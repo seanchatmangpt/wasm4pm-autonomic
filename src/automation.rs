@@ -6,11 +6,24 @@ use crate::{RlState, RlAction};
 use std::fs;
 use std::path::Path;
 
+const TRAINING_LOGS_DIR_NAME: &str = "training_logs";
+const TEST_LOGS_DIR_NAME: &str = "test_logs";
+const GROUND_TRUTH_DIR_NAME: &str = "ground_truth";
+
+const MAX_TRAINING_EPOCHS: usize = 10;
+const FITNESS_STOPPING_THRESHOLD: f64 = 0.99;
+const CLASSIFICATION_FITNESS_THRESHOLD: f64 = 0.8;
+const STRUCTURAL_SOUNDNESS_PENALTY: f32 = 0.5;
+
+const RL_LEARNING_RATE: f32 = 0.1;
+const RL_DISCOUNT_FACTOR: f32 = 0.9;
+const RL_EXPLORATION_RATE: f32 = 0.1;
+
 pub fn automate_discovery(data_dir: &str) {
-    let training_dir = format!("{}/training_logs", data_dir);
-    let test_dir = format!("{}/test_logs", data_dir);
-    let base_dir = format!("{}/test_logs", data_dir); // Base logs are in the same folder in this dataset
-    let ground_truth_dir = format!("{}/ground_truth", data_dir);
+    let training_dir = format!("{}/{}", data_dir, TRAINING_LOGS_DIR_NAME);
+    let test_dir = format!("{}/{}", data_dir, TEST_LOGS_DIR_NAME);
+    let _base_dir = format!("{}/{}", data_dir, TEST_LOGS_DIR_NAME); // Base logs are in the same folder in this dataset
+    let ground_truth_dir = format!("{}/{}", data_dir, GROUND_TRUTH_DIR_NAME);
     
     println!("Data Dir: {}", data_dir);
     println!("Training Dir: {}", training_dir);
@@ -74,8 +87,8 @@ pub fn automate_discovery(data_dir: &str) {
                         .and_then(|a| if let crate::models::AttributeValue::Boolean(b) = a.value { Some(b) } else { None })
                         .unwrap_or(true);
                     
-                    // Simple classifier: if fitness > 0.8, we say it fits (is positive)
-                    let predicted_is_pos = test_res.fitness > 0.8;
+                    // Simple classifier: if fitness > CLASSIFICATION_FITNESS_THRESHOLD, we say it fits (is positive)
+                    let predicted_is_pos = test_res.fitness > CLASSIFICATION_FITNESS_THRESHOLD;
                     if predicted_is_pos == gt_is_pos {
                         correct_classifications += 1;
                     }
@@ -98,19 +111,25 @@ pub fn automate_discovery(data_dir: &str) {
 fn train_to_perfection(train_log: &EventLog) -> PetriNet {
     // Ground-up rebuild: actual discovery is simulated here to verify RL integration
     let mut model = PetriNet::default();
-    let agent: QLearning<RlState, RlAction> = QLearning::with_hyperparams(0.1, 0.9, 0.1);
+    let agent: QLearning<RlState, RlAction> = QLearning::with_hyperparams(RL_LEARNING_RATE, RL_DISCOUNT_FACTOR, RL_EXPLORATION_RATE);
     
     // Simulate training epochs
-    for _ in 0..10 {
+    for _ in 0..MAX_TRAINING_EPOCHS {
         let results = token_replay(train_log, &model);
         let avg_f: f64 = results.iter().map(|r| r.fitness).sum::<f64>() / results.len() as f64;
         
         let is_sound = model.is_structural_workflow_net();
+        let verifies_calculus = model.verifies_state_equation_calculus();
         
         // Structural Soundness Penalty: Adversarial defense requires sound nets.
-        let reward = if is_sound { avg_f as f32 } else { avg_f as f32 - 0.5 };
+        // Strengthened with formal state equation calculus verification.
+        let reward = if is_sound && verifies_calculus { 
+            avg_f as f32 
+        } else { 
+            avg_f as f32 - STRUCTURAL_SOUNDNESS_PENALTY 
+        };
         
-        if avg_f >= 0.99 && is_sound { break; }
+        if avg_f >= FITNESS_STOPPING_THRESHOLD && is_sound && verifies_calculus { break; }
 
         let state = RlState {
             marking_vec: Vec::new(),

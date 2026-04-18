@@ -14,6 +14,12 @@ use std::marker::PhantomData;
 
 use fastrand::Rng;
 
+pub const DEFAULT_LEARNING_RATE: f32 = 0.1;
+pub const DEFAULT_DISCOUNT_FACTOR: f32 = 0.99;
+pub const DEFAULT_EXPLORATION_RATE: f32 = 1.0;
+pub const DEFAULT_EXPLORATION_DECAY: f32 = 0.995;
+pub const REINFORCE_LEARNING_RATE: f32 = 0.01;
+
 /// State for reinforcement learning (must be hashable and cloneable)
 pub trait WorkflowState: Clone + Eq + Hash {
     /// State features for function approximation
@@ -145,10 +151,10 @@ impl<S: WorkflowState, A: WorkflowAction> QLearning<S, A> {
     pub fn new() -> Self {
         Self {
             q_table: RefCell::new(HashMap::new()),
-            learning_rate: 0.1,
-            discount_factor: 0.99,
-            exploration_rate: 1.0,
-            exploration_decay: 0.995,
+            learning_rate: DEFAULT_LEARNING_RATE,
+            discount_factor: DEFAULT_DISCOUNT_FACTOR,
+            exploration_rate: DEFAULT_EXPLORATION_RATE,
+            exploration_decay: DEFAULT_EXPLORATION_DECAY,
             episodes: RefCell::new(0),
             total_reward: RefCell::new(0.0),
             rng: RefCell::new(Rng::new()),
@@ -162,8 +168,8 @@ impl<S: WorkflowState, A: WorkflowAction> QLearning<S, A> {
             q_table: RefCell::new(HashMap::new()),
             learning_rate: lr,
             discount_factor: df,
-            exploration_rate: 1.0,
-            exploration_decay: 0.995,
+            exploration_rate: DEFAULT_EXPLORATION_RATE,
+            exploration_decay: DEFAULT_EXPLORATION_DECAY,
             episodes: RefCell::new(0),
             total_reward: RefCell::new(0.0),
             rng: RefCell::new(Rng::with_seed(seed)),
@@ -337,10 +343,10 @@ impl<S: WorkflowState, A: WorkflowAction> SARSAAgent<S, A> {
     pub fn new() -> Self {
         Self {
             q_table: RefCell::new(HashMap::new()),
-            learning_rate: 0.1,
-            discount_factor: 0.99,
-            exploration_rate: 1.0,
-            exploration_decay: 0.995,
+            learning_rate: DEFAULT_LEARNING_RATE,
+            discount_factor: DEFAULT_DISCOUNT_FACTOR,
+            exploration_rate: DEFAULT_EXPLORATION_RATE,
+            exploration_decay: DEFAULT_EXPLORATION_DECAY,
             pending_next: RefCell::new(None),
             rng: RefCell::new(Rng::new()),
             _phantom: PhantomData,
@@ -353,8 +359,8 @@ impl<S: WorkflowState, A: WorkflowAction> SARSAAgent<S, A> {
             q_table: RefCell::new(HashMap::new()),
             learning_rate: lr,
             discount_factor: df,
-            exploration_rate: 1.0,
-            exploration_decay: 0.995,
+            exploration_rate: DEFAULT_EXPLORATION_RATE,
+            exploration_decay: DEFAULT_EXPLORATION_DECAY,
             pending_next: RefCell::new(None),
             rng: RefCell::new(Rng::with_seed(seed)),
             _phantom: PhantomData,
@@ -513,10 +519,10 @@ impl<S: WorkflowState, A: WorkflowAction> DoubleQLearning<S, A> {
         Self {
             q_a: RefCell::new(HashMap::new()),
             q_b: RefCell::new(HashMap::new()),
-            learning_rate: 0.1,
-            discount_factor: 0.99,
-            exploration_rate: 1.0,
-            exploration_decay: 0.995,
+            learning_rate: DEFAULT_LEARNING_RATE,
+            discount_factor: DEFAULT_DISCOUNT_FACTOR,
+            exploration_rate: DEFAULT_EXPLORATION_RATE,
+            exploration_decay: DEFAULT_EXPLORATION_DECAY,
             rng: RefCell::new(Rng::new()),
             _phantom: PhantomData,
         }
@@ -529,8 +535,8 @@ impl<S: WorkflowState, A: WorkflowAction> DoubleQLearning<S, A> {
             q_b: RefCell::new(HashMap::new()),
             learning_rate: lr,
             discount_factor: df,
-            exploration_rate: 1.0,
-            exploration_decay: 0.995,
+            exploration_rate: DEFAULT_EXPLORATION_RATE,
+            exploration_decay: DEFAULT_EXPLORATION_DECAY,
             rng: RefCell::new(Rng::with_seed(seed)),
             _phantom: PhantomData,
         }
@@ -713,10 +719,10 @@ impl<S: WorkflowState, A: WorkflowAction> ExpectedSARSAAgent<S, A> {
     pub fn new() -> Self {
         Self {
             q_table: RefCell::new(HashMap::new()),
-            learning_rate: 0.1,
-            discount_factor: 0.99,
-            exploration_rate: 1.0,
-            exploration_decay: 0.995,
+            learning_rate: DEFAULT_LEARNING_RATE,
+            discount_factor: DEFAULT_DISCOUNT_FACTOR,
+            exploration_rate: DEFAULT_EXPLORATION_RATE,
+            exploration_decay: DEFAULT_EXPLORATION_DECAY,
             rng: RefCell::new(Rng::new()),
             _phantom: PhantomData,
         }
@@ -728,8 +734,8 @@ impl<S: WorkflowState, A: WorkflowAction> ExpectedSARSAAgent<S, A> {
             q_table: RefCell::new(HashMap::new()),
             learning_rate: lr,
             discount_factor: df,
-            exploration_rate: 1.0,
-            exploration_decay: 0.995,
+            exploration_rate: DEFAULT_EXPLORATION_RATE,
+            exploration_decay: DEFAULT_EXPLORATION_DECAY,
             rng: RefCell::new(Rng::with_seed(seed)),
             _phantom: PhantomData,
         }
@@ -885,8 +891,8 @@ impl<S: WorkflowState, A: WorkflowAction> ReinforceAgent<S, A> {
     pub fn new() -> Self {
         Self {
             theta: RefCell::new(HashMap::new()),
-            learning_rate: 0.01,
-            discount_factor: 0.99,
+            learning_rate: REINFORCE_LEARNING_RATE,
+            discount_factor: DEFAULT_DISCOUNT_FACTOR,
             rng: RefCell::new(Rng::new()),
             _phantom: PhantomData,
         }

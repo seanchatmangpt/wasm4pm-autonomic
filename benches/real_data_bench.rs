@@ -10,6 +10,11 @@ use std::path::Path;
 use std::fs::File;
 use std::io::BufReader;
 
+const REAL_DATA_PATH: &str = "data/DomesticDeclarations.xes";
+const BENCH_STEPS: usize = 1000;
+const GOAL_STATE: i32 = 100;
+const DEFAULT_REWARD: f32 = 1.0;
+
 fn create_state(h: i32) -> RlState {
     RlState {
         health_level: h,
@@ -37,10 +42,10 @@ fn map_activity_to_action(activity: &str) -> RlAction {
 }
 
 fn load_real_actions() -> Vec<RlAction> {
-    let path = Path::new("data/DomesticDeclarations.xes");
+    let path = Path::new(REAL_DATA_PATH);
     if !path.exists() {
-        eprintln!("Data file not found at data/DomesticDeclarations.xes. Using mock data.");
-        return vec![RlAction::Idle; 1000];
+        eprintln!("Data file not found at {}. Using mock data.", REAL_DATA_PATH);
+        return vec![RlAction::Idle; BENCH_STEPS];
     }
 
     let file = File::open(path).expect("Failed to open XES file");
@@ -74,10 +79,10 @@ fn bench_real_data_processing(c: &mut Criterion) {
 
     let mut group = c.benchmark_group("RealDataProcessing");
     
-    let chunk_size = 1000.min(actions.len());
+    let chunk_size = BENCH_STEPS.min(actions.len());
     let actions_chunk = &actions[..chunk_size];
 
-    group.bench_function("QLearning Real Data (1000 steps)", |b| b.iter(|| {
+    group.bench_function(format!("QLearning Real Data ({} steps)", BENCH_STEPS), |b| b.iter(|| {
         let mut state = create_state(0);
         for action in actions_chunk {
             let next_h = match action {
@@ -86,15 +91,15 @@ fn bench_real_data_processing(c: &mut Criterion) {
                 RlAction::Rework => (state.health_level - 1).max(0),
             };
             let next_state = create_state(next_h);
-            let done = next_h >= 100;
-            let reward = if done { 1.0 } else { 0.0 };
+            let done = next_h >= GOAL_STATE;
+            let reward = if done { DEFAULT_REWARD } else { 0.0 };
             q.update(black_box(&state), black_box(action), reward, black_box(&next_state), done);
             state = next_state;
             if done { state = create_state(0); }
         }
     }));
 
-    group.bench_function("SARSA Real Data (1000 steps)", |b| b.iter(|| {
+    group.bench_function(format!("SARSA Real Data ({} steps)", BENCH_STEPS), |b| b.iter(|| {
         sarsa.reset();
         let mut state = create_state(0);
         for action in actions_chunk {
@@ -104,8 +109,8 @@ fn bench_real_data_processing(c: &mut Criterion) {
                 RlAction::Rework => (state.health_level - 1).max(0),
             };
             let next_state = create_state(next_h);
-            let done = next_h >= 100;
-            let reward = if done { 1.0 } else { 0.0 };
+            let done = next_h >= GOAL_STATE;
+            let reward = if done { DEFAULT_REWARD } else { 0.0 };
             sarsa.update(black_box(&state), black_box(action), reward, black_box(&next_state), done);
             state = next_state;
             if done { state = create_state(0); sarsa.reset(); }

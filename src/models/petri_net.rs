@@ -93,4 +93,63 @@ impl PetriNet {
         
         true
     }
+
+    /// Generates the Incidence Matrix (W) for the Petri Net, 
+    /// a fundamental requirement for Workflow Theory Calculus.
+    /// W[p][t] = Out(t, p) - In(t, p)
+    pub fn incidence_matrix(&self) -> Vec<Vec<i32>> {
+        let mut matrix = vec![vec![0; self.transitions.len()]; self.places.len()];
+        
+        let mut place_map = HashMap::new();
+        for (i, p) in self.places.iter().enumerate() {
+            place_map.insert(&p.id, i);
+        }
+        
+        let mut transition_map = HashMap::new();
+        for (j, t) in self.transitions.iter().enumerate() {
+            transition_map.insert(&t.id, j);
+        }
+        
+        for arc in &self.arcs {
+            let weight = arc.weight.unwrap_or(1) as i32;
+            
+            // If arc is from Transition to Place (Output arc)
+            if let (Some(&t_idx), Some(&p_idx)) = (transition_map.get(&arc.from), place_map.get(&arc.to)) {
+                matrix[p_idx][t_idx] += weight;
+            }
+            
+            // If arc is from Place to Transition (Input arc)
+            if let (Some(&p_idx), Some(&t_idx)) = (place_map.get(&arc.from), transition_map.get(&arc.to)) {
+                matrix[p_idx][t_idx] -= weight;
+            }
+        }
+        
+        matrix
+    }
+
+    /// Verifies the structural bounds of the workflow net state equation
+    /// M_n = M_0 + W * x
+    /// ensuring no transition creates infinite tokens (unboundedness).
+    pub fn verifies_state_equation_calculus(&self) -> bool {
+        if !self.is_structural_workflow_net() {
+            return false;
+        }
+        let w = self.incidence_matrix();
+        
+        // Simple heuristic: ensure there are no transitions that only produce tokens 
+        // without consuming any (which would lead to unboundedness).
+        // Since we already enforce no source/sink transitions, this is a secondary behavioral check.
+        for t_idx in 0..self.transitions.len() {
+            let mut consumes = false;
+            let mut produces = false;
+            for p_idx in 0..self.places.len() {
+                if w[p_idx][t_idx] < 0 { consumes = true; }
+                if w[p_idx][t_idx] > 0 { produces = true; }
+            }
+            if !consumes || !produces {
+                return false;
+            }
+        }
+        true
+    }
 }

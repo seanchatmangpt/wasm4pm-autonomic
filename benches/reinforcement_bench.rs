@@ -5,6 +5,12 @@ use wasm4pm::reinforcement::{
 };
 use wasm4pm::{RlAction, RlState};
 
+const MAX_STEPS: usize = 100;
+const BENCH_EPISODES: usize = 500;
+const GOAL_STATE_DEFAULT: i32 = 5;
+const GOAL_STATE_REINFORCE: i32 = 3;
+const BENCH_SAMPLE_SIZE: usize = 10;
+
 fn create_state(h: i32) -> RlState {
     RlState {
         health_level: h,
@@ -25,7 +31,7 @@ fn run_corridor_silent<T: Agent<RlState, RlAction>>(agent: &T, episodes: usize, 
         agent.reset();
         let mut state = create_state(0);
         let mut steps = 0;
-        while state.health_level < goal_state && steps < 100 {
+        while state.health_level < goal_state && steps < MAX_STEPS {
             let action = agent.select_action(&state);
             let next_h = match action {
                 RlAction::Idle => state.health_level,
@@ -71,22 +77,22 @@ fn bench_agents_step(c: &mut Criterion) {
 
 fn bench_convergence(c: &mut Criterion) {
     let mut group = c.benchmark_group("Convergence");
-    group.sample_size(10); // Convergence benchmarks are slower
+    group.sample_size(BENCH_SAMPLE_SIZE); // Convergence benchmarks are slower
     
-    group.bench_function("QLearning Corridor (500 ep)", |b| b.iter(|| {
+    group.bench_function(format!("QLearning Corridor ({} ep)", BENCH_EPISODES), |b| b.iter(|| {
         let agent = QLearning::with_hyperparams(0.1, 0.9, 0.5);
-        run_corridor_silent(&agent, 500, 5);
+        run_corridor_silent(&agent, BENCH_EPISODES, GOAL_STATE_DEFAULT);
     }));
 
-    group.bench_function("SARSA Corridor (500 ep)", |b| b.iter(|| {
+    group.bench_function(format!("SARSA Corridor ({} ep)", BENCH_EPISODES), |b| b.iter(|| {
         let mut agent = SARSAAgent::new();
         agent.set_exploration_rate(0.5);
-        run_corridor_silent(&agent, 500, 5);
+        run_corridor_silent(&agent, BENCH_EPISODES, GOAL_STATE_DEFAULT);
     }));
 
-    group.bench_function("Reinforce Corridor (500 ep)", |b| b.iter(|| {
+    group.bench_function(format!("Reinforce Corridor ({} ep)", BENCH_EPISODES), |b| b.iter(|| {
         let agent = ReinforceAgent::with_hyperparams(0.1, 0.9);
-        run_corridor_silent(&agent, 500, 3);
+        run_corridor_silent(&agent, BENCH_EPISODES, GOAL_STATE_REINFORCE);
     }));
 
     group.finish();
