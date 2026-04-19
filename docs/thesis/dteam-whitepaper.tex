@@ -1,0 +1,33 @@
+\documentclass[12pt,a4paper]{report}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath, amsfonts, amssymb, amsthm, booktabs, hyperref, geometry}
+\geometry{margin=1in}
+
+\title{DTEAM: Deterministic Process Intelligence Engine\ \large Technical Whitepaper v1.3.0}
+\author{\textbf{DTEAM Autonomic Discovery Team}}
+\date{April 18, 2026}
+
+\begin{document}
+\maketitle
+
+\chapter{Empirical Validation}
+\section{Final Performance Benchmarks}
+Table 1.1 presents the finalized performance metrics for the DTEAM v1.3.0 kernel.
+\begin{table}[ht]
+\centering
+\caption{DTEAM v1.3.0 Absolute Performance Metrics}
+\begin{tabular}{lr}
+\hline
+Operation & Latency (ns) \\
+\hline
+QLearning Update Step & 14.87 \\
+SARSA Update Step & 17.53 \\
+Double Q-Learning Update Step & 27.67 \\
+Action Selection ($\pi^*$) & 6.95 \\
+Packed Key Table Lookup (Median) & 23.30 \\
+\hline
+\end{tabular}
+\end{table}
+
+\end{document}

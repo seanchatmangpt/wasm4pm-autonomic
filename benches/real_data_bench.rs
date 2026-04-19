@@ -1,10 +1,10 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use process_mining::core::event_data::case_centric::xes::{import_xes, XESImportOptions};
 use process_mining::core::event_data::case_centric::AttributeValue;
-use wasm4pm::reinforcement::{
+use dteam::reinforcement::{
     Agent, QLearning, SARSAAgent,
 };
-use wasm4pm::{RlAction, RlState};
+use dteam::{RlAction, RlState};
 use std::path::Path;
 use std::fs::File;
 use std::io::BufReader;
@@ -57,11 +57,8 @@ fn load_real_actions() -> Vec<RlAction> {
             // Find concept:name attribute
             let name_attr = event.attributes.iter().find(|a| a.key == "concept:name");
             if let Some(attr) = name_attr {
-                match &attr.value {
-                    AttributeValue::String(s) => {
-                        actions.push(map_activity_to_action(s));
-                    }
-                    _ => {}
+                if let AttributeValue::String(s) = &attr.value {
+                    actions.push(map_activity_to_action(s));
                 }
             }
         }

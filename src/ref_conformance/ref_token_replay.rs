@@ -271,7 +271,7 @@ pub fn apply_token_based_replay_bcinr(
         let missing_final = final_mask & !marking;
         local_missing += missing_final.count_ones();
         local_consumed += final_count;
-        marking = marking & !final_mask;
+        marking &= !final_mask;
         let local_remaining = marking.count_ones();
         
         result.missing += (local_missing as u64) * freq;

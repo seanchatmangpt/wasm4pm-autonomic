@@ -1,7 +1,8 @@
 use serde::{Deserialize, Serialize};
 use crate::models::{EventLog, Trace};
 use crate::models::petri_net::{PetriNet, Arc};
-use rustc_hash::FxHashMap;
+use crate::utils::dense_kernel::{PackedKeyTable, fnv1a_64};
+use std::hash::{Hash, Hasher};
 
 pub mod case_centric;
 
@@ -27,9 +28,9 @@ pub struct ProjectedLog {
 
 impl From<&EventLog> for ProjectedLog {
     fn from(log: &EventLog) -> Self {
-        let mut act_to_idx = FxHashMap::default();
+        let mut act_to_idx = PackedKeyTable::new();
         let mut activities = Vec::new();
-        let mut traces_map = FxHashMap::default();
+        let mut traces_map = PackedKeyTable::new();
 
         for trace in &log.traces {
             let mut trace_acts = Vec::with_capacity(trace.events.len());
@@ -39,19 +40,31 @@ impl From<&EventLog> for ProjectedLog {
                     .and_then(|a| if let crate::models::AttributeValue::String(s) = &a.value { Some(s.as_str()) } else { None })
                     .unwrap_or("No Activity");
 
-                let index = *act_to_idx.entry(activity.to_string()).or_insert_with(|| {
+                let h = fnv1a_64(activity.as_bytes());
+                let index = if let Some(&idx) = act_to_idx.get(h) {
+                    idx
+                } else {
                     let idx = activities.len();
                     activities.push(activity.to_string());
+                    act_to_idx.insert(h, activity.to_string(), idx);
                     idx
-                });
+                };
                 trace_acts.push(index);
             }
-            *traces_map.entry(trace_acts).or_insert(0) += 1;
+            
+            let mut hasher = rustc_hash::FxHasher::default();
+            trace_acts.hash(&mut hasher);
+            let h = hasher.finish();
+            if let Some(freq) = traces_map.get_mut(h) {
+                *freq += 1;
+            } else {
+                traces_map.insert(h, trace_acts, 1);
+            }
         }
 
         Self {
             activities,
-            traces: traces_map.into_iter().collect(),
+            traces: traces_map.iter().map(|(_, k, v)| (k.clone(), *v)).collect(),
         }
     }
 }
@@ -60,8 +73,10 @@ pub fn token_replay_projected(log: &ProjectedLog, petri_net: &PetriNet) -> f64 {
     let num_places = petri_net.places.len();
     if num_places > 64 { return 0.0; }
 
-    let mut place_to_idx = FxHashMap::default();
-    for (i, p) in petri_net.places.iter().enumerate() { place_to_idx.insert(p.id.clone(), i); }
+    let mut place_to_idx = PackedKeyTable::with_capacity(num_places);
+    for (i, p) in petri_net.places.iter().enumerate() { 
+        place_to_idx.insert(fnv1a_64(p.id.as_bytes()), p.id.clone(), i); 
+    }
 
     let num_transitions = petri_net.transitions.len();
     let dummy_t_idx = num_transitions;
@@ -79,7 +94,7 @@ pub fn token_replay_projected(log: &ProjectedLog, petri_net: &PetriNet) -> f64 {
 
         if let Some(t_idx) = t_idx_opt {
             let p_id = if is_input { &arc.from } else { &arc.to };
-            if let Some(&p_idx) = place_to_idx.get(p_id) {
+            if let Some(&p_idx) = place_to_idx.get(fnv1a_64(p_id.as_bytes())) {
                 if is_input { input_masks[t_idx] |= 1u64 << p_idx; }
                 else { output_masks[t_idx] |= 1u64 << p_idx; }
             }
@@ -94,13 +109,13 @@ pub fn token_replay_projected(log: &ProjectedLog, petri_net: &PetriNet) -> f64 {
     }
 
     let mut initial_mask = 0u64;
-    for (p_id, c) in &petri_net.initial_marking {
-        if *c > 0 { if let Some(&p_idx) = place_to_idx.get(p_id) { initial_mask |= 1u64 << p_idx; } }
+    for (_, p_id, c) in petri_net.initial_marking.iter() {
+        if *c > 0 { if let Some(&p_idx) = place_to_idx.get(fnv1a_64(p_id.as_bytes())) { initial_mask |= 1u64 << p_idx; } }
     }
 
     let mut final_mask = 0u64;
     if let Some(fm) = petri_net.final_markings.first() {
-        for (p_id, c) in fm { if *c > 0 { if let Some(&p_idx) = place_to_idx.get(p_id) { final_mask |= 1u64 << p_idx; } } }
+        for (_, p_id, c) in fm.iter() { if *c > 0 { if let Some(&p_idx) = place_to_idx.get(fnv1a_64(p_id.as_bytes())) { final_mask |= 1u64 << p_idx; } } }
     }
     let final_count = final_mask.count_ones();
 
@@ -148,16 +163,17 @@ pub fn token_replay_projected(log: &ProjectedLog, petri_net: &PetriNet) -> f64 {
 pub fn token_replay(log: &EventLog, petri_net: &PetriNet) -> Vec<ConformanceResult> {
     let num_places = petri_net.places.len();
     if num_places > 64 {
-        // Fallback for > 64 places, but for our bounded Engine this shouldn't be hit.
         return log.traces.iter().map(|trace| replay_trace_standard(trace, petri_net)).collect();
     }
 
-    let mut place_to_idx = FxHashMap::default();
-    let mut act_to_t_idx = FxHashMap::default();
+    let mut place_to_idx = PackedKeyTable::with_capacity(num_places);
+    let mut act_to_t_idx = PackedKeyTable::with_capacity(petri_net.transitions.len());
 
-    for (i, p) in petri_net.places.iter().enumerate() { place_to_idx.insert(p.id.clone(), i); }
+    for (i, p) in petri_net.places.iter().enumerate() { 
+        place_to_idx.insert(fnv1a_64(p.id.as_bytes()), p.id.clone(), i); 
+    }
     for (i, t) in petri_net.transitions.iter().enumerate() { 
-        act_to_t_idx.insert(t.label.clone(), i);
+        act_to_t_idx.insert(fnv1a_64(t.label.as_bytes()), t.label.clone(), i);
     }
 
     let num_transitions = petri_net.transitions.len();
@@ -168,13 +184,10 @@ pub fn token_replay(log: &EventLog, petri_net: &PetriNet) -> Vec<ConformanceResu
 
     for arc in &petri_net.arcs {
         let mut is_input = false;
-        let mut is_output = false;
-        
         let t_idx_opt = if petri_net.transitions.iter().any(|t| t.id == arc.to) {
             is_input = true;
             petri_net.transitions.iter().position(|t| t.id == arc.to)
         } else if petri_net.transitions.iter().any(|t| t.id == arc.from) {
-            is_output = true;
             petri_net.transitions.iter().position(|t| t.id == arc.from)
         } else {
             None
@@ -182,7 +195,7 @@ pub fn token_replay(log: &EventLog, petri_net: &PetriNet) -> Vec<ConformanceResu
 
         if let Some(t_idx) = t_idx_opt {
             let p_id = if is_input { &arc.from } else { &arc.to };
-            if let Some(&p_idx) = place_to_idx.get(p_id) {
+            if let Some(&p_idx) = place_to_idx.get(fnv1a_64(p_id.as_bytes())) {
                 if is_input {
                     input_masks[t_idx] |= 1u64 << p_idx;
                 } else {
@@ -200,9 +213,9 @@ pub fn token_replay(log: &EventLog, petri_net: &PetriNet) -> Vec<ConformanceResu
     }
 
     let mut initial_mask = 0u64;
-    for (p_id, c) in &petri_net.initial_marking {
+    for (_, p_id, c) in petri_net.initial_marking.iter() {
         if *c > 0 {
-            if let Some(&p_idx) = place_to_idx.get(p_id) {
+            if let Some(&p_idx) = place_to_idx.get(fnv1a_64(p_id.as_bytes())) {
                 initial_mask |= 1u64 << p_idx;
             }
         }
@@ -210,9 +223,9 @@ pub fn token_replay(log: &EventLog, petri_net: &PetriNet) -> Vec<ConformanceResu
 
     let mut final_mask = 0u64;
     if let Some(fm) = petri_net.final_markings.first() {
-        for (p_id, c) in fm {
+        for (_, p_id, c) in fm.iter() {
             if *c > 0 {
-                if let Some(&p_idx) = place_to_idx.get(p_id) {
+                if let Some(&p_idx) = place_to_idx.get(fnv1a_64(p_id.as_bytes())) {
                     final_mask |= 1u64 << p_idx;
                 }
             }
@@ -230,7 +243,7 @@ pub fn token_replay(log: &EventLog, petri_net: &PetriNet) -> Vec<ConformanceResu
             let mut t_idx = dummy_t_idx;
             if let Some(attr) = event.attributes.iter().find(|a| a.key == "concept:name") {
                 if let crate::models::AttributeValue::String(s) = &attr.value {
-                    if let Some(&idx) = act_to_t_idx.get(s) {
+                    if let Some(&idx) = act_to_t_idx.get(fnv1a_64(s.as_bytes())) {
                         t_idx = idx;
                     }
                 }
@@ -281,7 +294,8 @@ fn replay_trace_standard(trace: &Trace, petri_net: &PetriNet) -> ConformanceResu
                 let input_arcs: Vec<&Arc> = petri_net.arcs.iter().filter(|a| a.to == transition.id).collect();
                 let mut can_fire = true;
                 for arc in &input_arcs {
-                    let token_count = markings.get(&arc.from).unwrap_or(&0);
+                    let h = fnv1a_64(arc.from.as_bytes());
+                    let token_count = markings.get(h).unwrap_or(&0);
                     if *token_count < arc.weight.unwrap_or(1) {
                         can_fire = false;
                         missing_tokens += arc.weight.unwrap_or(1) - *token_count;
@@ -290,13 +304,19 @@ fn replay_trace_standard(trace: &Trace, petri_net: &PetriNet) -> ConformanceResu
 
                 if can_fire {
                     for arc in &input_arcs {
-                        let token_count = markings.get_mut(&arc.from).unwrap();
+                        let h = fnv1a_64(arc.from.as_bytes());
+                        let token_count = markings.get_mut(h).unwrap();
                         *token_count -= arc.weight.unwrap_or(1);
                         consumed_tokens += arc.weight.unwrap_or(1);
                     }
                     let output_arcs: Vec<&Arc> = petri_net.arcs.iter().filter(|a| a.from == transition.id).collect();
                     for arc in &output_arcs {
-                        *markings.entry(arc.to.clone()).or_insert(0) += arc.weight.unwrap_or(1);
+                        let h = fnv1a_64(arc.to.as_bytes());
+                        if let Some(token_count) = markings.get_mut(h) {
+                            *token_count += arc.weight.unwrap_or(1);
+                        } else {
+                            markings.insert(h, arc.to.clone(), arc.weight.unwrap_or(1));
+                        }
                         produced_tokens += arc.weight.unwrap_or(1);
                     }
                 } else {
@@ -306,7 +326,7 @@ fn replay_trace_standard(trace: &Trace, petri_net: &PetriNet) -> ConformanceResu
         }
     }
 
-    let remaining_tokens: usize = markings.values().sum();
+    let remaining_tokens: usize = markings.iter().map(|(_, _, v)| *v).sum();
     let total_tokens_needed = consumed_tokens + missing_tokens;
     let fitness = if total_tokens_needed == 0 {
         1.0

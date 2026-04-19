@@ -2,3 +2,6 @@
 **/*.rs.bk
 *.json
 .DS_Store
+
+# Accidental home-path copies (must never be tracked)
+/Users/

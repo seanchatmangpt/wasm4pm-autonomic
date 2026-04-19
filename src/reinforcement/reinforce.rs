@@ -1,12 +1,11 @@
 use std::cell::RefCell;
-use rustc_hash::FxHashMap;
 use std::marker::PhantomData;
 use fastrand::Rng;
 
 use super::*;
 
 pub struct ReinforceAgent<S: WorkflowState, A: WorkflowAction> {
-    pub(crate) theta: RefCell<FxHashMap<S, Vec<f32>>>,
+    pub(crate) theta: RefCell<PackedKeyTable<S, Vec<f32>>>,
     pub(crate) learning_rate: f32,
     pub(crate) discount_factor: f32,
     pub(crate) rng: RefCell<Rng>,
@@ -17,7 +16,7 @@ impl<S: WorkflowState, A: WorkflowAction> ReinforceAgent<S, A> {
     #[allow(dead_code)]
     pub fn new() -> Self {
         Self {
-            theta: RefCell::new(FxHashMap::default()),
+            theta: RefCell::new(PackedKeyTable::default()),
             learning_rate: REINFORCE_LEARNING_RATE,
             discount_factor: DEFAULT_DISCOUNT_FACTOR,
             rng: RefCell::new(Rng::new()),
@@ -28,7 +27,7 @@ impl<S: WorkflowState, A: WorkflowAction> ReinforceAgent<S, A> {
     #[allow(dead_code)]
     pub fn new_with_seed(lr: f32, df: f32, seed: u64) -> Self {
         Self {
-            theta: RefCell::new(FxHashMap::default()),
+            theta: RefCell::new(PackedKeyTable::default()),
             learning_rate: lr,
             discount_factor: df,
             rng: RefCell::new(Rng::with_seed(seed)),
@@ -48,10 +47,9 @@ impl<S: WorkflowState, A: WorkflowAction> ReinforceAgent<S, A> {
     #[allow(dead_code)]
     pub fn select_action(&self, state: S) -> A {
         let theta = self.theta.borrow();
-        let weights = theta.get(&state).cloned().unwrap_or_else(zeros::<A>);
-        drop(theta);
+        let weights = get_q_values::<S, A>(&*theta, &state);
 
-        let probs = softmax_probs(&weights);
+        let probs = softmax_probs(weights);
         let u = self.rng.borrow_mut().f32();
         let mut acc = 0.0;
 
@@ -82,13 +80,14 @@ impl<S: WorkflowState, A: WorkflowAction> ReinforceAgent<S, A> {
         let mut theta = self.theta.borrow_mut();
 
         for (t, (state, action, _)) in trajectory.iter().enumerate() {
-            ensure_state::<S, A, _>(&mut *theta, *state);
-            let logits = get_q_values::<S, A, _>(&*theta, state);
-            let probs = softmax_probs(&logits);
+            ensure_state::<S, A>(&mut *theta, *state);
+            let logits = get_q_values::<S, A>(&*theta, state);
+            let probs = softmax_probs(logits);
             let a_idx = action.to_index();
             let g_t = returns[t];
 
-            let weights = theta.get_mut(state).unwrap();
+            let h = hash_state(state);
+            let weights = theta.get_mut(h).unwrap();
             for j in 0..A::ACTION_COUNT {
                 let grad = if j == a_idx { 1.0 - probs[j] } else { -probs[j] };
                 weights[j] += self.learning_rate * g_t * grad;
@@ -104,7 +103,7 @@ impl<S: WorkflowState, A: WorkflowAction> ReinforceAgent<S, A> {
     #[allow(dead_code)]
     pub fn get_policy_weights(&self, state: S) -> Vec<f32> {
         let theta = self.theta.borrow();
-        theta.get(&state).cloned().unwrap_or_else(zeros::<A>)
+        get_q_values::<S, A>(&*theta, &state).to_vec()
     }
 
     pub fn set_exploration_rate(&mut self, _rate: f32) {
@@ -130,7 +129,7 @@ impl ReinforceAgent<crate::RlState, crate::RlAction> {
         let theta = self.theta.borrow();
         let mut state_values = std::collections::HashMap::new();
 
-        for (state, weights) in theta.iter() {
+        for (_, state, weights) in theta.iter() {
             let key = encode_rl_state_key(
                 state.health_level,
                 state.event_rate_q,
@@ -159,8 +158,7 @@ impl ReinforceAgent<crate::RlState, crate::RlAction> {
 
         for (key, weights) in table.state_values {
             let (h, e, a, s, d, r, c, p) = decode_rl_state_key(key);
-            theta.insert(
-                crate::RlState {
+            let state = crate::RlState {
                     health_level: h,
                     event_rate_q: e,
                     activity_count_q: a,
@@ -171,9 +169,8 @@ impl ReinforceAgent<crate::RlState, crate::RlAction> {
                     cycle_phase: p,
                     marking_mask: 0,
                     activities_hash: 0,
-                },
-                weights,
-            );
+            };
+            theta.insert(hash_state(&state), state, weights);
         }
     }
 }

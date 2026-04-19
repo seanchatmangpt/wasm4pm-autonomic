@@ -1,7 +1,7 @@
 # Final Porting and Refactoring Status Report - 2026-04-18
 
 ## Overview
-This document summarizes the state of the `wasm4pm` project after achieving independence from the external `process_mining` crate and optimizing the core engine for performance and audit-compliance.
+This document summarizes the state of the `dteam` project after achieving independence from the external `process_mining` crate and optimizing the core engine for performance and audit-compliance.
 
 ## Project Structure
 - `src/models/`: Contains independently implemented `EventLog`, `Trace`, `Event`, and `PetriNet` structures.
@@ -20,7 +20,7 @@ This document summarizes the state of the `wasm4pm` project after achieving inde
 
 ## Known Limitations & Remaining Work
 - `src/automation.rs` and `src/discovery.rs` still contain legacy stubs and require integration with the new `models` module.
-- `reinforcement_tests.rs` should be migrated to use the new native `wasm4pm` models rather than external trait mocks.
+- `reinforcement_tests.rs` should be migrated to use the new native `dteam` models rather than external trait mocks.
 - Benchmarking scripts (`benches/`) need to be updated to target the new native implementation.
 
 ## Security Posture

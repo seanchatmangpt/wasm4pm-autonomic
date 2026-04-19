@@ -1,6 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use wasm4pm::reinforcement::{Agent, QLearning, SARSAAgent, DoubleQLearning};
-use wasm4pm::{RlState, RlAction};
+use dteam::reinforcement::{Agent, QLearning, SARSAAgent, DoubleQLearning};
+use dteam::{RlState, RlAction};
 
 fn create_mock_state(h: i8) -> RlState {
     RlState {

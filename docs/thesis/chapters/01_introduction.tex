@@ -1,0 +1,24 @@
+\chapter{Introduction: The Crisis of Stochasticity}
+\section{The Fragility of AI-Assisted Process Mining}
+Modern process discovery has increasingly turned toward machine learning (ML) and reinforcement learning (RL) to handle the complexity of real-world event logs. However, this transition has introduced a significant crisis of stochasticity. Standard RL implementations rely heavily on dynamically allocated memory, non-deterministic bucket-probing hash maps, and floating-point approximations. These architectural choices lead to thread-level jitter and unstable execution trajectories. 
+
+When an algorithm's output relies on the transient state of the host machine's heap or the CPU's branch predictor, the resulting process models become non-reproducible. In high-stakes environments—such as medical workflows, financial compliance, or legal dispatch systems—the ability to precisely reproduce a process model across different hardware platforms is not merely a convenience; it is a fundamental requirement for technical auditability and legal defensibility.
+
+\section{The ``Cracked Contest'' and the Overfitting Accusation}
+The process mining community frequently evaluates algorithms based on precision, recall, and classification accuracy across standardized datasets (e.g., the PDC-2025 suite). Achieving 100\% accuracy is often met with immediate skepticism, primarily due to the ubiquitous problem of \textit{overfitting}. Traditional algorithms that achieve perfect scores usually do so by memorizing trace sequences, resulting in overly complex "flower nets" or highly fragmented models that fail to generalize.
+
+To claim 100\% accuracy legitimately, a system must prove that its models are not just accurate, but structurally minimal and logically sound. It must prove that it learned the underlying control-flow constraints rather than merely memorizing the training log.
+
+\section{The DTEAM Vision: From Heuristics to Determinism}
+The Deterministic Process Intelligence Engine (DTEAM) was engineered from the ground up to solve this exact problem. DTEAM abandons heuristic guessing in favor of a mathematically closed, axiomatically verifiable transformation kernel. Our governing principle is:
+\begin{equation}
+A = \mu(O^*)
+\end{equation}
+Where:
+\begin{itemize}
+    \item $O^*$ represents the closed ontology of the target process language (e.g., block-structured Workflow Nets).
+    \item $\mu$ is a strictly deterministic transformation kernel (the RL engine + WASM runtime + reward shaping).
+    \item $A$ is the resulting structural artifact (the Petri Net and its classification outcome).
+\end{itemize}
+
+By proving that $\mu$ is strictly deterministic, and by enforcing structural soundness mathematically within $O^*$, DTEAM ensures that $A$ is both optimal and verifiably free from overfitting.

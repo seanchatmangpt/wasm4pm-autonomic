@@ -4,9 +4,10 @@
 use serde::{Deserialize, Serialize};
 use crate::models::EventLog;
 use crate::models::petri_net::{PetriNet};
-use rustc_hash::FxHashMap;
+use crate::utils::dense_kernel::{PackedKeyTable, fnv1a_64};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct TokenBasedReplayResult {
     pub produced: u64,
     pub consumed: u64,
@@ -26,18 +27,13 @@ impl TokenBasedReplayResult {
     }
 }
 
-impl Default for TokenBasedReplayResult {
-    fn default() -> Self {
-        Self { produced: 0, consumed: 0, missing: 0, remaining: 0 }
-    }
-}
 
 pub fn apply_token_based_replay(
     petri_net: &PetriNet,
     event_log: &EventLog,
 ) -> TokenBasedReplayResult {
     let mut result = TokenBasedReplayResult::new();
-    let mut markings: FxHashMap<String, usize> = petri_net.initial_marking.clone();
+    let mut markings: PackedKeyTable<String, usize> = petri_net.initial_marking.clone();
 
     for trace in &event_log.traces {
         for event in &trace.events {
@@ -46,7 +42,7 @@ pub fn apply_token_based_replay(
                 .and_then(|a| if let crate::models::AttributeValue::String(s) = &a.value { Some(s) } else { None });
 
             if let Some(activity) = activity {
-                if let Some(transition) = petri_net.transitions.iter().find(|t| &t.label == activity) {
+                if let Some(transition) = petri_net.transitions.iter().find(|t| t.label == *activity) {
                     let inputs: Vec<_> = petri_net.arcs.iter().filter(|a| a.to == transition.id).collect();
                     
                     let mut can_fire = true;
@@ -54,7 +50,8 @@ pub fn apply_token_based_replay(
                     
                     for arc in &inputs {
                         let weight = arc.weight.unwrap_or(1);
-                        let tokens = markings.get(&arc.from).cloned().unwrap_or(0);
+                        let h = fnv1a_64(arc.from.as_bytes());
+                        let tokens = markings.get(h).cloned().unwrap_or(0);
                         if tokens < weight {
                             can_fire = false;
                             trace_missing += weight - tokens;
@@ -64,7 +61,8 @@ pub fn apply_token_based_replay(
                     if can_fire {
                         for arc in &inputs {
                             let weight = arc.weight.unwrap_or(1);
-                            let tokens = markings.get_mut(&arc.from).unwrap();
+                            let h = fnv1a_64(arc.from.as_bytes());
+                            let tokens = markings.get_mut(h).unwrap();
                             *tokens -= weight;
                             result.consumed += weight as u64;
                         }
@@ -72,7 +70,12 @@ pub fn apply_token_based_replay(
                         let outputs: Vec<_> = petri_net.arcs.iter().filter(|a| a.from == transition.id).collect();
                         for arc in &outputs {
                             let weight = arc.weight.unwrap_or(1);
-                            *markings.entry(arc.to.clone()).or_insert(0) += weight;
+                            let h = fnv1a_64(arc.to.as_bytes());
+                            if let Some(tokens) = markings.get_mut(h) {
+                                *tokens += weight;
+                            } else {
+                                markings.insert(h, arc.to.clone(), weight);
+                            }
                             result.produced += weight as u64;
                         }
                     } else {
@@ -83,6 +86,6 @@ pub fn apply_token_based_replay(
         }
     }
     
-    result.remaining = markings.values().sum::<usize>() as u64;
+    result.remaining = markings.iter().map(|(_, _, v)| *v).sum::<usize>() as u64;
     result
 }

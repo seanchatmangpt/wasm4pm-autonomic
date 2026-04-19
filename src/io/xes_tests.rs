@@ -2,8 +2,8 @@
 mod tests {
     use crate::io::xes::XESReader;
     use crate::models::AttributeValue;
-    use std::fs;
-    use std::path::Path;
+    
+    
 
     #[test]
     fn test_xes_import_simple() {

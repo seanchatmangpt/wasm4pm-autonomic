@@ -1,0 +1,72 @@
+# dteam.toml — Hyper-Advanced Digital Team Configuration
+
+[meta]
+version = "2026.04.18"
+environment = "autonomous"
+identity = "DPIE-Alpha-01"
+
+[kernel]
+# K-Tier selection: K64, K128, K256, K512, K1024
+tier = "K256"
+# Memory alignment (bytes): 64-bit alignment is mandatory for branchless mask calculus
+alignment = 8
+# Determinism: strict, relaxed, non_deterministic
+determinism = "strict"
+# Allocation policy: zero_heap, stack_only, bounded_heap
+allocation_policy = "zero_heap"
+
+[autonomic]
+# Operational modes: recommend, guarded, autonomous
+mode = "guarded"
+# Sampling rate for online ingestion (ms)
+sampling_rate = 100
+# Manifest integrity: sha256, blake3, fnv1a_64
+integrity_hash = "fnv1a_64"
+
+[autonomic.guards]
+# Threshold for automatic action execution in autonomous mode
+risk_threshold = "Low"
+# Minimum health required for autonomous intervention
+min_health_threshold = 0.7
+# Maximum allowed latency for a single cycle (ms)
+max_cycle_latency_ms = 50
+# Authority level required for structural repairs
+repair_authority = "senior_engineer"
+
+[autonomic.policy]
+# Compliance profile: strict_conformance, permissive, audit_only
+profile = "strict_conformance"
+# Penalize actions that lead to model complexity increase (MDL)
+mdl_penalty = 0.05
+# Weight for human feedback in adapt phase
+human_weight = 0.8
+
+[rl]
+algorithm = "DoubleQLearning"
+learning_rate = 0.08
+discount_factor = 0.95
+exploration_rate = 0.2
+exploration_decay = 0.999
+# Reward weights for the composite reward surface
+reward_weights = { fitness = 0.6, soundness = 0.2, simplicity = 0.1, latency = 0.1 }
+
+[discovery]
+max_training_epochs = 100
+fitness_stopping_threshold = 0.995
+# Discovery strategy: incremental, batch, sliding_window
+strategy = "incremental"
+# Window size for concept drift detection (events)
+drift_window = 1000
+
+[paths]
+training_logs_dir = "data/pdc2025/training_logs"
+test_logs_dir = "data/pdc2025/test_logs"
+ground_truth_dir = "data/pdc2025/ground_truth"
+artifacts_dir = "artifacts"
+manifest_bus_path = "tmp/dmanifest_bus"
+
+[wasm]
+# Amortization batch size for host calls
+batch_size = 10
+# Maximum memory pages
+max_pages = 16

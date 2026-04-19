@@ -1,0 +1,22 @@
+\chapter{The Axiomatic Foundation of DTEAM}
+To defend against hostile critique, DTEAM is bound by a strict "Skeptic Contract"—a set of encoded formal claims that the engine must continuously satisfy.
+
+\section{The Reset Axiom and State Leakage}
+Overfitting in RL often occurs via temporal state leakage, where the agent implicitly "remembers" the trace sequence. DTEAM enforces the Reset Axiom:
+\begin{axiom}[Reset Axiom]
+For all traces $k$, the hidden state $H_k = \emptyset$. This implies that the mutual information between the next trace $\sigma_{k+1}$ and the hidden state $H_k$ given the initial state $s_0$ is zero:
+\begin{equation}
+I(\sigma_{k+1}; H_k | s_0) = 0
+\end{equation}
+\end{axiom}
+In implementation, DTEAM strictly re-initializes the RL agent's context between traces. The policy evaluation is strictly Markovian with respect to the current state only, rendering sequence memorization impossible.
+
+\section{Value-Structure Equivalence}
+A common failure mode in RL-based discovery is that the converged value function $Q^*$ does not map to the correct topological structure. DTEAM resolves this via the Theorem of Value-Structure Equivalence:
+\begin{theorem}[Value-Structure Equivalence]
+If the reward function is uniquely maximized by the ground truth model $N_{GT}$, the Bellman operator converges ($\gamma < 1$), and the policy is greedy with respect to $Q^*$, then the induced optimal policy $\pi^*$ yields a net $N^*$ that is bisimulation equivalent to the ground truth:
+\begin{equation}
+\pi^* \implies N^* \cong N_{GT}
+\end{equation}
+\end{theorem}
+This is enforced through a continuous topographic penalty gradient, ensuring that unsound or degenerate topologies receive strictly lower rewards.

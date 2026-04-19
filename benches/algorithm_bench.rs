@@ -1,8 +1,8 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use wasm4pm::ref_models::ref_petri_net::{PetriNet, ArcType, Marking};
-use wasm4pm::ref_models::ref_event_log::EventLogActivityProjection;
-use wasm4pm::ref_conformance::ref_token_replay::{apply_token_based_replay_standard, apply_token_based_replay_optimized, apply_token_based_replay_bcinr};
-use wasm4pm::io::xes::XESReader;
+use dteam::ref_models::ref_petri_net::{PetriNet, ArcType, Marking};
+use dteam::ref_models::ref_event_log::EventLogActivityProjection;
+use dteam::ref_conformance::ref_token_replay::{apply_token_based_replay_standard, apply_token_based_replay_optimized, apply_token_based_replay_bcinr};
+use dteam::io::xes::XESReader;
 use std::path::Path;
 
 fn create_test_net() -> PetriNet {

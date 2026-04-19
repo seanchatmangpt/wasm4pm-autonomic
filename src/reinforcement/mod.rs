@@ -1,9 +1,8 @@
 //! Core traits and utilities for reinforcement learning
 //! in single-threaded WASM environments.
 
-use std::hash::Hash;
-use std::collections::HashMap;
-use std::hash::BuildHasher;
+use std::hash::{Hash, Hasher};
+pub use crate::utils::dense_kernel::PackedKeyTable;
 
 pub const DEFAULT_LEARNING_RATE: f32 = 0.1;
 pub const DEFAULT_DISCOUNT_FACTOR: f32 = 0.99;
@@ -60,10 +59,12 @@ pub trait AgentMeta {
 
 // --- Common Utilities ---
 
+/*
 #[inline]
 pub(crate) fn zeros<A: WorkflowAction>() -> Vec<f32> {
     vec![0.0; A::ACTION_COUNT]
 }
+*/
 
 #[inline]
 pub(crate) fn clamp_probability(x: f32) -> f32 {
@@ -84,39 +85,47 @@ pub(crate) fn greedy_index(values: &[f32]) -> usize {
         .unwrap_or(0)
 }
 
-pub(crate) fn get_q_values<S, A, H>(
-    table: &HashMap<S, Vec<f32>, H>,
+#[inline]
+pub(crate) fn hash_state<S: Hash>(state: &S) -> u64 {
+    let mut hasher = rustc_hash::FxHasher::default();
+    state.hash(&mut hasher);
+    hasher.finish()
+}
+
+pub(crate) fn get_q_values<'a, S, A>(
+    table: &'a PackedKeyTable<S, Vec<f32>>,
     state: &S,
-) -> Vec<f32> 
+) -> &'a [f32] 
 where 
     S: WorkflowState, 
     A: WorkflowAction,
-    H: BuildHasher
 {
-    table.get(state).cloned().unwrap_or_else(zeros::<A>)
+    static ZEROS: [f32; 256] = [0.0; 256];
+    table.get(hash_state(state)).map(|v| v.as_slice()).unwrap_or(&ZEROS[..A::ACTION_COUNT])
 }
 
-pub(crate) fn ensure_state<S, A, H>(
-    table: &mut HashMap<S, Vec<f32>, H>,
+pub(crate) fn ensure_state<S, A>(
+    table: &mut PackedKeyTable<S, Vec<f32>>,
     state: S,
 ) 
 where 
     S: WorkflowState, 
     A: WorkflowAction,
-    H: BuildHasher + Default
 {
-    table.entry(state).or_insert_with(zeros::<A>);
+    let h = hash_state(&state);
+    if table.get(h).is_none() {
+        table.insert(h, state, vec![0.0; A::ACTION_COUNT]);
+    }
 }
 
-pub(crate) fn max_q<S, A, H>(table: &HashMap<S, Vec<f32>, H>, state: &S) -> f32 
+pub(crate) fn max_q<S, A>(table: &PackedKeyTable<S, Vec<f32>>, state: &S) -> f32 
 where 
     S: WorkflowState, 
     A: WorkflowAction,
-    H: BuildHasher
 {
-    get_q_values::<S, A, H>(table, state)
-        .into_iter()
-        .fold(f32::NEG_INFINITY, f32::max)
+    get_q_values::<S, A>(table, state)
+        .iter()
+        .fold(f32::NEG_INFINITY, |a, &b| a.max(b))
 }
 
 pub(crate) fn epsilon_greedy_probs(values: &[f32], epsilon: f32) -> Vec<f32> {

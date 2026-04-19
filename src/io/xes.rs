@@ -10,6 +10,12 @@ use std::path::Path;
 
 pub struct XESReader;
 
+impl Default for XESReader {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl XESReader {
     pub fn new() -> Self {
         XESReader
@@ -76,16 +82,13 @@ impl XESReader {
                         let key = std::str::from_utf8(&attr_key).unwrap_or("");
                         let value = std::str::from_utf8(&attr_value).unwrap_or("");
 
-                        match key {
-                            "concept:name" => {
-                                if inside_event {
-                                    event_activity = Some(value.to_string());
-                                } else if let Some(ref mut trace) = current_trace {
-                                    trace_id = Some(value.to_string());
-                                    trace.id = value.to_string();
-                                }
+                        if key == "concept:name" {
+                            if inside_event {
+                                event_activity = Some(value.to_string());
+                            } else if let Some(ref mut trace) = current_trace {
+                                trace_id = Some(value.to_string());
+                                trace.id = value.to_string();
                             }
-                            _ => {}
                         }
                     }
                 }

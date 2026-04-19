@@ -1,0 +1,15 @@
+\chapter{The K-Tier Memory Architecture}
+\section{Bounding Complexity}
+Traditional process mining tools rely heavily on standard collections (\texttt{Vec}, \texttt{HashMap}) which incur continuous heap allocation penalties. In a tight RL loop updating millions of times per second, dynamic allocations introduce massive latency spikes and cache fragmentation.
+
+DTEAM introduces the \textbf{K-Tier Architecture}, bounding system complexity at initialization.
+
+\begin{definition}[K-Tier]
+A K-tier is a fixed-capacity, word-aligned bitset representation where the capacity $K$ is a multiple of the CPU word size $W$ (64 bits).
+\end{definition}
+
+DTEAM supports operational tiers $K \in \{64, 128, 256, 512, 1024\}$. By forcing the engine to allocate fixed-width representations for marking masks, incidence matrices, and transition spaces, the memory footprint remains absolutely stable throughout the discovery epoch.
+
+\section{The Performance Law: $O(K/64)$}
+In a K-tier architecture, the latency of any fundamental Petri net operation is strictly bounded by the number of 64-bit words required to represent the tier.
+For a model operating in $K=64$, checking transition enablement is an $O(1)$ instruction. For $K=512$, the operation requires exactly 8 word-level bitwise instructions. Because 8 words equal 64 bytes, the entire state space fits precisely within a single L1 cache line, effectively neutralizing RAM latency.

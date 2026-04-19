@@ -1,8 +1,8 @@
-use wasm4pm::reinforcement::{Agent, SARSAAgent};
-use wasm4pm::ref_conformance::ref_token_replay::apply_token_based_replay_bcinr;
-use wasm4pm::ref_models::ref_petri_net::{PetriNet, ArcType};
-use wasm4pm::ref_models::ref_event_log::EventLogActivityProjection;
-use wasm4pm::{RlState, RlAction};
+use dteam::reinforcement::{Agent, SARSAAgent};
+use dteam::ref_conformance::ref_token_replay::apply_token_based_replay_bcinr;
+use dteam::ref_models::ref_petri_net::{PetriNet, ArcType};
+use dteam::ref_models::ref_event_log::EventLogActivityProjection;
+use dteam::{RlState, RlAction};
 use std::collections::HashMap;
 
 #[global_allocator]

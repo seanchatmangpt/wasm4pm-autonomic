@@ -1,7 +1,6 @@
 pub mod petri_net;
 /// Data structures derived from `rust4pm` (MIT/Apache-2.0).
 /// See ATTRIBUTION.md for details.
-
 use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -82,5 +81,22 @@ impl EventLog {
             }
         }
         activities.len()
+    }
+
+    pub fn canonical_hash(&self) -> u64 {
+        let mut h = 0xcbf29ce484222325u64;
+        for trace in &self.traces {
+            for event in &trace.events {
+                if let Some(attr) = event.attributes.iter().find(|a| a.key == "concept:name") {
+                    if let AttributeValue::String(s) = &attr.value {
+                        for b in s.as_bytes() {
+                            h ^= *b as u64;
+                            h = h.wrapping_mul(0x100000001b3);
+                        }
+                    }
+                }
+            }
+        }
+        h
     }
 }

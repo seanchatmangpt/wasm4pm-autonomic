@@ -1,6 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use wasm4pm::models::{EventLog, Trace, Event};
-use wasm4pm::dpie::orchestration::{Engine, KTier};
+use dteam::models::{EventLog, Trace, Event};
+use dteam::dteam::orchestration::Engine;
 
 fn create_log_of_size(n: usize) -> EventLog {
     let mut log = EventLog::new();

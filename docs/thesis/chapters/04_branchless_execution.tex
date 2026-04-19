@@ -1,0 +1,22 @@
+\chapter{Branchless Execution Kernels}
+\section{The Jitter Problem}
+Data-dependent branching is the enemy of determinism. In conventional token-based replay, checking enablement involves conditional logic:
+\begin{lstlisting}[language=C]
+if ((marking & in_mask) == in_mask) {
+    marking = (marking & ~in_mask) | out_mask;
+}
+\end{lstlisting}
+If the log is highly variable, the CPU branch predictor fails frequently, causing execution pipelines to flush and introducing nanosecond-scale jitter.
+
+\section{Branchless Mask Calculus}
+DTEAM replaces all conditional execution with bitwise selection and boolean masking. Using Bit-Compressed Integer Representation (BCINR) principles, the transition firing kernel is reduced to unconditional arithmetic:
+\begin{equation}
+M' = (M \ \& \ \neg I) \ | \ O
+\end{equation}
+Where $M$ is the current marking, $I$ is the input arc mask, and $O$ is the output arc mask. 
+
+To determine enablement and quantify missing tokens without a single branch, DTEAM employs hardware-accelerated population counts:
+\begin{equation}
+\text{Missing} = \text{popcount}(I \ \& \ \neg M)
+\end{equation}
+This operation maps directly to the \texttt{POPCNT} CPU instruction. The result is a replay engine that executes in identical time regardless of whether the transition is fully enabled, partially enabled, or completely disabled. 

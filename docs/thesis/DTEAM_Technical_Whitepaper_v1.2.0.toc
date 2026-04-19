@@ -1,0 +1,22 @@
+\contentsline {chapter}{\numberline {1}Introduction}{2}{chapter.1}%
+\contentsline {section}{\numberline {1.1}The Stochasticity Crisis in AI-Process Mining}{2}{section.1.1}%
+\contentsline {section}{\numberline {1.2}The DTEAM Vision: From Scripts to Engines}{2}{section.1.2}%
+\contentsline {chapter}{\numberline {2}The K-Tier Memory Architecture}{3}{chapter.2}%
+\contentsline {section}{\numberline {2.1}Motivation: Bounding Complexity}{3}{section.2.1}%
+\contentsline {section}{\numberline {2.2}Formal Definition of K-Tiers}{3}{section.2.2}%
+\contentsline {section}{\numberline {2.3}The Performance Law: $O(K/64)$}{3}{section.2.3}%
+\contentsline {chapter}{\numberline {3}Branchless Execution Kernels}{4}{chapter.3}%
+\contentsline {section}{\numberline {3.1}The Jitter Problem}{4}{section.3.1}%
+\contentsline {section}{\numberline {3.2}Branchless Mask Calculus}{4}{section.3.2}%
+\contentsline {chapter}{\numberline {4}Dense Kernel Optimization (v1.2.0)}{5}{chapter.4}%
+\contentsline {section}{\numberline {4.1}The Death of FxHashMap}{5}{section.4.1}%
+\contentsline {section}{\numberline {4.2}Packed Key Table (PKT)}{5}{section.4.2}%
+\contentsline {section}{\numberline {4.3}Dense Indexing Strategy}{5}{section.4.3}%
+\contentsline {chapter}{\numberline {5}Zero-Heap Reinforcement Learning}{6}{chapter.5}%
+\contentsline {section}{\numberline {5.1}State Space Quantification}{6}{section.5.1}%
+\contentsline {section}{\numberline {5.2}The Copy Property}{6}{section.5.2}%
+\contentsline {chapter}{\numberline {6}Empirical Breakthroughs}{7}{chapter.6}%
+\contentsline {section}{\numberline {6.1}RL Update Performance}{7}{section.6.1}%
+\contentsline {section}{\numberline {6.2}E2E Discovery Parity}{7}{section.6.2}%
+\contentsline {chapter}{\numberline {7}Conclusion and Peer Review Outlook}{8}{chapter.7}%
+\contentsline {chapter}{\numberline {A}Glossary of Terms}{10}{appendix.A}%

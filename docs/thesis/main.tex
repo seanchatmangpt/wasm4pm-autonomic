@@ -1,0 +1,67 @@
+\documentclass[12pt,a4paper]{report}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath, amsfonts, amssymb, amsthm, hyperref, geometry, listings, color, fancyhdr, setspace, caption}
+\geometry{margin=1in}
+\setstretch{1.15}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstset{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+
+\newtheorem{theorem}{Theorem}[chapter]
+\newtheorem{axiom}{Axiom}[chapter]
+\newtheorem{lemma}{Lemma}[chapter]
+\newtheorem{definition}{Definition}[chapter]
+\newtheorem{corollary}{Corollary}[chapter]
+
+\title{\Huge\textbf{DTEAM: Deterministic Process Intelligence Engine}\\ \vspace{0.5cm} \Large Technical Whitepaper v1.3.0 \\ \vspace{0.2cm} \normalsize The Mathematical and Architectural Foundations of Zero-Heap, Provable Process Discovery}
+\author{\textbf{DTEAM Autonomic Discovery Team}}
+\date{April 18, 2026}
+
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{DTEAM v1.3.0}
+\lhead{DTEAM Autonomic}
+\rfoot{Page \thepage}
+
+\begin{document}
+\maketitle
+
+\input{chapters/00_abstract.tex}
+
+\tableofcontents
+\listoftables
+
+\input{chapters/01_introduction.tex}
+\input{chapters/02_axiomatic_foundation.tex}
+\input{chapters/03_ktier_architecture.tex}
+\input{chapters/04_branchless_execution.tex}
+\input{chapters/05_dense_kernel.tex}
+\input{chapters/06_boundary_collapse.tex}
+\input{chapters/07_verifiable_provenance.tex}
+\input{chapters/08_empirical_validation.tex}
+\input{chapters/09_skeptic_harness.tex}
+\input{chapters/10_conclusion.tex}
+
+\end{document}
