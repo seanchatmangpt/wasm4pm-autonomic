@@ -1,5 +1,5 @@
 use std::cell::RefCell;
-use std::collections::HashMap;
+use rustc_hash::FxHashMap;
 use std::marker::PhantomData;
 use fastrand::Rng;
 
@@ -11,7 +11,7 @@ use super::*;
 /// at action-selection time so that the subsequent update can use the actual
 /// on-policy next action.
 pub struct SARSAAgent<S: WorkflowState, A: WorkflowAction> {
-    pub(crate) q_table: RefCell<HashMap<S, Vec<f32>>>,
+    pub(crate) q_table: RefCell<FxHashMap<S, Vec<f32>>>,
     pub(crate) learning_rate: f32,
     pub(crate) discount_factor: f32,
     pub(crate) exploration_rate: f32,
@@ -25,7 +25,7 @@ impl<S: WorkflowState, A: WorkflowAction> SARSAAgent<S, A> {
     #[allow(dead_code)]
     pub fn new() -> Self {
         Self {
-            q_table: RefCell::new(HashMap::new()),
+            q_table: RefCell::new(FxHashMap::default()),
             learning_rate: DEFAULT_LEARNING_RATE,
             discount_factor: DEFAULT_DISCOUNT_FACTOR,
             exploration_rate: DEFAULT_EXPLORATION_RATE,
@@ -39,7 +39,7 @@ impl<S: WorkflowState, A: WorkflowAction> SARSAAgent<S, A> {
     #[allow(dead_code)]
     pub fn new_with_seed(lr: f32, df: f32, seed: u64) -> Self {
         Self {
-            q_table: RefCell::new(HashMap::new()),
+            q_table: RefCell::new(FxHashMap::default()),
             learning_rate: lr,
             discount_factor: df,
             exploration_rate: DEFAULT_EXPLORATION_RATE,
@@ -76,7 +76,7 @@ impl<S: WorkflowState, A: WorkflowAction> SARSAAgent<S, A> {
 
     fn greedy_action(&self, state: S) -> A {
         let q_table = self.q_table.borrow();
-        let q_vals = get_q_values::<S, A>(&q_table, &state);
+        let q_vals = get_q_values::<S, A, _>(&*q_table, &state);
         A::from_index(greedy_index(&q_vals)).unwrap()
     }
 
@@ -91,15 +91,12 @@ impl<S: WorkflowState, A: WorkflowAction> SARSAAgent<S, A> {
         done: bool,
     ) {
         let mut q_table = self.q_table.borrow_mut();
-        ensure_state::<S, A>(&mut q_table, state);
+        ensure_state::<S, A, _>(&mut *q_table, state);
 
         let next_q = if done {
             0.0
         } else {
-            q_table
-                .get(&next_state)
-                .map(|q_vals| q_vals[next_action.to_index()])
-                .unwrap_or(0.0)
+            get_q_values::<S, A, _>(&*q_table, &next_state)[next_action.to_index()]
         };
 
         let action_idx = action.to_index();
@@ -144,7 +141,7 @@ impl SARSAAgent<crate::RlState, crate::RlAction> {
         use crate::rl_state_serialization::{encode_rl_state_key, SerializedAgentQTable};
 
         let q_table = self.q_table.borrow();
-        let mut state_values = HashMap::new();
+        let mut state_values = std::collections::HashMap::new();
 
         for (state, q_values) in q_table.iter() {
             let key = encode_rl_state_key(

@@ -2,9 +2,9 @@
 //! High-performance implementation using bcinr bitset algebra.
 
 use serde::{Deserialize, Serialize};
-use crate::models::{EventLog, Trace};
+use crate::models::EventLog;
 use crate::models::petri_net::{PetriNet};
-use std::collections::HashMap;
+use rustc_hash::FxHashMap;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TokenBasedReplayResult {
@@ -37,7 +37,7 @@ pub fn apply_token_based_replay(
     event_log: &EventLog,
 ) -> TokenBasedReplayResult {
     let mut result = TokenBasedReplayResult::new();
-    let mut markings: HashMap<String, usize> = petri_net.initial_marking.clone();
+    let mut markings: FxHashMap<String, usize> = petri_net.initial_marking.clone();
 
     for trace in &event_log.traces {
         for event in &trace.events {

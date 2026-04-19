@@ -3,10 +3,8 @@
 /// Proper XML parsing implementation using quick-xml
 use crate::models::{Attribute, AttributeValue, Event, EventLog, Trace};
 use anyhow::Result;
-use chrono::{DateTime, Utc};
 use quick_xml::events::Event as XmlEvent;
 use quick_xml::Reader;
-use uuid::Uuid;
 use std::fs;
 use std::path::Path;
 

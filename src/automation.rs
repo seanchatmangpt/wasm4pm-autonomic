@@ -1,6 +1,6 @@
 use crate::models::{EventLog};
 use crate::models::petri_net::{PetriNet};
-use crate::conformance::token_replay;
+use crate::conformance::{token_replay, token_replay_projected, ProjectedLog};
 use crate::reinforcement::{Agent, QLearning};
 use crate::config::AutonomicConfig;
 use crate::{RlState, RlAction};
@@ -64,8 +64,11 @@ pub fn automate_discovery(data_dir: &str) {
                 let test_log = reader.read(&test_path).expect("Failed to read test log");
                 let gt_log = reader.read(&ground_truth_path).expect("Failed to read GT log");
 
+                // Pre-project the training log for high-performance evaluations
+                let projected_train_log = ProjectedLog::from(&train_log);
+
                 // 1. Train Model on Training Data
-                let model = train_to_perfection(&train_log, &config);
+                let model = train_to_perfection_projected(&projected_train_log, &config);
                 
                 // 2. Performance on Unseen Test Data
                 let test_results = token_replay(&test_log, &model);
@@ -111,12 +114,28 @@ pub fn automate_discovery(data_dir: &str) {
 }
 
 fn train_to_perfection(train_log: &EventLog, config: &AutonomicConfig) -> PetriNet {
-    train_to_perfection_with_reward(train_log, config, STRUCTURAL_SOUNDNESS_WEIGHT, MINIMALITY_WEIGHT)
+    let projected = ProjectedLog::from(train_log);
+    train_to_perfection_projected(&projected, config)
+}
+
+fn train_to_perfection_projected(train_log: &ProjectedLog, config: &AutonomicConfig) -> PetriNet {
+    train_to_perfection_with_reward_projected(train_log, config, STRUCTURAL_SOUNDNESS_WEIGHT, MINIMALITY_WEIGHT)
 }
 
 /// Parameterized training loop for DPIE Engine integration.
 pub fn train_to_perfection_with_reward(
     train_log: &EventLog, 
+    config: &AutonomicConfig,
+    beta: f32,
+    lambda: f32
+) -> PetriNet {
+    let projected = ProjectedLog::from(train_log);
+    train_to_perfection_with_reward_projected(&projected, config, beta, lambda)
+}
+
+/// Fully optimized training loop using projected logs and bitset kernels.
+pub fn train_to_perfection_with_reward_projected(
+    train_log: &ProjectedLog, 
     config: &AutonomicConfig,
     beta: f32,
     lambda: f32
@@ -129,8 +148,7 @@ pub fn train_to_perfection_with_reward(
     );
     
     for _epoch in 0..config.automation.max_training_epochs {
-        let results = token_replay(train_log, &model);
-        let avg_f: f64 = results.iter().map(|r| r.fitness).sum::<f64>() / results.len() as f64;
+        let avg_f = token_replay_projected(train_log, &model);
         
         let unsoundness_u = model.structural_unsoundness_score();
         let complexity_c = (model.transitions.len() + model.arcs.len()) as f32;
@@ -139,7 +157,7 @@ pub fn train_to_perfection_with_reward(
         let verifies_calculus = model.verifies_state_equation_calculus();
         
         // REWARD SHAPING: F - (beta * U) - (lambda * C) - canonical_penalty
-        let reward = avg_f as f32 
+        let _reward = avg_f as f32 
             - (beta * unsoundness_u) 
             - (lambda * complexity_c)
             - canonical_penalty;
@@ -162,21 +180,13 @@ pub fn train_to_perfection_with_reward(
     }
     
     // For verification of 100% path, we ensure the model matches the log's transitions
-    for trace in &train_log.traces {
-        for event in &trace.events {
-            let activity = event.attributes.iter()
-                .find(|a| a.key == "concept:name")
-                .and_then(|a| if let crate::models::AttributeValue::String(s) = &a.value { Some(s) } else { None });
-            
-            if let Some(act) = activity {
-                if !model.transitions.iter().any(|t| &t.label == act) {
-                    model.transitions.push(crate::models::petri_net::Transition {
-                        id: act.clone(),
-                        label: act.clone(),
-                        is_invisible: Some(false),
-                    });
-                }
-            }
+    for act in &train_log.activities {
+        if !model.transitions.iter().any(|t| &t.label == act) {
+            model.transitions.push(crate::models::petri_net::Transition {
+                id: act.clone(),
+                label: act.clone(),
+                is_invisible: Some(false),
+            });
         }
     }
     model

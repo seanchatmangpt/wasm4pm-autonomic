@@ -1,4 +1,4 @@
-use crate::models::{EventLog, Trace, Event, AttributeValue};
+use crate::models::{EventLog, Trace};
 use fastrand;
 
 pub fn inject_noise(log: &EventLog, noise_level: f64) -> EventLog {

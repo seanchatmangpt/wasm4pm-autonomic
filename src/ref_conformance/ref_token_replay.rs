@@ -1,7 +1,6 @@
 use std::collections::HashMap;
-use crate::ref_models::ref_petri_net::{PetriNet, Marking, PlaceID, ArcType};
+use crate::ref_models::ref_petri_net::{PetriNet, ArcType};
 use crate::ref_models::ref_event_log::EventLogActivityProjection;
-use uuid::Uuid;
 use itertools::Itertools;
 
 #[derive(Debug, Clone, Default)]
@@ -65,7 +64,7 @@ pub fn apply_token_based_replay_standard(
                                 result.consumed += arc.weight as u64 * freq;
                             }
                         }
-                        ArcType::TransitionPlace(from, to) => {
+                        ArcType::TransitionPlace(from, _to) => {
                             if *node_to_pos.get(&from).unwrap() == trans_idx {
                                 let p_pos = *node_to_pos.get(&from).unwrap();
                                 marking[p_pos] += arc.weight as i64;

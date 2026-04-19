@@ -1,13 +1,13 @@
 use std::cell::RefCell;
-use std::collections::HashMap;
+use rustc_hash::FxHashMap;
 use std::marker::PhantomData;
 use fastrand::Rng;
 
 use super::*;
 
 pub struct DoubleQLearning<S: WorkflowState, A: WorkflowAction> {
-    pub(crate) q_a: RefCell<HashMap<S, Vec<f32>>>,
-    pub(crate) q_b: RefCell<HashMap<S, Vec<f32>>>,
+    pub(crate) q_a: RefCell<FxHashMap<S, Vec<f32>>>,
+    pub(crate) q_b: RefCell<FxHashMap<S, Vec<f32>>>,
     pub(crate) learning_rate: f32,
     pub(crate) discount_factor: f32,
     pub(crate) exploration_rate: f32,
@@ -20,8 +20,8 @@ impl<S: WorkflowState, A: WorkflowAction> DoubleQLearning<S, A> {
     #[allow(dead_code)]
     pub fn new() -> Self {
         Self {
-            q_a: RefCell::new(HashMap::new()),
-            q_b: RefCell::new(HashMap::new()),
+            q_a: RefCell::new(FxHashMap::default()),
+            q_b: RefCell::new(FxHashMap::default()),
             learning_rate: DEFAULT_LEARNING_RATE,
             discount_factor: DEFAULT_DISCOUNT_FACTOR,
             exploration_rate: DEFAULT_EXPLORATION_RATE,
@@ -34,8 +34,8 @@ impl<S: WorkflowState, A: WorkflowAction> DoubleQLearning<S, A> {
     #[allow(dead_code)]
     pub fn new_with_seed(lr: f32, df: f32, seed: u64) -> Self {
         Self {
-            q_a: RefCell::new(HashMap::new()),
-            q_b: RefCell::new(HashMap::new()),
+            q_a: RefCell::new(FxHashMap::default()),
+            q_b: RefCell::new(FxHashMap::default()),
             learning_rate: lr,
             discount_factor: df,
             exploration_rate: DEFAULT_EXPLORATION_RATE,
@@ -69,8 +69,8 @@ impl<S: WorkflowState, A: WorkflowAction> DoubleQLearning<S, A> {
         let qa = self.q_a.borrow();
         let qb = self.q_b.borrow();
 
-        let va = get_q_values::<S, A>(&qa, &state);
-        let vb = get_q_values::<S, A>(&qb, &state);
+        let va = get_q_values::<S, A, _>(&*qa, &state);
+        let vb = get_q_values::<S, A, _>(&*qb, &state);
 
         let mut merged = vec![0.0; A::ACTION_COUNT];
         for i in 0..A::ACTION_COUNT {
@@ -85,13 +85,13 @@ impl<S: WorkflowState, A: WorkflowAction> DoubleQLearning<S, A> {
         let mut qa = self.q_a.borrow_mut();
         let mut qb = self.q_b.borrow_mut();
 
-        ensure_state::<S, A>(&mut qa, state);
-        ensure_state::<S, A>(&mut qb, state);
+        ensure_state::<S, A, _>(&mut *qa, state);
+        ensure_state::<S, A, _>(&mut *qb, state);
 
         let action_idx = action.to_index();
 
         if self.rng.borrow_mut().bool() {
-            let next_vals = get_q_values::<S, A>(&qa, &next_state);
+            let next_vals = get_q_values::<S, A, _>(&*qa, &next_state);
             let best_next_idx = greedy_index(&next_vals);
             let next_q = if done {
                 0.0
@@ -105,7 +105,7 @@ impl<S: WorkflowState, A: WorkflowAction> DoubleQLearning<S, A> {
             let target = reward + self.discount_factor * next_q;
             qa.get_mut(&state).unwrap()[action_idx] += self.learning_rate * (target - current);
         } else {
-            let next_vals = get_q_values::<S, A>(&qb, &next_state);
+            let next_vals = get_q_values::<S, A, _>(&*qb, &next_state);
             let best_next_idx = greedy_index(&next_vals);
             let next_q = if done {
                 0.0
@@ -152,7 +152,7 @@ impl DoubleQLearning<crate::RlState, crate::RlAction> {
         use crate::rl_state_serialization::{encode_rl_state_key, SerializedAgentQTable};
 
         let qa = self.q_a.borrow();
-        let mut state_values = HashMap::new();
+        let mut state_values = std::collections::HashMap::new();
 
         for (state, q_values) in qa.iter() {
             let key = encode_rl_state_key(

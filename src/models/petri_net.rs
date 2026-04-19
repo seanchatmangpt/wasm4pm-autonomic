@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use rustc_hash::FxHashMap;
 use std::hash::{Hash, Hasher};
-use std::collections::hash_map::DefaultHasher;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Place {
@@ -27,42 +26,40 @@ pub struct PetriNet {
     pub places: Vec<Place>,
     pub transitions: Vec<Transition>,
     pub arcs: Vec<Arc>,
-    pub initial_marking: HashMap<String, usize>,
-    pub final_markings: Vec<HashMap<String, usize>>,
+    pub initial_marking: FxHashMap<String, usize>,
+    pub final_markings: Vec<FxHashMap<String, usize>>,
 }
 
 impl PetriNet {
-    /// Evaluates if the net is a structurally valid workflow net
-    /// (1 unique start place, 1 unique end place, strongly connected).
-    /// Highly optimized using bitset algebra to map node connectivity.
+    /// Builds a temporary node-to-index mapping using the faster FxHasher.
+    /// This is now only used for cold paths.
+    fn build_node_index(&self) -> FxHashMap<&str, usize> {
+        let mut map = FxHashMap::with_capacity_and_hasher(
+            self.places.len() + self.transitions.len(), 
+            Default::default()
+        );
+        for (i, p) in self.places.iter().enumerate() { map.insert(p.id.as_str(), i); }
+        let offset = self.places.len();
+        for (i, t) in self.transitions.iter().enumerate() { map.insert(t.id.as_str(), offset + i); }
+        map
+    }
+
+    /// Evaluates if the net is a structurally valid workflow net.
+    /// Highly optimized with pre-calculated indices and bitset algebra.
     pub fn is_structural_workflow_net(&self) -> bool {
         if self.places.is_empty() || self.transitions.is_empty() { return false; }
         
-        let mut id_to_index = HashMap::new();
-        let mut idx = 0;
-        
-        for p in &self.places {
-            id_to_index.insert(&p.id, idx);
-            idx += 1;
-        }
-        let place_count = idx;
-        
-        for t in &self.transitions {
-            id_to_index.insert(&t.id, idx);
-            idx += 1;
-        }
-        let total_nodes = idx;
+        let id_to_index = self.build_node_index();
+        let place_count = self.places.len();
+        let total_nodes = place_count + self.transitions.len();
         let num_words = (total_nodes + 63) / 64;
         
-        // Bitset algebra replacing HashMap counters for microsecond latency
         let mut in_degrees = vec![0u64; num_words];
         let mut out_degrees = vec![0u64; num_words];
         
         for arc in &self.arcs {
-            if let Some(&from_idx) = id_to_index.get(&arc.from) {
+            if let (Some(&from_idx), Some(&to_idx)) = (id_to_index.get(arc.from.as_str()), id_to_index.get(arc.to.as_str())) {
                 out_degrees[from_idx / 64] |= 1u64 << (from_idx % 64);
-            }
-            if let Some(&to_idx) = id_to_index.get(&arc.to) {
                 in_degrees[to_idx / 64] |= 1u64 << (to_idx % 64);
             }
         }
@@ -73,74 +70,44 @@ impl PetriNet {
         for i in 0..place_count {
             let has_in = (in_degrees[i / 64] & (1u64 << (i % 64))) != 0;
             let has_out = (out_degrees[i / 64] & (1u64 << (i % 64))) != 0;
-            
             if !has_in { source_places_count += 1; }
             if !has_out { sink_places_count += 1; }
         }
         
-        // A workflow net must have exactly one source place and one sink place
-        if source_places_count != 1 || sink_places_count != 1 {
-            return false;
-        }
+        if source_places_count != 1 || sink_places_count != 1 { return false; }
         
-        // Ensure no transitions are sources or sinks (must have in > 0 and out > 0)
         for i in place_count..total_nodes {
             let has_in = (in_degrees[i / 64] & (1u64 << (i % 64))) != 0;
             let has_out = (out_degrees[i / 64] & (1u64 << (i % 64))) != 0;
-            
-            if !has_in || !has_out {
-                return false;
-            }
+            if !has_in || !has_out { return false; }
         }
         
         true
     }
 
-    /// Generates the Incidence Matrix (W) for the Petri Net, 
-    /// a fundamental requirement for Workflow Theory Calculus.
-    /// W[p][t] = Out(t, p) - In(t, p)
+    /// Generates the Incidence Matrix (W).
     pub fn incidence_matrix(&self) -> Vec<Vec<i32>> {
         let mut matrix = vec![vec![0; self.transitions.len()]; self.places.len()];
-        
-        let mut place_map = HashMap::new();
-        for (i, p) in self.places.iter().enumerate() {
-            place_map.insert(&p.id, i);
-        }
-        
-        let mut transition_map = HashMap::new();
-        for (j, t) in self.transitions.iter().enumerate() {
-            transition_map.insert(&t.id, j);
-        }
+        let id_to_index = self.build_node_index();
+        let place_count = self.places.len();
         
         for arc in &self.arcs {
             let weight = arc.weight.unwrap_or(1) as i32;
-            
-            // If arc is from Transition to Place (Output arc)
-            if let (Some(&t_idx), Some(&p_idx)) = (transition_map.get(&arc.from), place_map.get(&arc.to)) {
-                matrix[p_idx][t_idx] += weight;
-            }
-            
-            // If arc is from Place to Transition (Input arc)
-            if let (Some(&p_idx), Some(&t_idx)) = (place_map.get(&arc.from), transition_map.get(&arc.to)) {
-                matrix[p_idx][t_idx] -= weight;
+            if let (Some(&from_idx), Some(&to_idx)) = (id_to_index.get(arc.from.as_str()), id_to_index.get(arc.to.as_str())) {
+                if from_idx < place_count && to_idx >= place_count {
+                    matrix[from_idx][to_idx - place_count] -= weight;
+                } else if from_idx >= place_count && to_idx < place_count {
+                    matrix[to_idx][from_idx - place_count] += weight;
+                }
             }
         }
-        
         matrix
     }
 
-    /// Verifies the structural bounds of the workflow net state equation
-    /// M_n = M_0 + W * x
-    /// ensuring no transition creates infinite tokens (unboundedness).
+    /// Verifies the structural bounds of the workflow net state equation.
     pub fn verifies_state_equation_calculus(&self) -> bool {
-        if !self.is_structural_workflow_net() {
-            return false;
-        }
+        if !self.is_structural_workflow_net() { return false; }
         let w = self.incidence_matrix();
-        
-        // Simple heuristic: ensure there are no transitions that only produce tokens 
-        // without consuming any (which would lead to unboundedness).
-        // Since we already enforce no source/sink transitions, this is a secondary behavioral check.
         for t_idx in 0..self.transitions.len() {
             let mut consumes = false;
             let mut produces = false;
@@ -148,61 +115,62 @@ impl PetriNet {
                 if w[p_idx][t_idx] < 0 { consumes = true; }
                 if w[p_idx][t_idx] > 0 { produces = true; }
             }
-            if !consumes || !produces {
-                return false;
-            }
+            if !consumes || !produces { return false; }
         }
         true
     }
 
-    /// Computes a smooth unsoundness score by counting structural violations.
-    /// Used as a gradient for RL reward shaping to prevent degenerate topologies.
+    /// Computes a smooth unsoundness score using bitset algebra and FxHash.
     pub fn structural_unsoundness_score(&self) -> f32 {
         if self.places.is_empty() || self.transitions.is_empty() { return 10.0; }
         
-        let mut score = 0.0;
-        let mut id_to_index = HashMap::new();
-        let mut idx = 0;
+        let id_to_index = self.build_node_index();
+        let place_count = self.places.len();
+        let total_nodes = place_count + self.transitions.len();
+        let num_words = (total_nodes + 63) / 64;
         
-        for p in &self.places { id_to_index.insert(&p.id, idx); idx += 1; }
-        let place_count = idx;
-        for t in &self.transitions { id_to_index.insert(&t.id, idx); idx += 1; }
-        let total_nodes = idx;
-        
-        let mut in_degrees = vec![0u32; total_nodes];
-        let mut out_degrees = vec![0u32; total_nodes];
+        let mut in_degrees = vec![0u64; num_words];
+        let mut out_degrees = vec![0u64; num_words];
         
         for arc in &self.arcs {
-            if let Some(&from_idx) = id_to_index.get(&arc.from) { out_degrees[from_idx] += 1; }
-            if let Some(&to_idx) = id_to_index.get(&arc.to) { in_degrees[to_idx] += 1; }
+            if let (Some(&from_idx), Some(&to_idx)) = (id_to_index.get(arc.from.as_str()), id_to_index.get(arc.to.as_str())) {
+                out_degrees[from_idx / 64] |= 1u64 << (from_idx % 64);
+                in_degrees[to_idx / 64] |= 1u64 << (to_idx % 64);
+            }
         }
         
-        // 1. Source/Sink violations
-        let source_places: Vec<usize> = (0..place_count).filter(|&i| in_degrees[i] == 0).collect();
-        let sink_places: Vec<usize> = (0..place_count).filter(|&i| out_degrees[i] == 0).collect();
-        
-        if source_places.len() != 1 { score += (source_places.len() as f32 - 1.0).abs(); }
-        if sink_places.len() != 1 { score += (sink_places.len() as f32 - 1.0).abs(); }
-        
-        // 2. Transition connectivity violations
-        for i in place_count..total_nodes {
-            if in_degrees[i] == 0 { score += 1.0; }
-            if out_degrees[i] == 0 { score += 1.0; }
-        }
-        
-        // 3. Place connectivity (non-source/sink)
+        let mut score = 0.0;
+        let mut source_places_count = 0;
+        let mut sink_places_count = 0;
         for i in 0..place_count {
-            if !source_places.contains(&i) && in_degrees[i] == 0 { score += 1.0; }
-            if !sink_places.contains(&i) && out_degrees[i] == 0 { score += 1.0; }
+            let has_in = (in_degrees[i / 64] & (1u64 << (i % 64))) != 0;
+            let has_out = (out_degrees[i / 64] & (1u64 << (i % 64))) != 0;
+            if !has_in { source_places_count += 1; }
+            if !has_out { sink_places_count += 1; }
+        }
+        
+        score += (source_places_count as f32 - 1.0).abs();
+        score += (sink_places_count as f32 - 1.0).abs();
+        
+        for i in place_count..total_nodes {
+            let has_in = (in_degrees[i / 64] & (1u64 << (i % 64))) != 0;
+            let has_out = (out_degrees[i / 64] & (1u64 << (i % 64))) != 0;
+            if !has_in { score += 1.0; }
+            if !has_out { score += 1.0; }
+        }
+        
+        for i in 0..place_count {
+            let has_in = (in_degrees[i / 64] & (1u64 << (i % 64))) != 0;
+            let has_out = (out_degrees[i / 64] & (1u64 << (i % 64))) != 0;
+            if !has_in && !has_out { score += 2.0; } 
         }
         
         score
     }
 
-    /// Computes a deterministic canonical hash for the Petri Net topology.
-    /// Used as a mathematical tie-breaker to ensure \arg\max R is strictly unique.
+    /// Optimized to use direct ID hashing instead of expensive string formatting.
     pub fn canonical_hash(&self) -> u64 {
-        let mut hasher = DefaultHasher::new();
+        let mut hasher = rustc_hash::FxHasher::default();
         let mut p_ids: Vec<_> = self.places.iter().map(|p| &p.id).collect();
         p_ids.sort();
         for id in p_ids { id.hash(&mut hasher); }
@@ -211,9 +179,13 @@ impl PetriNet {
         t_ids.sort();
         for id in t_ids { id.hash(&mut hasher); }
         
-        let mut arc_reprs: Vec<_> = self.arcs.iter().map(|a| format!("{}_{}_{:?}", a.from, a.to, a.weight)).collect();
-        arc_reprs.sort();
-        for a in arc_reprs { a.hash(&mut hasher); }
+        let mut arcs = self.arcs.clone();
+        arcs.sort_by(|a, b| (&a.from, &a.to).cmp(&(&b.from, &b.to)));
+        for arc in arcs {
+            arc.from.hash(&mut hasher);
+            arc.to.hash(&mut hasher);
+            arc.weight.unwrap_or(1).hash(&mut hasher);
+        }
         
         hasher.finish()
     }

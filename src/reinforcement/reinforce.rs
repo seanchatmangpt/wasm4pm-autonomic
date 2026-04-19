@@ -1,12 +1,12 @@
 use std::cell::RefCell;
-use std::collections::HashMap;
+use rustc_hash::FxHashMap;
 use std::marker::PhantomData;
 use fastrand::Rng;
 
 use super::*;
 
 pub struct ReinforceAgent<S: WorkflowState, A: WorkflowAction> {
-    pub(crate) theta: RefCell<HashMap<S, Vec<f32>>>,
+    pub(crate) theta: RefCell<FxHashMap<S, Vec<f32>>>,
     pub(crate) learning_rate: f32,
     pub(crate) discount_factor: f32,
     pub(crate) rng: RefCell<Rng>,
@@ -17,7 +17,7 @@ impl<S: WorkflowState, A: WorkflowAction> ReinforceAgent<S, A> {
     #[allow(dead_code)]
     pub fn new() -> Self {
         Self {
-            theta: RefCell::new(HashMap::new()),
+            theta: RefCell::new(FxHashMap::default()),
             learning_rate: REINFORCE_LEARNING_RATE,
             discount_factor: DEFAULT_DISCOUNT_FACTOR,
             rng: RefCell::new(Rng::new()),
@@ -28,7 +28,7 @@ impl<S: WorkflowState, A: WorkflowAction> ReinforceAgent<S, A> {
     #[allow(dead_code)]
     pub fn new_with_seed(lr: f32, df: f32, seed: u64) -> Self {
         Self {
-            theta: RefCell::new(HashMap::new()),
+            theta: RefCell::new(FxHashMap::default()),
             learning_rate: lr,
             discount_factor: df,
             rng: RefCell::new(Rng::with_seed(seed)),
@@ -82,8 +82,8 @@ impl<S: WorkflowState, A: WorkflowAction> ReinforceAgent<S, A> {
         let mut theta = self.theta.borrow_mut();
 
         for (t, (state, action, _)) in trajectory.iter().enumerate() {
-            ensure_state::<S, A>(&mut theta, *state);
-            let logits = theta.get(state).cloned().unwrap_or_else(zeros::<A>);
+            ensure_state::<S, A, _>(&mut *theta, *state);
+            let logits = get_q_values::<S, A, _>(&*theta, state);
             let probs = softmax_probs(&logits);
             let a_idx = action.to_index();
             let g_t = returns[t];
@@ -128,7 +128,7 @@ impl ReinforceAgent<crate::RlState, crate::RlAction> {
         use crate::rl_state_serialization::{encode_rl_state_key, SerializedAgentQTable};
 
         let theta = self.theta.borrow();
-        let mut state_values = HashMap::new();
+        let mut state_values = std::collections::HashMap::new();
 
         for (state, weights) in theta.iter() {
             let key = encode_rl_state_key(

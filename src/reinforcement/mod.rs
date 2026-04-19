@@ -1,8 +1,9 @@
 //! Core traits and utilities for reinforcement learning
 //! in single-threaded WASM environments.
 
-use std::collections::HashMap;
 use std::hash::Hash;
+use std::collections::HashMap;
+use std::hash::BuildHasher;
 
 pub const DEFAULT_LEARNING_RATE: f32 = 0.1;
 pub const DEFAULT_DISCOUNT_FACTOR: f32 = 0.99;
@@ -83,22 +84,37 @@ pub(crate) fn greedy_index(values: &[f32]) -> usize {
         .unwrap_or(0)
 }
 
-pub(crate) fn get_q_values<S: WorkflowState, A: WorkflowAction>(
-    table: &HashMap<S, Vec<f32>>,
+pub(crate) fn get_q_values<S, A, H>(
+    table: &HashMap<S, Vec<f32>, H>,
     state: &S,
-) -> Vec<f32> {
+) -> Vec<f32> 
+where 
+    S: WorkflowState, 
+    A: WorkflowAction,
+    H: BuildHasher
+{
     table.get(state).cloned().unwrap_or_else(zeros::<A>)
 }
 
-pub(crate) fn ensure_state<S: WorkflowState, A: WorkflowAction>(
-    table: &mut HashMap<S, Vec<f32>>,
+pub(crate) fn ensure_state<S, A, H>(
+    table: &mut HashMap<S, Vec<f32>, H>,
     state: S,
-) {
+) 
+where 
+    S: WorkflowState, 
+    A: WorkflowAction,
+    H: BuildHasher + Default
+{
     table.entry(state).or_insert_with(zeros::<A>);
 }
 
-pub(crate) fn max_q<S: WorkflowState, A: WorkflowAction>(table: &HashMap<S, Vec<f32>>, state: &S) -> f32 {
-    get_q_values::<S, A>(table, state)
+pub(crate) fn max_q<S, A, H>(table: &HashMap<S, Vec<f32>, H>, state: &S) -> f32 
+where 
+    S: WorkflowState, 
+    A: WorkflowAction,
+    H: BuildHasher
+{
+    get_q_values::<S, A, H>(table, state)
         .into_iter()
         .fold(f32::NEG_INFINITY, f32::max)
 }
