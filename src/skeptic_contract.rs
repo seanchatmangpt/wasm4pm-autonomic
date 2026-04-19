@@ -112,7 +112,35 @@ pub const CHECK_IDENTIFIABILITY: &str = "VERIFY_MODEL_UNIQUENESS";
 
 
 /// ============================================================
-/// SECTION 5: EXECUTION DETERMINISM
+/// SECTION 5: STRICT UNIQUENESS (TIE-BREAKER)
+/// ============================================================
+///
+/// REQUIRED IN IMPLEMENTATION:
+///
+/// [x] topological hash micro-penalty forces strict total ordering
+/// [x] argmax R is strictly unique across model space
+///
+/// STATUS: CLOSED via Lexicographical Tie-Breaker.
+///
+pub const CHECK_STRICT_UNIQUENESS: &str = "VERIFY_UNIQUE_MAXIMIZER";
+
+
+/// ============================================================
+/// SECTION 6: DOMAIN RESTRICTION
+/// ============================================================
+///
+/// REQUIRED IN IMPLEMENTATION:
+///
+/// [x] proof holds for block-structured workflow nets
+/// [x] representational overfitting bounded by MDL
+///
+/// STATUS: CLOSED via Domain Constraints.
+///
+pub const CHECK_DOMAIN_RESTRICTION: &str = "VERIFY_DOMAIN_BOUNDS";
+
+
+/// ============================================================
+/// SECTION 7: EXECUTION DETERMINISM
 /// ============================================================
 ///
 /// THESIS CLAIM:

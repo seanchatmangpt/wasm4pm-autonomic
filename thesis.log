@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.26 (TeX Live 2024) (preloaded format=pdflatex 2024.10.26)  18 APR 2026 18:10
+This is pdfTeX, Version 3.141592653-2.6-1.40.26 (TeX Live 2024) (preloaded format=pdflatex 2024.10.26)  18 APR 2026 18:20
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -577,19 +577,19 @@ Chapter 5.
 Chapter 6.
 [11
 
-] [12]
+] [12] [13]
 Chapter 7.
-[13
-
-]
-Chapter 8.
 [14
 
 ]
-Appendix A.
+Chapter 8.
 [15
 
-] [16
+]
+Appendix A.
+[16
+
+] [17
 
 ] (./thesis.aux)
  ***********
@@ -597,16 +597,16 @@ LaTeX2e <2023-11-01> patch level 1
 L3 programming layer <2024-02-20>
  ***********
 Package rerunfilecheck Info: File `thesis.out' has not changed.
-(rerunfilecheck)             Checksum: 8B860AD530715889AD204FA055600947;7271.
+(rerunfilecheck)             Checksum: 5B596532E8BCA7E8B5FC1A71078439AC;7701.
  ) 
 Here is how much of TeX's memory you used:
- 13868 strings out of 474116
- 215273 string characters out of 5743681
+ 13873 strings out of 474116
+ 215328 string characters out of 5743681
  1935187 words of memory out of 5000000
- 35976 multiletter control sequences out of 15000+600000
+ 35978 multiletter control sequences out of 15000+600000
  573860 words of font info for 94 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 75i,12n,79p,1031b,523s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 75i,12n,79p,1031b,500s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </usr/local/texlive/2024/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb
 ></usr/local/texlive/2024/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb>
 </usr/local/texlive/2024/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb><
@@ -619,10 +619,10 @@ al/texlive/2024/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy6.pfb></usr/local
 exlive/2024/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb></usr/local/te
 xlive/2024/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb></usr/local/tex
 live/2024/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb>
-Output written on thesis.pdf (18 pages, 179642 bytes).
+Output written on thesis.pdf (19 pages, 181925 bytes).
 PDF statistics:
- 345 PDF objects out of 1000 (max. 8388607)
- 298 compressed objects within 3 object streams
- 73 named destinations out of 1000 (max. 500000)
- 257 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 361 PDF objects out of 1000 (max. 8388607)
+ 312 compressed objects within 4 object streams
+ 76 named destinations out of 1000 (max. 500000)
+ 273 words of extra memory for PDF output out of 10000 (max. 10000000)
 

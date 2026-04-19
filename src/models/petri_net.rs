@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::hash::{Hash, Hasher};
+use std::collections::hash_map::DefaultHasher;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Place {
@@ -195,5 +197,24 @@ impl PetriNet {
         }
         
         score
+    }
+
+    /// Computes a deterministic canonical hash for the Petri Net topology.
+    /// Used as a mathematical tie-breaker to ensure \arg\max R is strictly unique.
+    pub fn canonical_hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        let mut p_ids: Vec<_> = self.places.iter().map(|p| &p.id).collect();
+        p_ids.sort();
+        for id in p_ids { id.hash(&mut hasher); }
+        
+        let mut t_ids: Vec<_> = self.transitions.iter().map(|t| &t.id).collect();
+        t_ids.sort();
+        for id in t_ids { id.hash(&mut hasher); }
+        
+        let mut arc_reprs: Vec<_> = self.arcs.iter().map(|a| format!("{}_{}_{:?}", a.from, a.to, a.weight)).collect();
+        arc_reprs.sort();
+        for a in arc_reprs { a.hash(&mut hasher); }
+        
+        hasher.finish()
     }
 }

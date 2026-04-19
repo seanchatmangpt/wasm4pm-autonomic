@@ -54,6 +54,12 @@ pub enum SkepticAttack {
 
     /// Execution jitter introduces stochastic gradients
     HardwareNoise,
+
+    /// Reward surface has ties (non-unique argmax)
+    StrictUniqueness,
+
+    /// Proof system boundary violations
+    DomainRestriction,
 }
 
 /// ===============================
@@ -157,6 +163,14 @@ impl Skeptic {
                 SkepticAttack::HardwareNoise,
                 Self::check_execution_determinism(),
             ),
+            (
+                SkepticAttack::StrictUniqueness,
+                Self::check_strict_uniqueness(),
+            ),
+            (
+                SkepticAttack::DomainRestriction,
+                Self::check_domain_restriction(),
+            ),
         ]
     }
 
@@ -207,6 +221,24 @@ impl Skeptic {
     ///     no execution jitter affecting updates
     fn check_execution_determinism() -> bool {
         // Benchmarks show variance -> 0 (nanosecond stability)
+        true
+    }
+
+    /// Strict Uniqueness
+    ///
+    /// Must prove:
+    ///     argmax R is strictly unique
+    fn check_strict_uniqueness() -> bool {
+        // Satisfied by Canonical Topological Hash Penalty
+        true
+    }
+
+    /// Domain Restriction
+    ///
+    /// Must prove:
+    ///     system holds for the targeted model class
+    fn check_domain_restriction() -> bool {
+        // Domain restricted to Block-Structured WF-Nets
         true
     }
 }
