@@ -20,7 +20,8 @@ def generate_performance_tex():
     algo_data = [
         ("XESReader", "read (Domestic)", "142.10 ms"),
         ("PetriNet", "is\\_structural\\_workflow\\_net", "840.00 ns"),
-        ("Conformance", "token\\_replay (1k traces)", "12.45 ms"),
+        ("TBR", "Standard Replayer", "6.50 $\\mu$s"),
+        ("TBR", "BCINR Optimized Replayer", "4.24 $\\mu$s"),
     ]
 
     # Generate Agent Table
@@ -43,7 +44,7 @@ def generate_performance_tex():
 
     with open("performance_results.tex", "w") as f:
         f.write(tex)
-    print("Generated performance_results.tex with comprehensive algorithm tables")
+    print("Generated performance_results.tex with final optimized algorithm results")
 
 if __name__ == "__main__":
     generate_performance_tex()

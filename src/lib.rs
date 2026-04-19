@@ -68,3 +68,10 @@ pub mod rl_state_serialization {
 pub mod automation;
 pub mod benchmark;
 pub mod config;
+pub mod ref_models {
+    pub mod ref_petri_net;
+    pub mod ref_event_log;
+}
+pub mod ref_conformance {
+    pub mod ref_token_replay;
+}
