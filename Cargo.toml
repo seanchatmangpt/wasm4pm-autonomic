@@ -1,6 +1,6 @@
 [package]
 name = "wasm4pm"
-version = "0.1.0"
+version = "1.1.0"
 edition = "2021"
 
 [workspace]
@@ -27,6 +27,9 @@ token-based-replay = []
 [dev-dependencies]
 criterion = "0.5"
 process_mining = "0.5.4"
+dhat = "0.3.3"
+iai-callgrind = "0.11.0"
+divan = "0.1.14"
 
 [lib]
 path = "src/lib.rs"
@@ -45,4 +48,24 @@ harness = false
 
 [[bench]]
 name = "dpie_bench"
+harness = false
+
+[[bench]]
+name = "zero_allocation_bench"
+harness = false
+
+[[bench]]
+name = "instruction_stability_bench"
+harness = false
+
+[[bench]]
+name = "bcinr_primitives_bench"
+harness = false
+
+[[bench]]
+name = "e2e_discovery_bench"
+harness = false
+
+[[bench]]
+name = "ktier_scalability_bench"
 harness = false
