@@ -237,7 +237,7 @@ fn run_phase(
                     .to_string()
             }
             "Implementation" => {
-                "DEFINITION OF DONE:\n- [x] Code compiled\n- [x] MDL Score verified.".to_string()
+                "DEFINITION OF DONE:\n- [x] Code compiled\n- [x] MDL Score verified.\n- [x] Proptests implemented (Success/Failure cases).".to_string()
             }
             _ => "MOCK CONTENT".to_string(),
         };
@@ -272,6 +272,7 @@ fn run_phase(
                  2. MINIMALITY: Satisfy MDL Φ(N) formula.\n \
                  3. PERFORMANCE: Zero-heap, branchless hot-path.\n \
                  4. PROVENANCE: Manifest updated.\n \
+                 5. RIGOR: Include property-based tests (proptests) that assert both successful execution and expected failure/admissibility violations.\n \
                  Consult @docs/DDS_THESIS.md for formal definitions. \
                  Modify files directly and output a DOD_VERIFICATION.md report.", 
                 ac_path.display()
