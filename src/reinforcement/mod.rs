@@ -46,8 +46,8 @@ pub trait WorkflowAction: Clone + Copy + Eq + Hash {
 /// Trait for any learning agent
 pub trait Agent<S: WorkflowState, A: WorkflowAction> {
     fn select_action(&self, state: S) -> A;
-    fn update(&self, state: S, action: A, reward: f32, next_state: S, done: bool);
-    fn reset(&self);
+    fn update(&mut self, state: S, action: A, reward: f32, next_state: S, done: bool);
+    fn reset(&mut self);
 }
 
 /// Metadata trait for agent introspection

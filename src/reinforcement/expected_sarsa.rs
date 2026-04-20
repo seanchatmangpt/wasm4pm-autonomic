@@ -68,7 +68,7 @@ impl<S: WorkflowState, A: WorkflowAction> ExpectedSARSAAgent<S, A> {
     }
 
     #[allow(dead_code)]
-    pub fn update(&self, state: S, action: A, reward: f32, next_state: S, done: bool) {
+    pub fn update(&mut self, state: S, action: A, reward: f32, next_state: S, done: bool) {
         let expected_next = if done {
             0.0
         } else {
@@ -180,11 +180,13 @@ impl<S: WorkflowState, A: WorkflowAction> Agent<S, A> for ExpectedSARSAAgent<S, 
         self.select_action(state)
     }
 
-    fn update(&self, state: S, action: A, reward: f32, next_state: S, done: bool) {
+    fn update(&mut self, state: S, action: A, reward: f32, next_state: S, done: bool) {
         self.update(state, action, reward, next_state, done)
     }
 
-    fn reset(&self) {}
+    fn reset(&mut self) {
+        // Just reset internal state if any, but don't wipe Q-table
+    }
 }
 
 impl<S: WorkflowState, A: WorkflowAction> AgentMeta for ExpectedSARSAAgent<S, A> {

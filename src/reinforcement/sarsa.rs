@@ -197,7 +197,7 @@ impl<S: WorkflowState, A: WorkflowAction> Agent<S, A> for SARSAAgent<S, A> {
         self.select_action(state)
     }
 
-    fn update(&self, state: S, action: A, reward: f32, next_state: S, done: bool) {
+    fn update(&mut self, state: S, action: A, reward: f32, next_state: S, done: bool) {
         if done {
             self.update_with_next_action(state, action, reward, next_state, action, true);
             return;
@@ -215,7 +215,7 @@ impl<S: WorkflowState, A: WorkflowAction> Agent<S, A> for SARSAAgent<S, A> {
         self.update_with_next_action(state, action, reward, next_state, next_action, false);
     }
 
-    fn reset(&self) {
+    fn reset(&mut self) {
         self.clear_pending();
     }
 }

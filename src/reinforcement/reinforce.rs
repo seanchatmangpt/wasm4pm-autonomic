@@ -187,11 +187,14 @@ impl<S: WorkflowState, A: WorkflowAction> Agent<S, A> for ReinforceAgent<S, A> {
         self.select_action(state)
     }
 
-    fn update(&self, state: S, action: A, reward: f32, _next_state: S, _done: bool) {
+    fn update(&mut self, state: S, action: A, reward: f32, _next_state: S, _done: bool) {
         self.update_step(state, action, reward);
     }
 
-    fn reset(&self) {}
+    fn reset(&mut self) {
+        let mut theta = self.theta.borrow_mut();
+        theta.clear();
+    }
 }
 
 impl<S: WorkflowState, A: WorkflowAction> AgentMeta for ReinforceAgent<S, A> {

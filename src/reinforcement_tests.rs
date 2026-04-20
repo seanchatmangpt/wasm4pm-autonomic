@@ -33,7 +33,7 @@ mod tests {
     /// State is represented by health_level.
     /// Actions: Idle (Stay), Optimize (Right), Rework (Left).
     fn run_corridor<T: Agent<RlState, RlAction>>(
-        agent: &T,
+        agent: &mut T,
         episodes: usize,
         goal_state: i32,
     ) -> f32 {
@@ -65,8 +65,8 @@ mod tests {
 
     #[test]
     fn test_q_learning_convergence() {
-        let agent = QLearning::with_hyperparams(0.1, 0.9, 0.5);
-        let avg_reward = run_corridor(&agent, EPISODES_STANDARD, GOAL_STATE_DEFAULT);
+        let mut agent = QLearning::with_hyperparams(0.1, 0.9, 0.5);
+        let avg_reward = run_corridor(&mut agent, EPISODES_STANDARD, GOAL_STATE_DEFAULT);
         assert!(
             avg_reward > AVG_REWARD_THRESHOLD,
             "Q-Learning should learn to reach the goal (avg_reward: {})",
@@ -81,14 +81,14 @@ mod tests {
 
         // Manual decay during training
         for ep in 0..EPISODES_EXTENDED {
-            run_corridor(&agent, 1, GOAL_STATE_DEFAULT);
+            run_corridor(&mut agent, 1, GOAL_STATE_DEFAULT);
             if ep % DECAY_INTERVAL == 0 {
                 agent.decay_exploration();
             }
         }
 
         agent.set_exploration_rate(0.0); // Greedy eval
-        let avg_reward = run_corridor(&agent, EVAL_EPISODES, GOAL_STATE_DEFAULT);
+        let avg_reward = run_corridor(&mut agent, EVAL_EPISODES, GOAL_STATE_DEFAULT);
         assert!(
             avg_reward > AVG_REWARD_THRESHOLD,
             "SARSA should learn to reach the goal (avg_reward: {})",
@@ -102,14 +102,14 @@ mod tests {
 
         // Manual decay during training
         for ep in 0..EPISODES_EXTENDED {
-            run_corridor(&agent, 1, GOAL_STATE_DEFAULT);
+            run_corridor(&mut agent, 1, GOAL_STATE_DEFAULT);
             if ep % DECAY_INTERVAL == 0 {
                 agent.decay_exploration();
             }
         }
 
         agent.set_exploration_rate(0.0);
-        let avg_reward = run_corridor(&agent, EVAL_EPISODES, GOAL_STATE_DEFAULT);
+        let avg_reward = run_corridor(&mut agent, EVAL_EPISODES, GOAL_STATE_DEFAULT);
         assert!(
             avg_reward > AVG_REWARD_THRESHOLD,
             "Double Q-Learning should learn to reach the goal (avg_reward: {})",
@@ -119,8 +119,8 @@ mod tests {
 
     #[test]
     fn test_expected_sarsa_convergence() {
-        let agent = ExpectedSARSAAgent::with_hyperparams(0.1, 0.9, 0.5);
-        let avg_reward = run_corridor(&agent, EPISODES_STANDARD, GOAL_STATE_DEFAULT);
+        let mut agent = ExpectedSARSAAgent::with_hyperparams(0.1, 0.9, 0.5);
+        let avg_reward = run_corridor(&mut agent, EPISODES_STANDARD, GOAL_STATE_DEFAULT);
         assert!(
             avg_reward > AVG_REWARD_THRESHOLD,
             "Expected SARSA should learn to reach the goal (avg_reward: {})",
@@ -130,8 +130,8 @@ mod tests {
 
     #[test]
     fn test_reinforce_convergence() {
-        let agent = ReinforceAgent::with_hyperparams(0.1, 0.9);
-        let avg_reward = run_corridor(&agent, EPISODES_STANDARD, GOAL_STATE_REINFORCE);
+        let mut agent = ReinforceAgent::with_hyperparams(0.1, 0.9);
+        let avg_reward = run_corridor(&mut agent, EPISODES_STANDARD, GOAL_STATE_REINFORCE);
         assert!(
             avg_reward > AVG_REWARD_THRESHOLD,
             "REINFORCE should learn to reach the goal (avg_reward: {})",
@@ -141,7 +141,7 @@ mod tests {
 
     #[test]
     fn test_negative_reward_avoidance() {
-        let agent = QLearning::with_hyperparams(0.1, 0.9, 0.1);
+        let mut agent = QLearning::with_hyperparams(0.1, 0.9, 0.1);
         for _ in 0..200 {
             let state = create_state(0);
             agent.update(state, RlAction::Optimize, -10.0, create_state(1), true);
@@ -159,7 +159,7 @@ mod tests {
 
     #[test]
     fn test_double_q_serialization_roundtrip() {
-        let agent = DoubleQLearning::<RlState, RlAction>::new();
+        let mut agent = DoubleQLearning::<RlState, RlAction>::new();
         let state = create_state(42);
 
         for _ in 0..100 {
@@ -167,12 +167,11 @@ mod tests {
         }
 
         let serialized = agent.export_as_serialized(3);
-        let new_agent = DoubleQLearning::<RlState, RlAction>::new();
+        let mut new_agent = DoubleQLearning::<RlState, RlAction>::new();
         new_agent.restore_from_serialized(serialized);
 
-        let mut new_agent_greedy = new_agent;
-        new_agent_greedy.set_exploration_rate(0.0);
-        let selected = new_agent_greedy.select_action(state);
+        new_agent.set_exploration_rate(0.0);
+        let selected = new_agent.select_action(state);
         assert_eq!(selected, RlAction::Optimize);
     }
 }

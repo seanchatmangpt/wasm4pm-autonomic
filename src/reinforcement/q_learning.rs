@@ -75,7 +75,7 @@ impl<S: WorkflowState, A: WorkflowAction> QLearning<S, A> {
     }
 
     #[allow(dead_code)]
-    pub fn update(&self, state: S, action: A, reward: f32, next_state: S, done: bool) {
+    pub fn update(&mut self, state: S, action: A, reward: f32, next_state: S, done: bool) {
         let mut q_table = self.q_table.borrow_mut();
         ensure_state::<S, A>(&mut *q_table, state);
 
@@ -200,11 +200,11 @@ impl<S: WorkflowState, A: WorkflowAction> Agent<S, A> for QLearning<S, A> {
         self.select_action(state)
     }
 
-    fn update(&self, state: S, action: A, reward: f32, next_state: S, done: bool) {
+    fn update(&mut self, state: S, action: A, reward: f32, next_state: S, done: bool) {
         self.update(state, action, reward, next_state, done)
     }
 
-    fn reset(&self) {}
+    fn reset(&mut self) {}
 }
 
 impl<S: WorkflowState, A: WorkflowAction> AgentMeta for QLearning<S, A> {
