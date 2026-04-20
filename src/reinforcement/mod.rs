@@ -92,30 +92,33 @@ pub(crate) fn hash_state<S: Hash>(state: &S) -> u64 {
     hasher.finish()
 }
 
-pub(crate) fn get_q_values<'a, S, A>(table: &'a PackedKeyTable<S, Vec<f32>>, state: &S) -> &'a [f32]
+pub const ACTION_MAX_LIMIT: usize = 8;
+pub type QArray = [f32; ACTION_MAX_LIMIT];
+
+pub(crate) fn get_q_values<'a, S, A>(table: &'a PackedKeyTable<S, QArray>, state: &S) -> &'a [f32]
 where
     S: WorkflowState,
     A: WorkflowAction,
 {
-    static ZEROS: [f32; 256] = [0.0; 256];
+    static ZEROS: QArray = [0.0; ACTION_MAX_LIMIT];
     table
         .get(hash_state(state))
-        .map(|v| v.as_slice())
+        .map(|v| &v[..A::ACTION_COUNT])
         .unwrap_or(&ZEROS[..A::ACTION_COUNT])
 }
 
-pub(crate) fn ensure_state<S, A>(table: &mut PackedKeyTable<S, Vec<f32>>, state: S)
+pub(crate) fn ensure_state<S, A>(table: &mut PackedKeyTable<S, QArray>, state: S)
 where
     S: WorkflowState,
     A: WorkflowAction,
 {
     let h = hash_state(&state);
     if table.get(h).is_none() {
-        table.insert(h, state, vec![0.0; A::ACTION_COUNT]);
+        table.insert(h, state, [0.0; ACTION_MAX_LIMIT]);
     }
 }
 
-pub(crate) fn max_q<S, A>(table: &PackedKeyTable<S, Vec<f32>>, state: &S) -> f32
+pub(crate) fn max_q<S, A>(table: &PackedKeyTable<S, QArray>, state: &S) -> f32
 where
     S: WorkflowState,
     A: WorkflowAction,
@@ -125,32 +128,49 @@ where
         .fold(f32::NEG_INFINITY, |a, &b| a.max(b))
 }
 
-pub(crate) fn epsilon_greedy_probs(values: &[f32], epsilon: f32) -> Vec<f32> {
+pub(crate) fn epsilon_greedy_probs<const N: usize>(values: &[f32], epsilon: f32) -> [f32; N] {
     let n = values.len();
+    assert!(n <= N);
+    let mut probs = [0.0; N];
     if n == 0 {
-        return Vec::new();
+        return probs;
     }
 
     let eps = clamp_probability(epsilon);
     let greedy = greedy_index(values);
     let uniform = eps / n as f32;
-    let mut probs = vec![uniform; n];
+    for i in 0..n {
+        probs[i] = uniform;
+    }
     probs[greedy] += 1.0 - eps;
     probs
 }
 
-pub(crate) fn softmax_probs(logits: &[f32]) -> Vec<f32> {
-    if logits.is_empty() {
-        return Vec::new();
+pub(crate) fn softmax_probs<const N: usize>(logits: &[f32]) -> [f32; N] {
+    let n = logits.len();
+    assert!(n <= N);
+    let mut probs = [0.0; N];
+    if n == 0 {
+        return probs;
     }
 
     let max_logit = logits.iter().cloned().fold(f32::NEG_INFINITY, f32::max);
-    let exps: Vec<f32> = logits.iter().map(|&x| (x - max_logit).exp()).collect();
-    let z: f32 = exps.iter().sum();
+    let mut exps = [0.0; N];
+    let mut z: f32 = 0.0;
+    for i in 0..n {
+        exps[i] = (logits[i] - max_logit).exp();
+        z += exps[i];
+    }
 
     if z <= 0.0 || !z.is_finite() {
-        vec![1.0 / logits.len() as f32; logits.len()]
+        let val = 1.0 / n as f32;
+        for i in 0..n {
+            probs[i] = val;
+        }
     } else {
-        exps.into_iter().map(|e| e / z).collect()
+        for i in 0..n {
+            probs[i] = exps[i] / z;
+        }
     }
+    probs
 }

@@ -5,8 +5,8 @@ use std::marker::PhantomData;
 use super::*;
 
 pub struct DoubleQLearning<S: WorkflowState, A: WorkflowAction> {
-    pub(crate) q_a: RefCell<PackedKeyTable<S, Vec<f32>>>,
-    pub(crate) q_b: RefCell<PackedKeyTable<S, Vec<f32>>>,
+    pub(crate) q_a: RefCell<PackedKeyTable<S, QArray>>,
+    pub(crate) q_b: RefCell<PackedKeyTable<S, QArray>>,
     pub(crate) learning_rate: f32,
     pub(crate) discount_factor: f32,
     pub(crate) exploration_rate: f32,
@@ -71,12 +71,12 @@ impl<S: WorkflowState, A: WorkflowAction> DoubleQLearning<S, A> {
         let va = get_q_values::<S, A>(&*qa, &state);
         let vb = get_q_values::<S, A>(&*qb, &state);
 
-        let mut merged = vec![0.0; A::ACTION_COUNT];
+        let mut merged = [0.0; ACTION_MAX_LIMIT];
         for i in 0..A::ACTION_COUNT {
             merged[i] = va[i] + vb[i];
         }
 
-        A::from_index(greedy_index(&merged)).unwrap()
+        A::from_index(greedy_index(&merged[..A::ACTION_COUNT])).unwrap()
     }
 
     #[allow(dead_code)]
@@ -102,7 +102,7 @@ impl<S: WorkflowState, A: WorkflowAction> DoubleQLearning<S, A> {
                     .unwrap_or(0.0)
             };
 
-            let current = qa.get(h_state).unwrap()[action_idx];
+            let current = qa.get_mut(h_state).unwrap()[action_idx];
             let target = reward + self.discount_factor * next_q;
             qa.get_mut(h_state).unwrap()[action_idx] += self.learning_rate * (target - current);
         } else {
@@ -116,7 +116,7 @@ impl<S: WorkflowState, A: WorkflowAction> DoubleQLearning<S, A> {
                     .unwrap_or(0.0)
             };
 
-            let current = qb.get(h_state).unwrap()[action_idx];
+            let current = qb.get_mut(h_state).unwrap()[action_idx];
             let target = reward + self.discount_factor * next_q;
             qb.get_mut(h_state).unwrap()[action_idx] += self.learning_rate * (target - current);
         }
@@ -166,7 +166,7 @@ impl DoubleQLearning<crate::RlState, crate::RlAction> {
                 state.circuit_state,
                 state.cycle_phase,
             );
-            state_values.insert(key, q_values.clone());
+            state_values.insert(key, q_values.to_vec());
         }
 
         SerializedAgentQTable {
@@ -201,8 +201,10 @@ impl DoubleQLearning<crate::RlState, crate::RlAction> {
                 marking_mask: 0,
                 activities_hash: 0,
             };
-            qa.insert(hash_state(&state), state, q_values.clone());
-            qb.insert(hash_state(&state), state, q_values);
+            let mut q_array = [0.0; ACTION_MAX_LIMIT];
+            q_array.copy_from_slice(&q_values);
+            qa.insert(hash_state(&state), state, q_array);
+            qb.insert(hash_state(&state), state, q_array);
         }
     }
 }

@@ -5,7 +5,7 @@ use std::marker::PhantomData;
 use super::*;
 
 pub struct ExpectedSARSAAgent<S: WorkflowState, A: WorkflowAction> {
-    pub(crate) q_table: RefCell<PackedKeyTable<S, Vec<f32>>>,
+    pub(crate) q_table: RefCell<PackedKeyTable<S, QArray>>,
     pub(crate) learning_rate: f32,
     pub(crate) discount_factor: f32,
     pub(crate) exploration_rate: f32,
@@ -75,7 +75,7 @@ impl<S: WorkflowState, A: WorkflowAction> ExpectedSARSAAgent<S, A> {
             let q_table = self.q_table.borrow();
             let q_vals = get_q_values::<S, A>(&*q_table, &next_state);
 
-            let probs = epsilon_greedy_probs(q_vals, self.exploration_rate);
+            let probs = epsilon_greedy_probs::<ACTION_MAX_LIMIT>(q_vals, self.exploration_rate);
             q_vals
                 .iter()
                 .zip(probs.iter())
@@ -88,7 +88,7 @@ impl<S: WorkflowState, A: WorkflowAction> ExpectedSARSAAgent<S, A> {
 
         let action_idx = action.to_index();
         let h = hash_state(&state);
-        let current_q = q_table.get(h).unwrap()[action_idx];
+        let current_q = q_table.get_mut(h).unwrap()[action_idx];
         let target = reward + self.discount_factor * expected_next;
         q_table.get_mut(h).unwrap()[action_idx] += self.learning_rate * (target - current_q);
     }
@@ -137,7 +137,7 @@ impl ExpectedSARSAAgent<crate::RlState, crate::RlAction> {
                 state.circuit_state,
                 state.cycle_phase,
             );
-            state_values.insert(key, q_values.clone());
+            state_values.insert(key, q_values.to_vec());
         }
 
         SerializedAgentQTable {
@@ -170,7 +170,9 @@ impl ExpectedSARSAAgent<crate::RlState, crate::RlAction> {
                 marking_mask: 0,
                 activities_hash: 0,
             };
-            q_table.insert(hash_state(&state), state, q_values);
+            let mut q_array = [0.0; ACTION_MAX_LIMIT];
+            q_array.copy_from_slice(&q_values);
+            q_table.insert(hash_state(&state), state, q_array);
         }
     }
 }

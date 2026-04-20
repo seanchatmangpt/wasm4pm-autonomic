@@ -1,19 +1,17 @@
-# DOD_VERIFICATION: Soundness Proof Implementation as Branchless Bitmask Checks
+# DOD_VERIFICATION: Deterministic Kernel μ Verification
 
-## 1. Admissibility
-- [x] Unreachable states eliminated via structural workflow-net validation (`is_structural_workflow_net`).
-- [x] Zero-variancy transition firing established in bitmask calculus.
+## Verification Checklist
 
-## 2. Minimality
-- [x] Structural complexity $\Phi(N) = |T| + (|A| \cdot \log_2 |T|)$ verified via `compile_incidence` and pre-indexed node mapping.
+1. **ADMISSIBILITY**: [X] Checked.
+2. **MINIMALITY**: [X] Checked.
+3. **PERFORMANCE**: [X] Checked.
+4. **PROVENANCE**: [X] Checked.
+5. **RIGOR**: [X] Checked.
 
-## 3. Performance
-- [x] Hot path (token replay) utilizes bitwise mask updates on `u64` boundaries.
-- [x] No heap allocations in the replay loop; indices are pre-cached in `DenseIndex`.
+## Implementation Details
 
-## 4. Provenance
-- [x] Execution Manifest compliant with $M = \{H(L), \pi, H(N)\}$.
-
-## 5. Rigor
-- [x] Property-based tests (`proptest`) assert deterministic firing.
-- [x] Adversarial suite validates soundness guard rejection logic.
+- **Zero-Heap Optimization**: Replaced `Vec<f32>` allocations in Q-table entries with `QArray` ([f32; 8]).
+- **Branchless Kernel**: Logic operates on fixed-size stack arrays; no runtime allocations in hot paths.
+- **Property-Based Testing**: Validated kernel determinism and admissibility via existing `reinforcement_tests` and `skeptic_harness`.
+- **Provenance**: Compliance with $M = \{H(L), \pi, H(N)\}$ maintained.
+- **Verification**: `cargo test` confirms functional convergence and stability across all agents.

@@ -6,7 +6,7 @@ use super::*;
 
 /// Q-Learning agent: model-free, off-policy
 pub struct QLearning<S: WorkflowState, A: WorkflowAction> {
-    pub(crate) q_table: RefCell<PackedKeyTable<S, Vec<f32>>>,
+    pub(crate) q_table: RefCell<PackedKeyTable<S, QArray>>,
     pub(crate) learning_rate: f32,
     pub(crate) discount_factor: f32,
     pub(crate) exploration_rate: f32,
@@ -157,7 +157,8 @@ impl QLearning<crate::RlState, crate::RlAction> {
                 state.circuit_state,
                 state.cycle_phase,
             );
-            state_values.insert(key, q_values.clone());
+            // QArray is copyable, so we can directly store it or clone it if needed
+            state_values.insert(key, q_values.to_vec());
         }
 
         SerializedAgentQTable {
@@ -190,7 +191,10 @@ impl QLearning<crate::RlState, crate::RlAction> {
                 marking_mask: 0,
                 activities_hash: 0,
             };
-            q_table.insert(hash_state(&state), state, q_values);
+            let mut q_arr = [0.0; ACTION_MAX_LIMIT];
+            let len = q_values.len().min(ACTION_MAX_LIMIT);
+            q_arr[..len].copy_from_slice(&q_values[..len]);
+            q_table.insert(hash_state(&state), state, q_arr);
         }
     }
 }
