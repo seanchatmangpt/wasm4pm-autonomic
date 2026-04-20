@@ -48,7 +48,6 @@
 ///
 pub const CHECK_RESET_AXIOM: &str = "VERIFY_RESET_BETWEEN_TRACES";
 
-
 /// ============================================================
 /// SECTION 2: VALUE → STRUCTURE GAP
 /// ============================================================
@@ -74,7 +73,6 @@ pub const CHECK_RESET_AXIOM: &str = "VERIFY_RESET_BETWEEN_TRACES";
 /// STATUS: CLOSED via Theorem of Structural Isomorphism and Smooth Topographic Gradient.
 ///
 pub const CHECK_VALUE_STRUCTURE: &str = "VERIFY_Q_TO_TOPOLOGY_MAPPING";
-
 
 /// ============================================================
 /// SECTION 3: REWARD FUNCTION (STRUCTURAL SOUNDNESS)
@@ -102,7 +100,6 @@ pub const CHECK_VALUE_STRUCTURE: &str = "VERIFY_Q_TO_TOPOLOGY_MAPPING";
 ///
 pub const CHECK_REWARD_TOPOLOGY: &str = "VERIFY_STRUCTURAL_PENALTY_ACTIVE";
 
-
 /// ============================================================
 /// SECTION 4: IDENTIFIABILITY
 /// ============================================================
@@ -128,7 +125,6 @@ pub const CHECK_REWARD_TOPOLOGY: &str = "VERIFY_STRUCTURAL_PENALTY_ACTIVE";
 ///
 pub const CHECK_IDENTIFIABILITY: &str = "VERIFY_MODEL_UNIQUENESS";
 
-
 /// ============================================================
 /// SECTION 5: STRICT UNIQUENESS (TIE-BREAKER)
 /// ============================================================
@@ -142,7 +138,6 @@ pub const CHECK_IDENTIFIABILITY: &str = "VERIFY_MODEL_UNIQUENESS";
 ///
 pub const CHECK_STRICT_UNIQUENESS: &str = "VERIFY_UNIQUE_MAXIMIZER";
 
-
 /// ============================================================
 /// SECTION 6: DOMAIN RESTRICTION
 /// ============================================================
@@ -155,7 +150,6 @@ pub const CHECK_STRICT_UNIQUENESS: &str = "VERIFY_UNIQUE_MAXIMIZER";
 /// STATUS: CLOSED via Domain Constraints.
 ///
 pub const CHECK_DOMAIN_RESTRICTION: &str = "VERIFY_DOMAIN_BOUNDS";
-
 
 /// ============================================================
 /// SECTION 7: EXECUTION DETERMINISM
@@ -181,7 +175,6 @@ pub const CHECK_DOMAIN_RESTRICTION: &str = "VERIFY_DOMAIN_BOUNDS";
 ///
 pub const CHECK_DETERMINISM: &str = "VERIFY_ZERO_JITTER_EXECUTION";
 
-
 /// ============================================================
 /// SECTION 8: IMPULSE POLICY GRADIENT (IF USED)
 /// ============================================================
@@ -206,7 +199,6 @@ pub const CHECK_DETERMINISM: &str = "VERIFY_ZERO_JITTER_EXECUTION";
 ///
 pub const CHECK_IMPULSE_ASSUMPTION: &str = "VERIFY_REWARD_HORIZON";
 
-
 /// ============================================================
 /// SECTION 9: DOUBLE Q / BIAS CONTROL (IF APPLICABLE)
 /// ============================================================
@@ -223,7 +215,6 @@ pub const CHECK_IMPULSE_ASSUMPTION: &str = "VERIFY_REWARD_HORIZON";
 /// ```
 ///
 pub const CHECK_DOUBLE_Q: &str = "VERIFY_DUAL_TABLE_INTEGRITY";
-
 
 /// ============================================================
 /// SECTION 10: EMPIRICAL CLAIM (100%)
@@ -249,7 +240,6 @@ pub const CHECK_DOUBLE_Q: &str = "VERIFY_DUAL_TABLE_INTEGRITY";
 ///
 pub const CHECK_DATA_ISOLATION: &str = "VERIFY_TRAIN_TEST_SEPARATION";
 
-
 /// ============================================================
 /// SECTION 11: SKEPTIC RESULT INTERPRETATION
 /// ============================================================
@@ -271,7 +261,7 @@ pub const CHECK_DATA_ISOLATION: &str = "VERIFY_TRAIN_TEST_SEPARATION";
 /// ```
 ///
 /// ============================================================
-
+///
 /// Optional: symbolic grouping for CI / reporting
 pub const ALL_CHECKS: &[&str] = &[
     CHECK_RESET_AXIOM,
@@ -283,7 +273,6 @@ pub const ALL_CHECKS: &[&str] = &[
     CHECK_DOUBLE_Q,
     CHECK_DATA_ISOLATION,
 ];
-
 
 /// ============================================================
 /// FINAL NOTE

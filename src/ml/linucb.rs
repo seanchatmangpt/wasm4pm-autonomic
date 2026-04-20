@@ -15,7 +15,7 @@ impl<const D: usize, const D2: usize> LinUcb<D, D2> {
         for i in 0..D {
             a_inv[i * D + i] = 1.0; // Identity initialization
         }
-        
+
         Self {
             alpha,
             a_inv,
@@ -38,7 +38,7 @@ impl<const D: usize, const D2: usize> LinUcb<D, D2> {
             for (i, &context_val) in context.iter().enumerate().take(D) {
                 let offset = i * D;
                 let row = &self.a_inv[offset..offset + D];
-                
+
                 // Theta = row * b
                 let mut row_dot_b = 0.0;
                 for (j, &row_val) in row.iter().enumerate().take(D) {
@@ -55,7 +55,7 @@ impl<const D: usize, const D2: usize> LinUcb<D, D2> {
             }
 
             let ucb = theta + self.alpha * variance.sqrt();
-            
+
             // Branchless best arm selection
             let is_better = ucb > max_ucb;
             best_arm = if is_better { arm } else { best_arm };
@@ -91,11 +91,22 @@ impl<const D: usize, const D2: usize> LinUcb<D, D2> {
         let inv_denom = 1.0 / (1.0 + x_a_inv_x);
 
         // A_inv = A_inv - (a_inv_x * a_inv_x^T) / Denom
+        // Add a bounding factor to prevent matrix collapse over 1M+ iterations
+        let min_eigen = 1e-5;
         for (i, &a_inv_x_val_i) in a_inv_x.iter().enumerate().take(D) {
             let offset = i * D;
             for (j, &a_inv_x_val_j) in a_inv_x.iter().enumerate().take(D) {
-                self.a_inv[offset + j] -= (a_inv_x_val_i * a_inv_x_val_j) * inv_denom;
+                let update = (a_inv_x_val_i * a_inv_x_val_j) * inv_denom;
+                let mut new_val = self.a_inv[offset + j] - update;
+                if i == j {
+                    new_val = new_val.max(min_eigen); // Protect diagonal to maintain positive semi-definiteness
+                }
+                self.a_inv[offset + j] = new_val.clamp(-1e4, 1e4); // Hard bound
             }
+        }
+
+        for b_val in self.b.iter_mut() {
+            *b_val = b_val.clamp(-1e5, 1e5);
         }
     }
 }

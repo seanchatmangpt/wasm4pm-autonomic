@@ -1,9 +1,11 @@
 //! Counterfactual simulation engine for evaluating proposed actions before commitment.
 //! Implements a safe "What-If" shadow state.
+use crate::autonomic::types::{ActionType, AutonomicAction, AutonomicState};
+use bcinr_core::bitset::select_u64;
 
-use crate::autonomic::types::{AutonomicAction, AutonomicState, ActionType};
-use crate::utils::dense_kernel::K64;
-use crate::utils::bitset::select_u64;
+const REWARD_REPAIR: f32 = 0.8;
+const REWARD_RECOMMEND: f32 = 0.2;
+const REWARD_ESCALATE: f32 = 0.05;
 
 pub struct Simulator {
     baseline_state: AutonomicState,
@@ -11,24 +13,31 @@ pub struct Simulator {
 
 impl Simulator {
     pub fn new(state: AutonomicState) -> Self {
-        Self { baseline_state: state }
+        Self {
+            baseline_state: state,
+        }
     }
 
     /// Evaluates the projected state if an action were to be applied.
     /// Uses BCINR select_u64 for branchless state mutation logic.
     pub fn evaluate_action(&self, action: &AutonomicAction) -> (AutonomicState, f32) {
         let mut projected = self.baseline_state.clone();
-        
+
         let is_repair = (action.action_type == ActionType::Repair) as u64;
         let is_recommend = (action.action_type == ActionType::Recommend) as u64;
-        
+
         // Use select_u64 for boolean-like drift reset
         projected.drift_detected = select_u64(is_repair, 0, projected.drift_detected as u64) != 0;
-        
+
         // Branchless reward selection (mapped to discrete values)
-        // High = 0.8 (Repair), Med = 0.2 (Recommend), Low = 0.05 (Escalate)
-        let mut reward = 0.05; // Default Escalate/Other
-        reward = if is_repair != 0 { 0.8 } else if is_recommend != 0 { 0.2 } else { reward };
+        let mut reward = REWARD_ESCALATE; // Default Escalate/Other
+        reward = if is_repair != 0 {
+            REWARD_REPAIR
+        } else if is_recommend != 0 {
+            REWARD_RECOMMEND
+        } else {
+            reward
+        };
 
         (projected, reward)
     }

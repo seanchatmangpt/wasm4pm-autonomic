@@ -80,7 +80,7 @@ pub struct Claim {
 /// ===============================
 /// Theorem Layer (Documentation Only)
 /// ===============================
-
+///
 /// # Theorem: Value–Structure Equivalence
 ///
 /// If:
@@ -161,18 +161,12 @@ impl Skeptic {
     /// Evaluate a claim against all attack vectors
     pub fn evaluate(_claim: &Claim) -> Vec<(SkepticAttack, bool)> {
         vec![
-            (
-                SkepticAttack::StateLeakage,
-                Self::check_reset_axiom(),
-            ),
+            (SkepticAttack::StateLeakage, Self::check_reset_axiom()),
             (
                 SkepticAttack::ValueStructureGap,
                 Self::check_value_structure_bridge(),
             ),
-            (
-                SkepticAttack::RewardHacking,
-                Self::check_reward_topology(),
-            ),
+            (SkepticAttack::RewardHacking, Self::check_reward_topology()),
             (
                 SkepticAttack::NonIdentifiability,
                 Self::check_identifiability(),
@@ -195,7 +189,7 @@ impl Skeptic {
     /// ===============================
     /// Individual Checks (Conceptual)
     /// ===============================
-
+    ///
     /// Overfitting defense
     ///
     /// Must prove:
@@ -282,7 +276,7 @@ pub fn run_skeptic_harness() {
             all_passed = false;
         }
     }
-    
+
     if !all_passed {
         println!("WARNING: System is strong but not yet *mathematically closed*.");
     }

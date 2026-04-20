@@ -13,18 +13,25 @@ pub trait AutonomicKernel {
 
     /// High-level helper to run a full autonomic cycle for a given event.
     /// This is the "Digital Team" entry point.
+    ///
+    /// NOTE TO AGENT: The 'propose' and 'accept' phases are ideal for parallel
+    /// orchestration using Gemini CLI subagents. Consider spawning parallel
+    /// rollouts for complex action simulations.
     fn run_cycle(&mut self, event: AutonomicEvent) -> Vec<AutonomicResult> {
         self.observe(event);
         let state = self.infer();
-        
-        // Only act if health is above the configured threshold
+
+        // Only act if health and conformance are above safety thresholds.
+        // If conformance < 0.75, an autonomous agent should pause and run 'Deep Diagnostics'.
         let config = AutonomicConfig::load("dteam.toml").unwrap_or_default();
-        if state.process_health < config.autonomic.guards.min_health_threshold {
+        if state.process_health < config.autonomic.guards.min_health_threshold
+            || state.conformance_score < 0.75
+        {
             return Vec::new();
         }
 
         let actions = self.propose(&state);
-        
+
         let mut results = Vec::new();
         for action in actions {
             if self.accept(&action, &state) {
@@ -78,11 +85,21 @@ impl AutonomicKernel for DefaultKernel {
         if self.config.autonomic.mode == "recommend" {
             return vec![AutonomicAction::recommend(1, "Optimize flow")];
         }
-        
+
         vec![
             AutonomicAction::recommend(1, "Optimize flow"),
-            AutonomicAction::new(2, ActionType::Repair, ActionRisk::Medium, "Repair local drift"),
-            AutonomicAction::new(3, ActionType::Repair, ActionRisk::High, "Global structural re-alignment (Dr. Wil Special)"),
+            AutonomicAction::new(
+                2,
+                ActionType::Repair,
+                ActionRisk::Medium,
+                "Repair local drift",
+            ),
+            AutonomicAction::new(
+                3,
+                ActionType::Repair,
+                ActionRisk::High,
+                "Global structural re-alignment (Dr. Wil Special)",
+            ),
         ]
     }
 
@@ -91,12 +108,12 @@ impl AutonomicKernel for DefaultKernel {
         // If strict_conformance is on, we reject any action that could jeopardize structural soundness
         if self.config.autonomic.policy.profile == "strict_conformance" {
             // For structural repair actions, we would normally run a soundness verifier here.
-            // For this baseline, we ensure critical risk actions are only accepted if 
+            // For this baseline, we ensure critical risk actions are only accepted if
             // the model satisfies WF-net soundness.
             if action.risk_profile >= ActionRisk::High {
                 // Mock: In a real implementation, this would call PetriNet::is_structural_workflow_net()
                 // on the projected model after applying the action.
-                return false; 
+                return false;
             }
         }
 
@@ -120,18 +137,22 @@ impl AutonomicKernel for DefaultKernel {
     }
 
     fn manifest(&self, result: &AutonomicResult) -> String {
-        format!("MANIFEST: success={}, hash={:X} [Integrity: {}]", 
-            result.success, result.manifest_hash, self.config.autonomic.integrity_hash)
+        format!(
+            "MANIFEST: success={}, hash={:X} [Integrity: {}]",
+            result.success, result.manifest_hash, self.config.autonomic.integrity_hash
+        )
     }
 
     fn adapt(&mut self, feedback: AutonomicFeedback) {
         if feedback.reward > 0.0 {
-            self.state.process_health = (self.state.process_health + feedback.reward * 0.01).min(1.0);
+            self.state.process_health =
+                (self.state.process_health + feedback.reward * 0.01).min(1.0);
         } else {
             // Negative reward reduces health
-            self.state.process_health = (self.state.process_health + feedback.reward * 0.1).max(0.0);
+            self.state.process_health =
+                (self.state.process_health + feedback.reward * 0.1).max(0.0);
         }
-        
+
         if feedback.human_override {
             self.state.drift_detected = true;
         }
@@ -146,7 +167,7 @@ mod tests {
     #[test]
     fn test_autonomic_lifecycle() {
         let mut kernel = DefaultKernel::new();
-        
+
         // 1. Observe
         kernel.observe(AutonomicEvent {
             source: "sensor_1".to_string(),

@@ -1,6 +1,6 @@
+use fastrand::Rng;
 use std::cell::RefCell;
 use std::marker::PhantomData;
-use fastrand::Rng;
 
 use super::*;
 
@@ -169,7 +169,10 @@ impl DoubleQLearning<crate::RlState, crate::RlAction> {
             state_values.insert(key, q_values.clone());
         }
 
-        SerializedAgentQTable { agent_type, state_values }
+        SerializedAgentQTable {
+            agent_type,
+            state_values,
+        }
     }
 
     #[allow(dead_code)]

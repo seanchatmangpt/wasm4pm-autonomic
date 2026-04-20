@@ -1,3 +1,3 @@
 pub mod ocel;
 
-pub use ocel::{OcelLog, OcelEvent, OcelObject, StreamingOcDfg};
+pub use ocel::{OcelEvent, OcelLog, OcelObject, StreamingOcDfg};

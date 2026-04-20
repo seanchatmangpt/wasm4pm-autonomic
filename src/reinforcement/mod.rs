@@ -1,8 +1,8 @@
 //! Core traits and utilities for reinforcement learning
 //! in single-threaded WASM environments.
 
+pub use bcinr_core::dense_kernel::PackedKeyTable;
 use std::hash::{Hash, Hasher};
-pub use crate::utils::dense_kernel::PackedKeyTable;
 
 pub const DEFAULT_LEARNING_RATE: f32 = 0.1;
 pub const DEFAULT_DISCOUNT_FACTOR: f32 = 0.99;
@@ -10,17 +10,17 @@ pub const DEFAULT_EXPLORATION_RATE: f32 = 1.0;
 pub const DEFAULT_EXPLORATION_DECAY: f32 = 0.995;
 pub const REINFORCE_LEARNING_RATE: f32 = 0.01;
 
-pub mod q_learning;
-pub mod sarsa;
 pub mod double_q;
 pub mod expected_sarsa;
+pub mod q_learning;
 pub mod reinforce;
+pub mod sarsa;
 
-pub use q_learning::QLearning;
-pub use sarsa::SARSAAgent;
 pub use double_q::DoubleQLearning;
 pub use expected_sarsa::ExpectedSARSAAgent;
+pub use q_learning::QLearning;
 pub use reinforce::ReinforceAgent;
+pub use sarsa::SARSAAgent;
 
 /// State for reinforcement learning (must be hashable and copyable)
 pub trait WorkflowState: Clone + Copy + Eq + Hash {
@@ -92,24 +92,21 @@ pub(crate) fn hash_state<S: Hash>(state: &S) -> u64 {
     hasher.finish()
 }
 
-pub(crate) fn get_q_values<'a, S, A>(
-    table: &'a PackedKeyTable<S, Vec<f32>>,
-    state: &S,
-) -> &'a [f32] 
-where 
-    S: WorkflowState, 
+pub(crate) fn get_q_values<'a, S, A>(table: &'a PackedKeyTable<S, Vec<f32>>, state: &S) -> &'a [f32]
+where
+    S: WorkflowState,
     A: WorkflowAction,
 {
     static ZEROS: [f32; 256] = [0.0; 256];
-    table.get(hash_state(state)).map(|v| v.as_slice()).unwrap_or(&ZEROS[..A::ACTION_COUNT])
+    table
+        .get(hash_state(state))
+        .map(|v| v.as_slice())
+        .unwrap_or(&ZEROS[..A::ACTION_COUNT])
 }
 
-pub(crate) fn ensure_state<S, A>(
-    table: &mut PackedKeyTable<S, Vec<f32>>,
-    state: S,
-) 
-where 
-    S: WorkflowState, 
+pub(crate) fn ensure_state<S, A>(table: &mut PackedKeyTable<S, Vec<f32>>, state: S)
+where
+    S: WorkflowState,
     A: WorkflowAction,
 {
     let h = hash_state(&state);
@@ -118,9 +115,9 @@ where
     }
 }
 
-pub(crate) fn max_q<S, A>(table: &PackedKeyTable<S, Vec<f32>>, state: &S) -> f32 
-where 
-    S: WorkflowState, 
+pub(crate) fn max_q<S, A>(table: &PackedKeyTable<S, Vec<f32>>, state: &S) -> f32
+where
+    S: WorkflowState,
     A: WorkflowAction,
 {
     get_q_values::<S, A>(table, state)

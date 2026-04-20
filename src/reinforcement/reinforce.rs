@@ -1,6 +1,6 @@
+use fastrand::Rng;
 use std::cell::RefCell;
 use std::marker::PhantomData;
-use fastrand::Rng;
 
 use super::*;
 
@@ -89,7 +89,11 @@ impl<S: WorkflowState, A: WorkflowAction> ReinforceAgent<S, A> {
             let h = hash_state(state);
             let weights = theta.get_mut(h).unwrap();
             for j in 0..A::ACTION_COUNT {
-                let grad = if j == a_idx { 1.0 - probs[j] } else { -probs[j] };
+                let grad = if j == a_idx {
+                    1.0 - probs[j]
+                } else {
+                    -probs[j]
+                };
                 weights[j] += self.learning_rate * g_t * grad;
             }
         }
@@ -143,7 +147,10 @@ impl ReinforceAgent<crate::RlState, crate::RlAction> {
             state_values.insert(key, weights.clone());
         }
 
-        SerializedAgentQTable { agent_type, state_values }
+        SerializedAgentQTable {
+            agent_type,
+            state_values,
+        }
     }
 
     #[allow(dead_code)]
@@ -159,16 +166,16 @@ impl ReinforceAgent<crate::RlState, crate::RlAction> {
         for (key, weights) in table.state_values {
             let (h, e, a, s, d, r, c, p) = decode_rl_state_key(key);
             let state = crate::RlState {
-                    health_level: h,
-                    event_rate_q: e,
-                    activity_count_q: a,
-                    spc_alert_level: s,
-                    drift_status: d,
-                    rework_ratio_q: r,
-                    circuit_state: c,
-                    cycle_phase: p,
-                    marking_mask: 0,
-                    activities_hash: 0,
+                health_level: h,
+                event_rate_q: e,
+                activity_count_q: a,
+                spc_alert_level: s,
+                drift_status: d,
+                rework_ratio_q: r,
+                circuit_state: c,
+                cycle_phase: p,
+                marking_mask: 0,
+                activities_hash: 0,
             };
             theta.insert(hash_state(&state), state, weights);
         }

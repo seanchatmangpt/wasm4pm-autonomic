@@ -1,6 +1,6 @@
+use fastrand::Rng;
 use std::cell::RefCell;
 use std::marker::PhantomData;
-use fastrand::Rng;
 
 use super::*;
 
@@ -79,7 +79,11 @@ impl<S: WorkflowState, A: WorkflowAction> QLearning<S, A> {
         let mut q_table = self.q_table.borrow_mut();
         ensure_state::<S, A>(&mut *q_table, state);
 
-        let next_val = if done { 0.0 } else { max_q::<S, A>(&*q_table, &next_state) };
+        let next_val = if done {
+            0.0
+        } else {
+            max_q::<S, A>(&*q_table, &next_state)
+        };
 
         let action_idx = action.to_index();
         let h = hash_state(&state);
@@ -156,7 +160,10 @@ impl QLearning<crate::RlState, crate::RlAction> {
             state_values.insert(key, q_values.clone());
         }
 
-        SerializedAgentQTable { agent_type, state_values }
+        SerializedAgentQTable {
+            agent_type,
+            state_values,
+        }
     }
 
     #[allow(dead_code)]
@@ -172,16 +179,16 @@ impl QLearning<crate::RlState, crate::RlAction> {
         for (key, q_values) in table.state_values {
             let (h, e, a, s, d, r, c, p) = decode_rl_state_key(key);
             let state = crate::RlState {
-                    health_level: h,
-                    event_rate_q: e,
-                    activity_count_q: a,
-                    spc_alert_level: s,
-                    drift_status: d,
-                    rework_ratio_q: r,
-                    circuit_state: c,
-                    cycle_phase: p,
-                    marking_mask: 0,
-                    activities_hash: 0,
+                health_level: h,
+                event_rate_q: e,
+                activity_count_q: a,
+                spc_alert_level: s,
+                drift_status: d,
+                rework_ratio_q: r,
+                circuit_state: c,
+                cycle_phase: p,
+                marking_mask: 0,
+                activities_hash: 0,
             };
             q_table.insert(hash_state(&state), state, q_values);
         }

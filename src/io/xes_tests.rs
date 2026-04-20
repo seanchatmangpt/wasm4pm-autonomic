@@ -2,8 +2,6 @@
 mod tests {
     use crate::io::xes::XESReader;
     use crate::models::AttributeValue;
-    
-    
 
     #[test]
     fn test_xes_import_simple() {
@@ -19,17 +17,24 @@ mod tests {
 </log>"#;
 
         let reader = XESReader::new();
-        let log = reader.parse_str(xes_content).expect("Failed to parse simple XES");
+        let log = reader
+            .parse_str(xes_content)
+            .expect("Failed to parse simple XES");
 
         assert_eq!(log.traces.len(), 1);
         let trace = &log.traces[0];
         assert_eq!(trace.id, "case_1");
         assert_eq!(trace.events.len(), 1);
-        
-        let activity = trace.events[0].attributes.iter()
+
+        let activity = trace.events[0]
+            .attributes
+            .iter()
             .find(|a| a.key == "concept:name")
             .unwrap();
-            
-        assert_eq!(activity.value, AttributeValue::String("activity_a".to_string()));
+
+        assert_eq!(
+            activity.value,
+            AttributeValue::String("activity_a".to_string())
+        );
     }
 }

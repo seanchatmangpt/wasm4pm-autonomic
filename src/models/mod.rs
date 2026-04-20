@@ -1,7 +1,7 @@
 pub mod petri_net;
 /// Data structures derived from `rust4pm` (MIT/Apache-2.0).
 /// See ATTRIBUTION.md for details.
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "type", content = "content")]
@@ -63,7 +63,7 @@ impl EventLog {
     pub fn new() -> Self {
         Self::default()
     }
-    
+
     pub fn add_trace(&mut self, trace: Trace) {
         self.traces.push(trace);
     }

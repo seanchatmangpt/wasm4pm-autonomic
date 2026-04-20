@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
-use std::collections::HashMap;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AutonomicConfig {
@@ -98,7 +98,7 @@ impl Default for AutonomicConfig {
             meta: MetaConfig {
                 version: "2026.04.18".to_string(),
                 environment: "autonomous".to_string(),
-                identity: "DPIE-Alpha-01".to_string(),
+                identity: "dteam-alpha-01".to_string(),
             },
             kernel: KernelConfig {
                 tier: "K256".to_string(),

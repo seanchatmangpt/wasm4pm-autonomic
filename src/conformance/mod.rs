@@ -1,7 +1,7 @@
-use serde::{Deserialize, Serialize};
+use crate::models::petri_net::{Arc, PetriNet};
 use crate::models::{EventLog, Trace};
-use crate::models::petri_net::{PetriNet, Arc};
-use crate::utils::dense_kernel::{PackedKeyTable, fnv1a_64};
+use bcinr_core::dense_kernel::{fnv1a_64, PackedKeyTable};
+use serde::{Deserialize, Serialize};
 use std::hash::{Hash, Hasher};
 
 pub mod case_centric;
@@ -35,9 +35,17 @@ impl From<&EventLog> for ProjectedLog {
         for trace in &log.traces {
             let mut trace_acts = Vec::with_capacity(trace.events.len());
             for event in &trace.events {
-                let activity = event.attributes.iter()
+                let activity = event
+                    .attributes
+                    .iter()
                     .find(|a| a.key == "concept:name")
-                    .and_then(|a| if let crate::models::AttributeValue::String(s) = &a.value { Some(s.as_str()) } else { None })
+                    .and_then(|a| {
+                        if let crate::models::AttributeValue::String(s) = &a.value {
+                            Some(s.as_str())
+                        } else {
+                            None
+                        }
+                    })
                     .unwrap_or("No Activity");
 
                 let h = fnv1a_64(activity.as_bytes());
@@ -51,7 +59,7 @@ impl From<&EventLog> for ProjectedLog {
                 };
                 trace_acts.push(index);
             }
-            
+
             let mut hasher = rustc_hash::FxHasher::default();
             trace_acts.hash(&mut hasher);
             let h = hasher.finish();
@@ -71,11 +79,13 @@ impl From<&EventLog> for ProjectedLog {
 
 pub fn token_replay_projected(log: &ProjectedLog, petri_net: &PetriNet) -> f64 {
     let num_places = petri_net.places.len();
-    if num_places > 64 { return 0.0; }
+    if num_places > 64 {
+        return 0.0;
+    }
 
     let mut place_to_idx = PackedKeyTable::with_capacity(num_places);
-    for (i, p) in petri_net.places.iter().enumerate() { 
-        place_to_idx.insert(fnv1a_64(p.id.as_bytes()), p.id.clone(), i); 
+    for (i, p) in petri_net.places.iter().enumerate() {
+        place_to_idx.insert(fnv1a_64(p.id.as_bytes()), p.id.clone(), i);
     }
 
     let num_transitions = petri_net.transitions.len();
@@ -86,8 +96,10 @@ pub fn token_replay_projected(log: &ProjectedLog, petri_net: &PetriNet) -> f64 {
 
     for arc in &petri_net.arcs {
         let mut is_input = false;
-        let t_idx_opt = if let Some(pos) = petri_net.transitions.iter().position(|t| t.id == arc.to) {
-            is_input = true; Some(pos)
+        let t_idx_opt = if let Some(pos) = petri_net.transitions.iter().position(|t| t.id == arc.to)
+        {
+            is_input = true;
+            Some(pos)
         } else {
             petri_net.transitions.iter().position(|t| t.id == arc.from)
         };
@@ -95,8 +107,11 @@ pub fn token_replay_projected(log: &ProjectedLog, petri_net: &PetriNet) -> f64 {
         if let Some(t_idx) = t_idx_opt {
             let p_id = if is_input { &arc.from } else { &arc.to };
             if let Some(&p_idx) = place_to_idx.get(fnv1a_64(p_id.as_bytes())) {
-                if is_input { input_masks[t_idx] |= 1u64 << p_idx; }
-                else { output_masks[t_idx] |= 1u64 << p_idx; }
+                if is_input {
+                    input_masks[t_idx] |= 1u64 << p_idx;
+                } else {
+                    output_masks[t_idx] |= 1u64 << p_idx;
+                }
             }
         }
     }
@@ -110,12 +125,22 @@ pub fn token_replay_projected(log: &ProjectedLog, petri_net: &PetriNet) -> f64 {
 
     let mut initial_mask = 0u64;
     for (_, p_id, c) in petri_net.initial_marking.iter() {
-        if *c > 0 { if let Some(&p_idx) = place_to_idx.get(fnv1a_64(p_id.as_bytes())) { initial_mask |= 1u64 << p_idx; } }
+        if *c > 0 {
+            if let Some(&p_idx) = place_to_idx.get(fnv1a_64(p_id.as_bytes())) {
+                initial_mask |= 1u64 << p_idx;
+            }
+        }
     }
 
     let mut final_mask = 0u64;
     if let Some(fm) = petri_net.final_markings.first() {
-        for (_, p_id, c) in fm.iter() { if *c > 0 { if let Some(&p_idx) = place_to_idx.get(fnv1a_64(p_id.as_bytes())) { final_mask |= 1u64 << p_idx; } } }
+        for (_, p_id, c) in fm.iter() {
+            if *c > 0 {
+                if let Some(&p_idx) = place_to_idx.get(fnv1a_64(p_id.as_bytes())) {
+                    final_mask |= 1u64 << p_idx;
+                }
+            }
+        }
     }
     let final_count = final_mask.count_ones();
 
@@ -150,29 +175,41 @@ pub fn token_replay_projected(log: &ProjectedLog, petri_net: &PetriNet) -> f64 {
         let remaining_tokens = marking.count_ones();
 
         let total_tokens_needed = consumed_tokens + missing_tokens;
-        let fitness = if total_tokens_needed == 0 { 1.0 } 
-            else { 1.0 - (missing_tokens as f64 + remaining_tokens as f64) / (total_tokens_needed as f64 + produced_tokens as f64) };
+        let fitness = if total_tokens_needed == 0 {
+            1.0
+        } else {
+            1.0 - (missing_tokens as f64 + remaining_tokens as f64)
+                / (total_tokens_needed as f64 + produced_tokens as f64)
+        };
 
         total_fitness += fitness * (*freq as f64);
         total_freq += freq;
     }
 
-    if total_freq == 0 { 1.0 } else { total_fitness / total_freq as f64 }
+    if total_freq == 0 {
+        1.0
+    } else {
+        total_fitness / total_freq as f64
+    }
 }
 
 pub fn token_replay(log: &EventLog, petri_net: &PetriNet) -> Vec<ConformanceResult> {
     let num_places = petri_net.places.len();
     if num_places > 64 {
-        return log.traces.iter().map(|trace| replay_trace_standard(trace, petri_net)).collect();
+        return log
+            .traces
+            .iter()
+            .map(|trace| replay_trace_standard(trace, petri_net))
+            .collect();
     }
 
     let mut place_to_idx = PackedKeyTable::with_capacity(num_places);
     let mut act_to_t_idx = PackedKeyTable::with_capacity(petri_net.transitions.len());
 
-    for (i, p) in petri_net.places.iter().enumerate() { 
-        place_to_idx.insert(fnv1a_64(p.id.as_bytes()), p.id.clone(), i); 
+    for (i, p) in petri_net.places.iter().enumerate() {
+        place_to_idx.insert(fnv1a_64(p.id.as_bytes()), p.id.clone(), i);
     }
-    for (i, t) in petri_net.transitions.iter().enumerate() { 
+    for (i, t) in petri_net.transitions.iter().enumerate() {
         act_to_t_idx.insert(fnv1a_64(t.label.as_bytes()), t.label.clone(), i);
     }
 
@@ -233,49 +270,53 @@ pub fn token_replay(log: &EventLog, petri_net: &PetriNet) -> Vec<ConformanceResu
     }
     let final_count = final_mask.count_ones();
 
-    log.traces.iter().map(|trace| {
-        let mut marking: u64 = initial_mask;
-        let mut missing_tokens = 0;
-        let mut consumed_tokens = 0;
-        let mut produced_tokens = initial_mask.count_ones();
+    log.traces
+        .iter()
+        .map(|trace| {
+            let mut marking: u64 = initial_mask;
+            let mut missing_tokens = 0;
+            let mut consumed_tokens = 0;
+            let mut produced_tokens = initial_mask.count_ones();
 
-        for event in &trace.events {
-            let mut t_idx = dummy_t_idx;
-            if let Some(attr) = event.attributes.iter().find(|a| a.key == "concept:name") {
-                if let crate::models::AttributeValue::String(s) = &attr.value {
-                    if let Some(&idx) = act_to_t_idx.get(fnv1a_64(s.as_bytes())) {
-                        t_idx = idx;
+            for event in &trace.events {
+                let mut t_idx = dummy_t_idx;
+                if let Some(attr) = event.attributes.iter().find(|a| a.key == "concept:name") {
+                    if let crate::models::AttributeValue::String(s) = &attr.value {
+                        if let Some(&idx) = act_to_t_idx.get(fnv1a_64(s.as_bytes())) {
+                            t_idx = idx;
+                        }
                     }
                 }
+
+                let in_mask = input_masks[t_idx];
+                let missing = in_mask & !marking;
+                missing_tokens += missing.count_ones();
+                marking = (marking & !in_mask) | output_masks[t_idx];
+                consumed_tokens += input_counts[t_idx];
+                produced_tokens += output_counts[t_idx];
             }
-            
-            let in_mask = input_masks[t_idx];
-            let missing = in_mask & !marking;
-            missing_tokens += missing.count_ones();
-            marking = (marking & !in_mask) | output_masks[t_idx];
-            consumed_tokens += input_counts[t_idx];
-            produced_tokens += output_counts[t_idx];
-        }
 
-        let missing_final = final_mask & !marking;
-        missing_tokens += missing_final.count_ones();
-        consumed_tokens += final_count;
-        marking &= !final_mask;
-        let remaining_tokens = marking.count_ones();
+            let missing_final = final_mask & !marking;
+            missing_tokens += missing_final.count_ones();
+            consumed_tokens += final_count;
+            marking &= !final_mask;
+            let remaining_tokens = marking.count_ones();
 
-        let total_tokens_needed = consumed_tokens + missing_tokens;
-        let fitness = if total_tokens_needed == 0 {
-            1.0
-        } else {
-            1.0 - (missing_tokens as f64 + remaining_tokens as f64) / (total_tokens_needed as f64 + produced_tokens as f64)
-        };
+            let total_tokens_needed = consumed_tokens + missing_tokens;
+            let fitness = if total_tokens_needed == 0 {
+                1.0
+            } else {
+                1.0 - (missing_tokens as f64 + remaining_tokens as f64)
+                    / (total_tokens_needed as f64 + produced_tokens as f64)
+            };
 
-        ConformanceResult {
-            case_id: trace.id.clone(),
-            fitness,
-            deviations: Vec::new(),
-        }
-    }).collect()
+            ConformanceResult {
+                case_id: trace.id.clone(),
+                fitness,
+                deviations: Vec::new(),
+            }
+        })
+        .collect()
 }
 
 fn replay_trace_standard(trace: &Trace, petri_net: &PetriNet) -> ConformanceResult {
@@ -285,13 +326,25 @@ fn replay_trace_standard(trace: &Trace, petri_net: &PetriNet) -> ConformanceResu
     let mut missing_tokens = 0;
 
     for event in &trace.events {
-        let activity = event.attributes.iter()
+        let activity = event
+            .attributes
+            .iter()
             .find(|a| a.key == "concept:name")
-            .and_then(|a| if let crate::models::AttributeValue::String(s) = &a.value { Some(s) } else { None });
+            .and_then(|a| {
+                if let crate::models::AttributeValue::String(s) = &a.value {
+                    Some(s)
+                } else {
+                    None
+                }
+            });
 
         if let Some(activity) = activity {
             if let Some(transition) = petri_net.transitions.iter().find(|t| &t.label == activity) {
-                let input_arcs: Vec<&Arc> = petri_net.arcs.iter().filter(|a| a.to == transition.id).collect();
+                let input_arcs: Vec<&Arc> = petri_net
+                    .arcs
+                    .iter()
+                    .filter(|a| a.to == transition.id)
+                    .collect();
                 let mut can_fire = true;
                 for arc in &input_arcs {
                     let h = fnv1a_64(arc.from.as_bytes());
@@ -309,7 +362,11 @@ fn replay_trace_standard(trace: &Trace, petri_net: &PetriNet) -> ConformanceResu
                         *token_count -= arc.weight.unwrap_or(1);
                         consumed_tokens += arc.weight.unwrap_or(1);
                     }
-                    let output_arcs: Vec<&Arc> = petri_net.arcs.iter().filter(|a| a.from == transition.id).collect();
+                    let output_arcs: Vec<&Arc> = petri_net
+                        .arcs
+                        .iter()
+                        .filter(|a| a.from == transition.id)
+                        .collect();
                     for arc in &output_arcs {
                         let h = fnv1a_64(arc.to.as_bytes());
                         if let Some(token_count) = markings.get_mut(h) {
@@ -331,7 +388,8 @@ fn replay_trace_standard(trace: &Trace, petri_net: &PetriNet) -> ConformanceResu
     let fitness = if total_tokens_needed == 0 {
         1.0
     } else {
-        1.0 - (missing_tokens as f64 + remaining_tokens as f64) / (total_tokens_needed as f64 + produced_tokens as f64)
+        1.0 - (missing_tokens as f64 + remaining_tokens as f64)
+            / (total_tokens_needed as f64 + produced_tokens as f64)
     };
 
     ConformanceResult {

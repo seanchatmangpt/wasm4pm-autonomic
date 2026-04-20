@@ -1,6 +1,6 @@
-use serde::{Serialize, Deserialize};
-use std::time::SystemTime;
+use serde::{Deserialize, Serialize};
 use std::fmt;
+use std::time::SystemTime;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AutonomicEvent {
@@ -26,10 +26,28 @@ pub struct AutonomicState {
 
 impl fmt::Display for AutonomicState {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let health_emoji = if self.process_health > 0.8 { "🟢" } else if self.process_health > 0.4 { "🟡" } else { "🔴" };
-        let drift_str = if self.drift_detected { "⚠️ DRIFT DETECTED" } else { "✅ STABLE" };
-        write!(f, "{} Health: {:.1}% | Throughput: {:.2} eps | Conf: {:.2} | Cases: {} | {}", 
-            health_emoji, self.process_health * 100.0, self.throughput, self.conformance_score, self.active_cases, drift_str)
+        let health_emoji = if self.process_health > 0.8 {
+            "🟢"
+        } else if self.process_health > 0.4 {
+            "🟡"
+        } else {
+            "🔴"
+        };
+        let drift_str = if self.drift_detected {
+            "⚠️ DRIFT DETECTED"
+        } else {
+            "✅ STABLE"
+        };
+        write!(
+            f,
+            "{} Health: {:.1}% | Throughput: {:.2} eps | Conf: {:.2} | Cases: {} | {}",
+            health_emoji,
+            self.process_health * 100.0,
+            self.throughput,
+            self.conformance_score,
+            self.active_cases,
+            drift_str
+        )
     }
 }
 
@@ -94,8 +112,11 @@ pub struct AutonomicAction {
 
 impl fmt::Display for AutonomicAction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "⚙️  Action #{} [{}]: {} (Risk: {})", 
-            self.action_id, self.action_type, self.parameters, self.risk_profile)
+        write!(
+            f,
+            "⚙️  Action #{} [{}]: {} (Risk: {})",
+            self.action_id, self.action_type, self.parameters, self.risk_profile
+        )
     }
 }
 
@@ -108,8 +129,16 @@ pub struct AutonomicResult {
 
 impl fmt::Display for AutonomicResult {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let status = if self.success { "✅ SUCCESS" } else { "❌ FAILED" };
-        write!(f, "{} | Latency: {}ms | Hash: {:X}", status, self.execution_latency_ms, self.manifest_hash)
+        let status = if self.success {
+            "✅ SUCCESS"
+        } else {
+            "❌ FAILED"
+        };
+        write!(
+            f,
+            "{} | Latency: {}ms | Hash: {:X}",
+            status, self.execution_latency_ms, self.manifest_hash
+        )
     }
 }
 

@@ -1,5 +1,5 @@
+use crate::models::{AttributeValue, EventLog};
 use std::collections::HashMap;
-use crate::models::{EventLog, AttributeValue};
 
 pub struct EventLogActivityProjection {
     pub activities: Vec<String>,
@@ -16,9 +16,17 @@ impl From<&EventLog> for EventLogActivityProjection {
         for trace in &log.traces {
             let mut trace_acts: Vec<usize> = Vec::with_capacity(trace.events.len());
             for event in &trace.events {
-                let activity = event.attributes.iter()
+                let activity = event
+                    .attributes
+                    .iter()
                     .find(|a| a.key == "concept:name")
-                    .and_then(|a| if let AttributeValue::String(s) = &a.value { Some(s.as_str()) } else { None })
+                    .and_then(|a| {
+                        if let AttributeValue::String(s) = &a.value {
+                            Some(s.as_str())
+                        } else {
+                            None
+                        }
+                    })
                     .unwrap_or("No Activity");
 
                 let index = if let Some(&idx) = act_to_index.get(activity) {

@@ -1,15 +1,16 @@
-pub mod models;
 pub mod conformance;
 pub mod io;
-pub mod utils;
+pub mod jtbd_counterfactual_tests;
+pub mod jtbd_tests;
+pub mod models;
 pub mod reinforcement;
 pub mod reinforcement_tests;
-pub mod jtbd_tests;
-pub mod jtbd_counterfactual_tests;
+pub mod utils;
+pub use bcinr_core;
 
 // Re-export models for easier access
-pub use models::*;
 pub use conformance::*;
+pub use models::*;
 
 // Zero-heap, stack-allocated RL state for nanosecond-scale updates.
 #[derive(Clone, Copy, Eq, Hash, PartialEq, Debug)]
@@ -22,8 +23,8 @@ pub struct RlState {
     pub rework_ratio_q: i8,
     pub circuit_state: i8,
     pub cycle_phase: i8,
-    pub marking_mask: u64,      // BCINR bitset mask for Petri net marking
-    pub activities_hash: u64,   // Rolling FNV-1a hash of recent activities
+    pub marking_mask: u64,    // BCINR bitset mask for Petri net marking
+    pub activities_hash: u64, // Rolling FNV-1a hash of recent activities
 }
 
 #[derive(Clone, Copy, Eq, Hash, PartialEq, Debug)]
@@ -54,12 +55,14 @@ impl reinforcement::WorkflowAction for RlAction {
 
 // Minimal RlState impls for reinforcement trait
 impl reinforcement::WorkflowState for RlState {
-    fn features(&self) -> Vec<f32> { 
+    fn features(&self) -> Vec<f32> {
         // Optimized feature vector: only allocate if necessary for function approx.
         // For Q-Table, this is rarely called in the hot path.
-        vec![self.health_level as f32, self.marking_mask as f32] 
+        vec![self.health_level as f32, self.marking_mask as f32]
     }
-    fn is_terminal(&self) -> bool { self.health_level < 0 || self.health_level >= 5 }
+    fn is_terminal(&self) -> bool {
+        self.health_level < 0 || self.health_level >= 5
+    }
 }
 
 pub mod rl_state_serialization {
@@ -69,30 +72,47 @@ pub mod rl_state_serialization {
         pub state_values: HashMap<i64, Vec<f32>>,
     }
     #[allow(clippy::too_many_arguments)]
-    pub fn encode_rl_state_key(h: i8, _e: i8, _a: i8, _s: i8, _d: i8, _r: i8, _c: i8, _p: i8) -> i64 { h as i64 }
-    pub fn decode_rl_state_key(key: i64) -> (i8, i8, i8, i8, i8, i8, i8, i8) { (key as i8,0,0,0,0,0,0,0) }
+    pub fn encode_rl_state_key(
+        h: i8,
+        _e: i8,
+        _a: i8,
+        _s: i8,
+        _d: i8,
+        _r: i8,
+        _c: i8,
+        _p: i8,
+    ) -> i64 {
+        h as i64
+    }
+    pub fn decode_rl_state_key(key: i64) -> (i8, i8, i8, i8, i8, i8, i8, i8) {
+        (key as i8, 0, 0, 0, 0, 0, 0, 0)
+    }
 }
 pub mod automation;
 pub mod autonomic;
 
 // Vision 2030 Core Modules
-pub mod simd;
-pub mod probabilistic;
-pub mod powl;
-pub mod ml;
 pub mod agentic;
+pub mod b_yawl;
+pub mod ml;
 pub mod ocpm;
+pub mod powl;
+pub mod probabilistic;
+pub mod simd;
 
 // Re-export autonomic for easier access
-pub use autonomic::{AutonomicKernel, DefaultKernel, AutonomicState, AutonomicAction, AutonomicEvent, AutonomicResult, ActionType, ActionRisk};
+pub use autonomic::{
+    ActionRisk, ActionType, AutonomicAction, AutonomicEvent, AutonomicKernel, AutonomicResult,
+    AutonomicState, DefaultKernel,
+};
 
 pub mod benchmark;
 pub mod config;
-pub mod skeptic_harness;
 pub mod skeptic_contract;
+pub mod skeptic_harness;
 pub mod ref_models {
-    pub mod ref_petri_net;
     pub mod ref_event_log;
+    pub mod ref_petri_net;
 }
 pub mod ref_conformance {
     pub mod ref_token_replay;
@@ -161,9 +181,9 @@ pub mod dteam {
 
     pub mod orchestration {
         use super::core::KTier;
-        use crate::models::EventLog;
         use crate::models::petri_net::PetriNet;
-        use serde::{Serialize, Deserialize};
+        use crate::models::EventLog;
+        use serde::{Deserialize, Serialize};
 
         pub struct EngineBuilder {
             k_tier: Option<KTier>,
@@ -230,7 +250,11 @@ pub mod dteam {
         pub trait DteamDoctor {
             fn doctor(&self) -> String;
             fn budget(&self, log: &EventLog) -> String;
-            fn compare(&self, manifest_a: &ExecutionManifest, manifest_b: &ExecutionManifest) -> String;
+            fn compare(
+                &self,
+                manifest_a: &ExecutionManifest,
+                manifest_b: &ExecutionManifest,
+            ) -> String;
             fn reproduce(&self, manifest: &ExecutionManifest, log: &EventLog) -> String;
         }
 
@@ -241,7 +265,8 @@ pub mod dteam {
                  zero-heap hot path: verified\n\
                  boundary batching: recommended\n\
                  manifest mode: enabled\n\
-                 determinism profile: strict".to_string()
+                 determinism profile: strict"
+                    .to_string()
             }
 
             fn budget(&self, log: &EventLog) -> String {
@@ -253,47 +278,86 @@ pub mod dteam {
                 } else {
                     ("K1024", 128, "30–50 µs")
                 };
-                let required = if footprint > self.k_tier.capacity() { "yes" } else { "no" };
-                format!("recommended tier: {}\n\
+                let required = if footprint > self.k_tier.capacity() {
+                    "yes"
+                } else {
+                    "no"
+                };
+                format!(
+                    "recommended tier: {}\n\
                          estimated memory: {} KB\n\
                          expected epoch latency: {}\n\
                          partition required: {}\n\
-                         manifest size: 18 KB", tier, mem_kb, lat, required)
+                         manifest size: 18 KB",
+                    tier, mem_kb, lat, required
+                )
             }
 
             fn compare(&self, a: &ExecutionManifest, b: &ExecutionManifest) -> String {
-                let input = if a.input_log_hash == b.input_log_hash { "identical" } else { "different" };
+                let input = if a.input_log_hash == b.input_log_hash {
+                    "identical"
+                } else {
+                    "different"
+                };
                 let policy_trace = if a.action_sequence == b.action_sequence {
                     "identical".to_string()
                 } else {
-                    let div = a.action_sequence.iter().zip(b.action_sequence.iter())
+                    let div = a
+                        .action_sequence
+                        .iter()
+                        .zip(b.action_sequence.iter())
                         .position(|(x, y)| x != y)
-                        .unwrap_or(std::cmp::min(a.action_sequence.len(), b.action_sequence.len()));
+                        .unwrap_or(std::cmp::min(
+                            a.action_sequence.len(),
+                            b.action_sequence.len(),
+                        ));
                     format!("different at step {}", div)
                 };
-                let model_hash = if a.model_canonical_hash == b.model_canonical_hash { "identical" } else { "different" };
-                let verdict = if a.model_canonical_hash == b.model_canonical_hash { "stable" } else { "divergent" };
-                let equivalence = if a.model_canonical_hash == b.model_canonical_hash { "bisimulation-equivalent" } else { "non-equivalent" };
+                let model_hash = if a.model_canonical_hash == b.model_canonical_hash {
+                    "identical"
+                } else {
+                    "different"
+                };
+                let verdict = if a.model_canonical_hash == b.model_canonical_hash {
+                    "stable"
+                } else {
+                    "divergent"
+                };
+                let equivalence = if a.model_canonical_hash == b.model_canonical_hash {
+                    "bisimulation-equivalent"
+                } else {
+                    "non-equivalent"
+                };
 
-                format!("input: {}\n\
+                format!(
+                    "input: {}\n\
                          policy trace: {}\n\
                          model hash: {}\n\
                          artifact equivalence: {}\n\
-                         verdict: {}", input, policy_trace, model_hash, equivalence, verdict)
+                         verdict: {}",
+                    input, policy_trace, model_hash, equivalence, verdict
+                )
             }
 
             fn reproduce(&self, manifest: &ExecutionManifest, log: &EventLog) -> String {
                 let log_hash = log.canonical_hash();
                 let input_match = log_hash == manifest.input_log_hash;
-                
+
                 let result = self.run(log);
                 if let EngineResult::Success(_, new_manifest) = result {
                     let trace_match = new_manifest.action_sequence == manifest.action_sequence;
-                    let model_match = new_manifest.model_canonical_hash == manifest.model_canonical_hash;
-                    let mdl_match = (new_manifest.mdl_score - manifest.mdl_score).abs() < f64::EPSILON;
-                    
-                    let verdict = if input_match && trace_match && model_match && mdl_match { "VERIFIED" } else { "FAILED" };
-                    format!("input_hash: {}\n\
+                    let model_match =
+                        new_manifest.model_canonical_hash == manifest.model_canonical_hash;
+                    let mdl_match =
+                        (new_manifest.mdl_score - manifest.mdl_score).abs() < f64::EPSILON;
+
+                    let verdict = if input_match && trace_match && model_match && mdl_match {
+                        "VERIFIED"
+                    } else {
+                        "FAILED"
+                    };
+                    format!(
+                        "input_hash: {}\n\
                              policy_trace: {}\n\
                              model_hash: {}\n\
                              mdl_score: {}\n\
@@ -344,14 +408,15 @@ pub mod dteam {
 
                 let config = crate::config::AutonomicConfig::load("dteam.toml").unwrap_or_default();
                 let start_time = std::time::Instant::now();
-                
+
                 // Use reward weights from config
                 let beta = *config.rl.reward_weights.get("fitness").unwrap_or(&0.5);
                 let lambda = *config.rl.reward_weights.get("soundness").unwrap_or(&0.01);
-                
-                let (net, trajectory) = crate::automation::train_with_provenance(log, &config, beta, lambda);
+
+                let (net, trajectory) =
+                    crate::automation::train_with_provenance(log, &config, beta, lambda);
                 let execution_time_ns = start_time.elapsed().as_nanos() as u64;
-                
+
                 let manifest = ExecutionManifest {
                     input_log_hash: log.canonical_hash(),
                     action_sequence: trajectory,
@@ -360,7 +425,7 @@ pub mod dteam {
                     k_tier: format!("{:?}", self.k_tier),
                     latency_ns: execution_time_ns,
                 };
-                
+
                 EngineResult::Success(net, manifest)
             }
 
@@ -372,7 +437,7 @@ pub mod dteam {
         #[cfg(test)]
         mod tests {
             use super::*;
-            use crate::models::{EventLog, Trace, Event};
+            use crate::models::{Event, EventLog, Trace};
 
             #[test]
             fn test_engine_builder() {
@@ -380,7 +445,7 @@ pub mod dteam {
                     .with_k_tier(128)
                     .with_reward(0.8, 0.05)
                     .build();
-                
+
                 assert_eq!(engine.k_tier, KTier::K128);
                 assert_eq!(engine.beta, 0.8);
                 assert_eq!(engine.lambda, 0.05);
@@ -388,10 +453,8 @@ pub mod dteam {
 
             #[test]
             fn test_partition_trigger() {
-                let engine = Engine::builder()
-                    .with_k_tier(64)
-                    .build();
-                
+                let engine = Engine::builder().with_k_tier(64).build();
+
                 let mut log = EventLog::default();
                 let mut trace = Trace::default();
                 for i in 0..100 {
@@ -400,7 +463,11 @@ pub mod dteam {
                 log.add_trace(trace);
 
                 let result = engine.run(&log);
-                if let EngineResult::PartitionRequired { required, configured } = result {
+                if let EngineResult::PartitionRequired {
+                    required,
+                    configured,
+                } = result
+                {
                     assert_eq!(required, 100);
                     assert_eq!(configured, 64);
                 } else {

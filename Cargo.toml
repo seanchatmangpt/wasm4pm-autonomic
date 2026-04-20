@@ -6,9 +6,14 @@ license = "BUSL-1.1"
 description = "Deterministic Process Intelligence Engine (dteam) - Digital Team"
 
 [workspace]
+members = [
+    "crates/*",
+]
 
 [dependencies]
 bcinr = "26.4.18"
+bcinr-core = { path = "crates/bcinr-core" }
+bcinr-extended = { path = "crates/bcinr-extended" }
 rustc-hash = "1.1.0"
 fastrand = "2.1"
 itertools = "0.12"
@@ -33,9 +38,14 @@ process_mining = "0.5.4"
 dhat = "0.3.3"
 iai-callgrind = "0.11.0"
 divan = "0.1.14"
+proptest = "1.2.0"
 
 [lib]
 path = "src/lib.rs"
+
+[[bin]]
+name = "ostar_bridge"
+path = "src/bin/ostar_bridge.rs"
 
 [[bench]]
 name = "reinforcement_bench"
