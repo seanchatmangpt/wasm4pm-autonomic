@@ -1,21 +1,17 @@
-# DOD_VERIFICATION: Deterministic Kernel μ Verification
+# DOD_VERIFICATION: Formal Ontology Closure & Activity Footprint Boundaries
 
-## Objective
-Verify the deterministic RL execution kernel μ property ($Var(\tau) = 0$).
-
-## Validation Summary
-- **ADMISSIBILITY**: Verified. No unreachable states detected in the kernel's state transition logic (`transition` function).
-- **MINIMALITY**: Structural state is constrained to $Var(\tau) = 0$ via the newly implemented `test_μ_kernel_determinism` property test.
-- **PERFORMANCE**: Branchless execution is maintained; the kernel logic remains free of data-dependent branching and heap allocations.
-- **PROVENANCE**: The engine's `ExecutionManifest` mechanism is active and integrated with the training provenance.
-- **RIGOR**: Property-based tests (proptest) have been implemented and validated, asserting zero-variancy across state space.
+## Overview
+This report confirms the implementation of strict activity footprint boundaries in the engine to enforce operational admissibility.
 
 ## Verification Checklist
-- [x] Proptest suite running: `proptest_kernel_verification`
-- [x] Zero-heap compliance confirmed for hot path
-- [x] Manifest compliance checked in `Engine::run`
-- [x] `dteam.toml` integration verified
-- [x] `AGENTS.md` updated with μ-verification requirements
+- [x] **Admissibility**: Enforced via branchless guards in `AutonomicKernel::execute`. Proptests ensure successful/failed execution logic strictly matches the input admissibility signal.
+- [x] **Minimality**: Structural soundness remains compliant with the MDL requirement defined in the thesis.
+- [x] **Performance**: Maintained zero-heap, branchless hot-path using `crate::utils::bitset::select_u64`.
+- [x] **Provenance**: Manifest generation `manifest()` in `DefaultKernel` ensures integrity hashes are embedded in the output.
+- [x] **Rigor**: Added property-based tests in `src/autonomic/kernel.rs` to enforce admissibility boundaries.
+
+## Admissibility Logic
+The engine now correctly uses `crate::utils::bitset::select_u64(is_admissible as u64, 1, 0)` for branching-free execution control, ensuring the `Var(τ) = 0` requirement. Structural soundness checks are enforced as a precondition for critical-risk actions within the autonomic loop.
 
 ## Conclusion
-The kernel demonstrates robust μ-determinism, satisfying all DDS paradigm requirements.
+The engine satisfies all formal ontology requirements for the current phase.
