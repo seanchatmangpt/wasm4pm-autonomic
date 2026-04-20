@@ -7,3 +7,4 @@ pub fn to_js_str<T: Serialize>(value: &T) -> Result<wasm_bindgen::JsValue, wasm_
 pub mod dense_kernel;
 pub mod math;
 pub mod scc;
+pub mod perturbation;

@@ -71,8 +71,8 @@ fn bench_real_data_processing(c: &mut Criterion) {
     let actions = load_real_actions();
     println!("Loaded {} actions from real data", actions.len());
 
-    let q = QLearning::<RlState, RlAction>::new();
-    let sarsa = SARSAAgent::<RlState, RlAction>::new();
+    let mut q = QLearning::<RlState, RlAction>::new();
+    let mut sarsa = SARSAAgent::<RlState, RlAction>::new();
 
     let mut group = c.benchmark_group("RealDataProcessing");
 

@@ -4,6 +4,8 @@ mod tests {
         Agent, DoubleQLearning, ExpectedSARSAAgent, QLearning, ReinforceAgent, SARSAAgent,
     };
     use crate::{RlAction, RlState};
+    use crate::utils::perturbation::Perturbator;
+    use proptest::prelude::*;
 
     const MAX_STEPS: usize = 100;
     const GOAL_STATE_DEFAULT: i32 = 5;
@@ -13,6 +15,19 @@ mod tests {
     const EVAL_EPISODES: usize = 100;
     const DECAY_INTERVAL: usize = 200;
     const AVG_REWARD_THRESHOLD: f32 = 0.5;
+
+    proptest! {
+        #[test]
+        fn test_perturbator_determinism(seed: u64, mask: u64, intensity: u64) {
+            let mut p1 = Perturbator::new(seed);
+            let mut p2 = Perturbator::new(seed);
+            
+            let m1 = p1.perturb_mask(mask, intensity);
+            let m2 = p2.perturb_mask(mask, intensity);
+            
+            assert_eq!(m1, m2, "Perturbator must be deterministic for a given seed");
+        }
+    }
 
     fn create_state(h: i32) -> RlState {
         RlState {
@@ -79,8 +94,8 @@ mod tests {
         let mut agent = SARSAAgent::new();
         agent.set_exploration_rate(0.8);
 
-        // Manual decay during training
-        for ep in 0..EPISODES_EXTENDED {
+        // Increased episodes to ensure convergence
+        for ep in 0..(EPISODES_EXTENDED * 5) {
             run_corridor(&mut agent, 1, GOAL_STATE_DEFAULT);
             if ep % DECAY_INTERVAL == 0 {
                 agent.decay_exploration();

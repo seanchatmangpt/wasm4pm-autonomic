@@ -14,7 +14,7 @@ fn main() {
     println!("Starting Zero-Allocation Benchmark...");
 
     // 1. RL Hot Path
-    let agent = SARSAAgent::<RlState, RlAction>::new();
+    let mut agent = SARSAAgent::<RlState, RlAction>::new();
     let state = RlState {
         health_level: 1,
         event_rate_q: 0,
