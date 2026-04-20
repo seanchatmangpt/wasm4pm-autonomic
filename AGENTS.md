@@ -89,7 +89,8 @@ Notable public items:
 
 ### Utilities — `src/utils/`
 
-- **`dense_kernel.rs`**: **`fnv1a_64`**, **`PackedKeyTable`**, dense ID errors; primary hash spine for nets and logs.
+- **`dense_kernel.rs`**: **`fnv1a_64`**, **`PackedKeyTable`**, **`DenseIndex`** (collision-guarded mapping); primary hash spine for nets and logs.
+- **`dense_index_proptests.rs`**: Property tests for **`DenseIndex`** collision detection.
 - **`bitset.rs`**, **`perturbation.rs`**, **`simd/swar.rs`**: low-level and perturbation helpers.
 - **`mod.rs`**: **`to_js_str`** bridges serde types to **`wasm_bindgen::JsValue`** via **`serde_wasm_bindgen`**.
 

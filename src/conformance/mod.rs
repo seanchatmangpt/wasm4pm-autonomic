@@ -1,6 +1,6 @@
 use crate::models::petri_net::{Arc, PetriNet};
 use crate::models::{EventLog, Trace};
-use crate::utils::dense_kernel::{fnv1a_64, PackedKeyTable};
+use crate::utils::dense_kernel::{fnv1a_64, PackedKeyTable, DenseIndex, NodeKind};
 use serde::{Deserialize, Serialize};
 use std::hash::{Hash, Hasher};
 
@@ -28,9 +28,31 @@ pub struct ProjectedLog {
 
 impl From<&EventLog> for ProjectedLog {
     fn from(log: &EventLog) -> Self {
-        let mut act_to_idx = PackedKeyTable::new();
-        let mut activities = Vec::new();
+        let mut unique_activities = std::collections::HashSet::new();
+        for trace in &log.traces {
+            for event in &trace.events {
+                let activity = event
+                    .attributes
+                    .iter()
+                    .find(|a| a.key == "concept:name")
+                    .and_then(|a| {
+                        if let crate::models::AttributeValue::String(s) = &a.value {
+                            Some(s.as_str())
+                        } else {
+                            None
+                        }
+                    })
+                    .unwrap_or("No Activity");
+                unique_activities.insert(activity.to_string());
+            }
+        }
+
+        let activity_index = DenseIndex::compile(
+            unique_activities.into_iter().map(|s| (s, NodeKind::Generic))
+        ).expect("Collision in activity names");
+
         let mut traces_map = PackedKeyTable::new();
+        let activities = activity_index.symbols().to_vec();
 
         for trace in &log.traces {
             let mut trace_acts = Vec::with_capacity(trace.events.len());
@@ -48,16 +70,7 @@ impl From<&EventLog> for ProjectedLog {
                     })
                     .unwrap_or("No Activity");
 
-                let h = fnv1a_64(activity.as_bytes());
-                let index = if let Some(&idx) = act_to_idx.get(h) {
-                    idx
-                } else {
-                    let idx = activities.len();
-                    activities.push(activity.to_string());
-                    act_to_idx.insert(h, activity.to_string(), idx);
-                    idx
-                };
-                trace_acts.push(index);
+                trace_acts.push(activity_index.dense_id_by_symbol(activity).unwrap() as usize);
             }
 
             let mut hasher = rustc_hash::FxHasher::default();

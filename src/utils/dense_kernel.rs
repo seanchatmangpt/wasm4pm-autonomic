@@ -149,6 +149,14 @@ impl DenseIndex {
         self.symbols.is_empty()
     }
     #[inline]
+    pub fn symbols(&self) -> &[String] {
+        &self.symbols
+    }
+    #[inline]
+    pub fn dense_id_by_symbol(&self, symbol: &str) -> Option<DenseId> {
+        self.dense_id(symbol)
+    }
+    #[inline]
     pub fn dense_id(&self, symbol: &str) -> Option<DenseId> {
         self.dense_id_by_hash(fnv1a_64(symbol.as_bytes()))
     }
