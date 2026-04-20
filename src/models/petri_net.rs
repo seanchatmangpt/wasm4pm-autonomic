@@ -52,34 +52,25 @@ impl PetriNet {
             return false;
         }
 
-        let id_to_index = self.build_node_index();
-        let place_count = self.places.len();
-        let total_nodes = place_count + self.transitions.len();
-        let num_words = total_nodes.div_ceil(64);
-
-        let mut in_degrees = vec![0u64; num_words];
-        let mut out_degrees = vec![0u64; num_words];
+        use rustc_hash::FxHashSet;
+        let mut has_incoming = FxHashSet::default();
+        let mut has_outgoing = FxHashSet::default();
 
         for arc in &self.arcs {
-            if let (Some(&from_idx), Some(&to_idx)) = (
-                id_to_index.get(fnv1a_64(arc.from.as_bytes())),
-                id_to_index.get(fnv1a_64(arc.to.as_bytes())),
-            ) {
-                out_degrees[from_idx / 64] |= 1u64 << (from_idx % 64);
-                in_degrees[to_idx / 64] |= 1u64 << (to_idx % 64);
-            }
+            has_outgoing.insert(&arc.from);
+            has_incoming.insert(&arc.to);
         }
 
         let mut source_places_count = 0;
         let mut sink_places_count = 0;
 
-        for i in 0..place_count {
-            let has_in = (in_degrees[i / 64] & (1u64 << (i % 64))) != 0;
-            let has_out = (out_degrees[i / 64] & (1u64 << (i % 64))) != 0;
-            if !has_in {
+        for p in &self.places {
+            let in_bound = has_incoming.contains(&p.id);
+            let out_bound = has_outgoing.contains(&p.id);
+            if !in_bound {
                 source_places_count += 1;
             }
-            if !has_out {
+            if !out_bound {
                 sink_places_count += 1;
             }
         }
@@ -88,10 +79,10 @@ impl PetriNet {
             return false;
         }
 
-        for i in place_count..total_nodes {
-            let has_in = (in_degrees[i / 64] & (1u64 << (i % 64))) != 0;
-            let has_out = (out_degrees[i / 64] & (1u64 << (i % 64))) != 0;
-            if !has_in || !has_out {
+        for t in &self.transitions {
+            let in_bound = has_incoming.contains(&t.id);
+            let out_bound = has_outgoing.contains(&t.id);
+            if !in_bound || !out_bound {
                 return false;
             }
         }
@@ -122,23 +113,29 @@ impl PetriNet {
     }
 
     /// Verifies the structural bounds of the workflow net state equation.
+    /// A transition must have at least one input place and one output place.
     pub fn verifies_state_equation_calculus(&self) -> bool {
         if !self.is_structural_workflow_net() {
             return false;
         }
-        let w = self.incidence_matrix();
-        for t_col in 0..self.transitions.len() {
-            let mut consumes = false;
-            let mut produces = false;
-            for row in w.iter().take(self.places.len()) {
-                if row[t_col] < 0 {
-                    consumes = true;
+
+        let place_ids: std::collections::HashSet<_> = self.places.iter().map(|p| &p.id).collect();
+
+        for t in &self.transitions {
+            let mut has_input = false;
+            let mut has_output = false;
+            for arc in &self.arcs {
+                if arc.to == t.id && place_ids.contains(&arc.from) {
+                    has_input = true;
                 }
-                if row[t_col] > 0 {
-                    produces = true;
+                if arc.from == t.id && place_ids.contains(&arc.to) {
+                    has_output = true;
+                }
+                if has_input && has_output {
+                    break;
                 }
             }
-            if !consumes || !produces {
+            if !has_input || !has_output {
                 return false;
             }
         }

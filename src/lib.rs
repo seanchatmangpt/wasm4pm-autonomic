@@ -189,6 +189,7 @@ pub mod dteam {
             beta: f32,
             lambda: f32,
             deterministic: bool,
+            config: Option<crate::config::AutonomicConfig>,
         }
 
         impl EngineBuilder {
@@ -198,6 +199,7 @@ pub mod dteam {
                     beta: 0.5,
                     lambda: 0.01,
                     deterministic: true,
+                    config: None,
                 }
             }
 
@@ -224,11 +226,15 @@ pub mod dteam {
             }
 
             pub fn build(self) -> Engine {
+                let config = self.config.unwrap_or_else(|| {
+                    crate::config::AutonomicConfig::load("dteam.toml").unwrap_or_default()
+                });
                 Engine {
                     k_tier: self.k_tier.unwrap_or(KTier::K256),
                     beta: self.beta,
                     lambda: self.lambda,
                     deterministic: self.deterministic,
+                    config,
                 }
             }
         }
@@ -244,6 +250,7 @@ pub mod dteam {
             pub beta: f32,
             pub lambda: f32,
             pub deterministic: bool,
+            pub config: crate::config::AutonomicConfig,
         }
 
         pub trait DteamDoctor {
@@ -395,7 +402,11 @@ pub mod dteam {
             }
 
             pub fn run(&self, log: &EventLog) -> EngineResult {
-                let required_k = log.activity_footprint();
+                let start_time = std::time::Instant::now();
+                
+                // Pre-project log once to avoid redundant scans
+                let projected = crate::conformance::ProjectedLog::from(log);
+                let required_k = projected.activities.len();
                 let target_tier = self.k_tier;
 
                 if required_k > target_tier.capacity() {
@@ -405,15 +416,13 @@ pub mod dteam {
                     };
                 }
 
-                let config = crate::config::AutonomicConfig::load("dteam.toml").unwrap_or_default();
-                let start_time = std::time::Instant::now();
-
-                // Use reward weights from config
-                let beta = *config.rl.reward_weights.get("fitness").unwrap_or(&0.5);
-                let lambda = *config.rl.reward_weights.get("soundness").unwrap_or(&0.01);
+                // Use reward weights from cached config
+                let beta = *self.config.rl.reward_weights.get("fitness").unwrap_or(&0.5);
+                let lambda = *self.config.rl.reward_weights.get("soundness").unwrap_or(&0.01);
 
                 let (net, trajectory) =
-                    crate::automation::train_with_provenance(log, &config, beta, lambda);
+                    crate::automation::train_with_provenance_projected(&projected, &self.config, beta, lambda);
+                
                 let execution_time_ns = start_time.elapsed().as_nanos() as u64;
 
                 let manifest = ExecutionManifest {
