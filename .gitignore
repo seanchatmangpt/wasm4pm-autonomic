@@ -5,3 +5,4 @@
 
 # Accidental home-path copies (must never be tracked)
 /Users/
+.wreckit/
