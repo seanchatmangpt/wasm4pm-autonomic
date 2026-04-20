@@ -9,40 +9,45 @@ use std::thread;
 use std::time::Instant;
 
 use opentelemetry::{global, KeyValue};
+use opentelemetry::trace::TracerProvider as _;
 use opentelemetry_otlp::WithExportConfig;
-use opentelemetry_sdk::{runtime, trace as sdktrace, Resource};
+use opentelemetry_sdk::trace::SdkTracerProvider;
+use opentelemetry_sdk::Resource;
 use tracing::{debug, error, info, info_span, warn};
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 
-fn init_telemetry() -> anyhow::Result<sdktrace::Tracer> {
-    let tracer = opentelemetry_otlp::new_pipeline()
-        .tracing()
-        .with_exporter(
-            opentelemetry_otlp::new_exporter()
-                .tonic()
-                .with_endpoint("http://localhost:4317"), // Default OTLP endpoint
-        )
-        .with_trace_config(
-            sdktrace::config().with_resource(Resource::new(vec![KeyValue::new(
-                "service.name",
-                "ralph-orchestrator",
-            )])),
-        )
-        .install_batch(runtime::Tokio)?;
+fn init_telemetry() -> anyhow::Result<SdkTracerProvider> {
+    let exporter = opentelemetry_otlp::SpanExporter::builder()
+        .with_tonic()
+        .with_endpoint("http://localhost:4317")
+        .build()?;
+
+    let provider = SdkTracerProvider::builder()
+        .with_batch_exporter(exporter)
+        .with_resource(Resource::builder().with_attributes(vec![KeyValue::new(
+            "service.name",
+            "ralph-orchestrator",
+        )]).build())
+        .build();
+
+    global::set_tracer_provider(provider.clone());
+
+    let tracer = provider.tracer("ralph-orchestrator");
+    let telemetry_layer = tracing_opentelemetry::layer().with_tracer(tracer);
 
     tracing_subscriber::registry()
         .with(tracing_subscriber::EnvFilter::from_default_env())
-        .with(tracing_opentelemetry::layer().with_tracer(tracer.clone()))
         .with(tracing_subscriber::fmt::layer())
+        .with(telemetry_layer)
         .init();
 
-    Ok(tracer)
+    Ok(provider)
 }
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let _tracer = init_telemetry().ok(); // Gracefully handle if no OTel collector
+    let provider = init_telemetry().ok(); // Gracefully handle if no OTel collector
     let _main_span = info_span!("ralph_main").entered();
 
     if cfg!(debug_assertions) {
@@ -59,9 +64,7 @@ async fn main() -> anyhow::Result<()> {
         }
     }
 
-    // gemini-3-flash-preview as requested (mapped to gemini-2.0-flash-exp or similar high tier if 3 doesn't exist yet, 
-    // but we will use the string provided or gemini-2.0-flash-exp which is common for "latest flash")
-    let mut model = Some("gemini-2.0-flash-exp".to_string()); 
+    let mut model = Some("gemini-3-flash-preview".to_string()); 
     if let Some(pos) = args.iter().position(|a| a == "--model") {
         if let Some(val) = args.get(pos + 1) {
             model = Some(val.clone());
@@ -167,11 +170,13 @@ async fn main() -> anyhow::Result<()> {
         }
     }
 
-    if cfg!(debug_assertions) {
-        info!("\n--- All ideas processed! ---");
-    }
-    global::shutdown_tracer_provider();
-    Ok(())
+if cfg!(debug_assertions) {
+    info!("\n--- All ideas processed! ---");
+}
+
+if let Some(p) = provider {
+    p.force_flush();
+}    Ok(())
 }
 
 fn process_idea(
