@@ -104,7 +104,7 @@ impl<S: WorkflowState, A: WorkflowAction> Default for SARSAAgent<S, A> {
 }
 
 // Serialization support for SARSAAgent
-impl SARSAAgent<crate::RlState, crate::RlAction> {
+impl SARSAAgent<crate::RlState<1>, crate::RlAction> {
     #[allow(dead_code)]
     pub fn export_as_serialized(
         &self,
@@ -141,13 +141,14 @@ impl SARSAAgent<crate::RlState, crate::RlAction> {
         table: crate::rl_state_serialization::SerializedAgentQTable,
     ) {
         use crate::rl_state_serialization::decode_rl_state_key;
+        use crate::utils::dense_kernel::KBitSet;
 
         let mut q_table = self.q_table.borrow_mut();
         q_table.clear();
 
         for (key, q_values) in table.state_values {
             let (h, e, a, s, d, r, c, p) = decode_rl_state_key(key);
-            let state = crate::RlState {
+            let state = crate::RlState::<1> {
                 health_level: h,
                 event_rate_q: e,
                 activity_count_q: a,
@@ -156,7 +157,7 @@ impl SARSAAgent<crate::RlState, crate::RlAction> {
                 rework_ratio_q: r,
                 circuit_state: c,
                 cycle_phase: p,
-                marking_mask: 0,
+                marking_mask: KBitSet::zero(),
                 activities_hash: 0,
             };
             let mut q_array = [0.0; ACTION_MAX_LIMIT];

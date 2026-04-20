@@ -173,7 +173,7 @@ impl DenseIndex {
 // K-BITSET
 // ============================================================================
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct KBitSet<const WORDS: usize> {
     pub words: [u64; WORDS],
 }

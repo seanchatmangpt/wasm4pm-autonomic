@@ -14,7 +14,7 @@ pub use models::*;
 
 // Zero-heap, stack-allocated RL state for nanosecond-scale updates.
 #[derive(Clone, Copy, Eq, Hash, PartialEq, Debug)]
-pub struct RlState {
+pub struct RlState<const WORDS: usize> {
     pub health_level: i8,
     pub event_rate_q: i8,
     pub activity_count_q: i8,
@@ -23,8 +23,8 @@ pub struct RlState {
     pub rework_ratio_q: i8,
     pub circuit_state: i8,
     pub cycle_phase: i8,
-    pub marking_mask: u64,    // BCINR bitset mask for Petri net marking
-    pub activities_hash: u64, // Rolling FNV-1a hash of recent activities
+    pub marking_mask: utils::dense_kernel::KBitSet<WORDS>,
+    pub activities_hash: u64,
 }
 
 #[derive(Clone, Copy, Eq, Hash, PartialEq, Debug)]
@@ -54,11 +54,13 @@ impl reinforcement::WorkflowAction for RlAction {
 }
 
 // Minimal RlState impls for reinforcement trait
-impl reinforcement::WorkflowState for RlState {
+impl<const WORDS: usize> reinforcement::WorkflowState for RlState<WORDS> {
     fn features(&self) -> [f32; 16] {
         let mut f = [0.0; 16];
         f[0] = self.health_level as f32;
-        f[1] = self.marking_mask as f32;
+        for i in 0..WORDS.min(15) {
+            f[i + 1] = self.marking_mask.words[i] as f32;
+        }
         f
     }
     fn is_terminal(&self) -> bool {

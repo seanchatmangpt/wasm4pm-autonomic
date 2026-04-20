@@ -3,6 +3,7 @@ mod tests {
     use crate::reinforcement::{
         Agent, DoubleQLearning, ExpectedSARSAAgent, QLearning, ReinforceAgent, SARSAAgent,
     };
+    use crate::utils::dense_kernel::KBitSet;
     use crate::{RlAction, RlState};
     use crate::utils::perturbation::Perturbator;
     use proptest::prelude::*;
@@ -29,8 +30,8 @@ mod tests {
         }
     }
 
-    fn create_state(h: i32) -> RlState {
-        RlState {
+    fn create_state(h: i32) -> RlState<1> {
+        RlState::<1> {
             health_level: h as i8,
             event_rate_q: 0,
             activity_count_q: 0,
@@ -39,7 +40,7 @@ mod tests {
             rework_ratio_q: 0,
             circuit_state: 0,
             cycle_phase: 0,
-            marking_mask: 0,
+            marking_mask: KBitSet::zero(),
             activities_hash: 0,
         }
     }
@@ -47,7 +48,7 @@ mod tests {
     /// A simple corridor environment where the agent starts at 0 and must reach GOAL_STATE.
     /// State is represented by health_level.
     /// Actions: Idle (Stay), Optimize (Right), Rework (Left).
-    fn run_corridor<T: Agent<RlState, RlAction>>(
+    fn run_corridor<T: Agent<RlState<1>, RlAction>>(
         agent: &mut T,
         episodes: usize,
         goal_state: i32,
@@ -170,7 +171,7 @@ mod tests {
 
     #[test]
     fn test_double_q_serialization_roundtrip() {
-        let mut agent = DoubleQLearning::<RlState, RlAction>::new();
+        let mut agent = DoubleQLearning::<RlState<1>, RlAction>::new();
         let state = create_state(42);
 
         for _ in 0..100 {
@@ -178,7 +179,7 @@ mod tests {
         }
 
         let serialized = agent.export_as_serialized(3);
-        let mut new_agent = DoubleQLearning::<RlState, RlAction>::new();
+        let mut new_agent = DoubleQLearning::<RlState<1>, RlAction>::new();
         new_agent.restore_from_serialized(serialized);
 
         new_agent.set_exploration_rate(0.0);

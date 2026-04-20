@@ -144,7 +144,7 @@ impl<S: WorkflowState, A: WorkflowAction> Default for DoubleQLearning<S, A> {
 }
 
 // Serialization support for DoubleQLearning
-impl DoubleQLearning<crate::RlState, crate::RlAction> {
+impl DoubleQLearning<crate::RlState<1>, crate::RlAction> {
     #[allow(dead_code)]
     pub fn export_as_serialized(
         &self,
@@ -181,6 +181,7 @@ impl DoubleQLearning<crate::RlState, crate::RlAction> {
         table: crate::rl_state_serialization::SerializedAgentQTable,
     ) {
         use crate::rl_state_serialization::decode_rl_state_key;
+        use crate::utils::dense_kernel::KBitSet;
 
         let mut qa = self.q_a.borrow_mut();
         let mut qb = self.q_b.borrow_mut();
@@ -189,7 +190,7 @@ impl DoubleQLearning<crate::RlState, crate::RlAction> {
 
         for (key, q_values) in table.state_values {
             let (h, e, a, s, d, r, c, p) = decode_rl_state_key(key);
-            let state = crate::RlState {
+            let state = crate::RlState::<1> {
                 health_level: h,
                 event_rate_q: e,
                 activity_count_q: a,
@@ -198,7 +199,7 @@ impl DoubleQLearning<crate::RlState, crate::RlAction> {
                 rework_ratio_q: r,
                 circuit_state: c,
                 cycle_phase: p,
-                marking_mask: 0,
+                marking_mask: KBitSet::zero(),
                 activities_hash: 0,
             };
             let mut q_array = [0.0; ACTION_MAX_LIMIT];

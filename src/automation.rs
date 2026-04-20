@@ -45,8 +45,9 @@ pub fn train_with_provenance_projected(
     _beta: f32,
     _lambda: f32,
 ) -> (PetriNet, Vec<u8>) {
+    use crate::utils::dense_kernel::KBitSet;
     let mut model = PetriNet::default();
-    let agent: QLearning<RlState, RlAction> = QLearning::with_hyperparams(
+    let agent: QLearning<RlState<1>, RlAction> = QLearning::with_hyperparams(
         config.rl.learning_rate,
         config.rl.discount_factor,
         config.rl.exploration_rate,
@@ -66,8 +67,8 @@ pub fn train_with_provenance_projected(
             break;
         }
 
-        let state = RlState {
-            marking_mask: 0,
+        let state = RlState::<1> {
+            marking_mask: KBitSet::zero(),
             activities_hash: 0,
             health_level: 0,
             event_rate_q: 0,

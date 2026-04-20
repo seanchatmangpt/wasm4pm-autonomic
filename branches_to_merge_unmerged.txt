@@ -1,0 +1,10 @@
+  wreckit/blue-river-flow-stability-implement-variance-flattening-logic-in-the-adaptive-kernel
+  wreckit/branchless-state-equation-calculus-eliminate-conditional-logic-in-petrinet-verification
+  wreckit/deterministic-perturbation-stable-noise-generation-for-adversarial-robustness-testing
+  wreckit/deterministic-sarsa-refactor-sarsa-agent-to-eliminate-stochastic-exploration
+  wreckit/execution-manifest-replay-tooling-to-perfectly-reproduce-n-from-l-and-π
+  wreckit/k-tier-scalability-optimize-bitset-alignment-for-k-1024-and-beyond
+  wreckit/ontology-mapping-automated-activity-to-index-mapping-with-fnv-1a-collision-guards
+  wreckit/test-idea-ensure-bitmask-alignment
+  wreckit/zero-copy-xes-parsing-optimize-xesreader-to-use-stack-allocated-buffers
+  wreckit/zero-heap-packedkeytable-eliminate-all-latent-allocations-in-pkt-hot-paths
