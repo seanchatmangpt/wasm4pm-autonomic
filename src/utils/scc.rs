@@ -57,9 +57,7 @@ pub fn compute_sccs_generic<const WORDS: usize>(adj: &[KBitSet<WORDS>]) -> Vec<K
     }
 
     for i in 0..max_nodes {
-        // Only start from nodes that have at least one edge or are part of the footprint
-        // The caller in powl/discovery.rs already filters tdfg, but we double check
-        if indices[i] == -1 && (!adj[i].is_empty() || (0..max_nodes).any(|prev| adj[prev].contains(i))) {
+        if indices[i] == -1 {
             strong_connect(i, adj, &mut index, &mut stack, &mut on_stack, &mut indices, &mut lowlink, &mut sccs, max_nodes);
         }
     }
