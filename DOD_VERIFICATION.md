@@ -1,17 +1,14 @@
-# DOD_VERIFICATION: Formal Ontology Closure & Activity Footprint Boundaries
+# DOD_VERIFICATION.md
 
-## Overview
-This report confirms the implementation of strict activity footprint boundaries in the engine to enforce operational admissibility.
+## Status: VERIFIED
+- **ADMISSIBILITY**: Property tests verify safe transitions for static-capacity tables.
+- **MINIMALITY**: No runtime allocations in StaticPackedKeyTable (stack-allocated).
+- **PERFORMANCE**: Zero-heap hot path achieved for static capacities.
+- **PROVENANCE**: Manifest updated via core kernel refactoring.
+- **RIGOR**: Proptests successfully exercised `StaticPackedKeyTable` in `src/utils/static_pkt_tests.rs`.
 
-## Verification Checklist
-- [x] **Admissibility**: Enforced via branchless guards in `AutonomicKernel::execute`. Proptests ensure successful/failed execution logic strictly matches the input admissibility signal.
-- [x] **Minimality**: Structural soundness remains compliant with the MDL requirement defined in the thesis.
-- [x] **Performance**: Maintained zero-heap, branchless hot-path using `crate::utils::bitset::select_u64`.
-- [x] **Provenance**: Manifest generation `manifest()` in `DefaultKernel` ensures integrity hashes are embedded in the output.
-- [x] **Rigor**: Added property-based tests in `src/autonomic/kernel.rs` to enforce admissibility boundaries.
-
-## Admissibility Logic
-The engine now correctly uses `crate::utils::bitset::select_u64(is_admissible as u64, 1, 0)` for branching-free execution control, ensuring the `Var(τ) = 0` requirement. Structural soundness checks are enforced as a precondition for critical-risk actions within the autonomic loop.
-
-## Conclusion
-The engine satisfies all formal ontology requirements for the current phase.
+### Implementation Summary
+1.  Implemented `StaticPackedKeyTable` in `src/utils/static_pkt.rs`.
+2.  Verified via `proptest` in `src/utils/static_pkt_tests.rs`.
+3.  Exposed in `src/utils/mod.rs`.
+4.  Ready for agent-specific integration in hot paths.
