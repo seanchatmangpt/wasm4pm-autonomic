@@ -1,11 +1,13 @@
 use dteam::autonomic::{AutonomicEvent, AutonomicKernel, DefaultKernel};
 use std::thread;
 use std::time::{Duration, SystemTime};
+use log::{debug, info, warn};
 
 fn main() {
+    env_logger::init();
     let mut kernel = DefaultKernel::new();
-    println!("🚀 Starting dteam Autonomic Runner...");
-    println!("Initial System State: {}\n", kernel.infer());
+    info!("🚀 Starting dteam Autonomic Runner...");
+    debug!("Initial System State: {}\n", kernel.infer());
 
     let simulated_events = vec![
         ("sensor_alpha", "Trace packet received (ID: 1024)"),
@@ -28,7 +30,7 @@ fn main() {
             timestamp: SystemTime::now(),
         };
 
-        println!("📥 {}", event);
+        info!("📥 Processing event: {}", event);
 
         let state = kernel.infer();
         let actions = kernel.propose(&state);
@@ -41,7 +43,7 @@ fn main() {
             } else {
                 "❌ REJECTED"
             };
-            println!("  {} -> {}", action, status);
+            info!("  Action: {} -> {}", action.parameters, status);
 
             if accepted {
                 results.push(kernel.execute(action));
@@ -49,13 +51,14 @@ fn main() {
         }
 
         if results.is_empty() {
-            println!("  ℹ️  No actions were executed.");
+            warn!("  ℹ️  No actions were executed for event from {}.", event.source);
         } else {
             for res in &results {
-                println!("  {}", kernel.manifest(res));
+                info!("  {}", kernel.manifest(res));
             }
 
             // Adapt with a small penalty to simulate operational decay
+            debug!("Applying simulated operational decay penalty.");
             kernel.adapt(dteam::autonomic::AutonomicFeedback {
                 reward: -0.5,
                 human_override: false,
@@ -63,11 +66,11 @@ fn main() {
             });
         }
 
-        println!("📊 Current State: {}\n", kernel.infer());
+        debug!("📊 Current State: {}\n", kernel.infer());
 
         // Simulate a small processing delay
         thread::sleep(Duration::from_millis(500));
     }
 
-    println!("🏁 Autonomic Runner sequence complete.");
+    info!("🏁 Autonomic Runner sequence complete.");
 }

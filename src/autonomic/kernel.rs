@@ -1,6 +1,6 @@
 use crate::autonomic::types::*;
-
 use crate::config::AutonomicConfig;
+use log::{debug, info, warn};
 
 pub trait AutonomicKernel {
     fn observe(&mut self, event: AutonomicEvent);
@@ -18,8 +18,10 @@ pub trait AutonomicKernel {
     /// orchestration using Gemini CLI subagents. Consider spawning parallel
     /// rollouts for complex action simulations.
     fn run_cycle(&mut self, event: AutonomicEvent) -> Vec<AutonomicResult> {
+        info!("Starting autonomic cycle for event from {}", event.source);
         self.observe(event);
         let state = self.infer();
+        debug!("Inferred state: {:?}", state);
 
         // Only act if health and conformance are above safety thresholds.
         // If conformance < 0.75, an autonomous agent should pause and run 'Deep Diagnostics'.
@@ -27,18 +29,27 @@ pub trait AutonomicKernel {
         if state.process_health < config.autonomic.guards.min_health_threshold
             || state.conformance_score < 0.75
         {
+            warn!(
+                "Safety threshold breached: health={}, conformance={}. Pausing cycle.",
+                state.process_health, state.conformance_score
+            );
             return Vec::new();
         }
 
         let actions = self.propose(&state);
+        info!("Proposed {} actions", actions.len());
 
         let mut results = Vec::new();
         for action in actions {
             if self.accept(&action, &state) {
+                info!("Executing accepted action: {}", action.parameters);
                 let result = self.execute(action);
                 results.push(result);
+            } else {
+                debug!("Action rejected: {}", action.parameters);
             }
         }
+        info!("Autonomic cycle complete. {} actions executed.", results.len());
         results
     }
 }
@@ -74,6 +85,7 @@ impl DefaultKernel {
 
 impl AutonomicKernel for DefaultKernel {
     fn observe(&mut self, event: AutonomicEvent) {
+        debug!("Observing event from {}: {}", event.source, event.payload);
         self.last_event = Some(event);
     }
 
@@ -82,7 +94,10 @@ impl AutonomicKernel for DefaultKernel {
     }
 
     fn propose(&self, _state: &AutonomicState) -> Vec<AutonomicAction> {
-        if self.config.autonomic.mode == "recommend" {
+        let mode = &self.config.autonomic.mode;
+        debug!("Proposing actions in '{}' mode", mode);
+
+        if mode == "recommend" {
             return vec![AutonomicAction::recommend(1, "Optimize flow")];
         }
 
@@ -107,10 +122,12 @@ impl AutonomicKernel for DefaultKernel {
         // van der Aalst Soundness Guard
         // If strict_conformance is on, we reject any action that could jeopardize structural soundness
         if self.config.autonomic.policy.profile == "strict_conformance" {
+            debug!("Strict conformance policy active. Verifying action: {}", action.parameters);
             // For structural repair actions, we would normally run a soundness verifier here.
             // For this baseline, we ensure critical risk actions are only accepted if
             // the model satisfies WF-net soundness.
             if action.risk_profile >= ActionRisk::High {
+                warn!("Rejecting high-risk action under strict conformance: {}", action.parameters);
                 // Mock: In a real implementation, this would call PetriNet::is_structural_workflow_net()
                 // on the projected model after applying the action.
                 return false;
@@ -125,10 +142,15 @@ impl AutonomicKernel for DefaultKernel {
             _ => ActionRisk::Critical,
         };
 
-        action.risk_profile <= threshold
+        let accepted = action.risk_profile <= threshold;
+        if !accepted {
+            warn!("Action rejected due to risk threshold: risk={:?}, threshold={:?}", action.risk_profile, threshold);
+        }
+        accepted
     }
 
-    fn execute(&mut self, _action: AutonomicAction) -> AutonomicResult {
+    fn execute(&mut self, action: AutonomicAction) -> AutonomicResult {
+        debug!("Executing action ID {}: {}", action.action_id, action.parameters);
         AutonomicResult {
             success: true,
             execution_latency_ms: 10,
@@ -144,6 +166,8 @@ impl AutonomicKernel for DefaultKernel {
     }
 
     fn adapt(&mut self, feedback: AutonomicFeedback) {
+        info!("Adapting system based on feedback (reward={})", feedback.reward);
+        let old_health = self.state.process_health;
         if feedback.reward > 0.0 {
             self.state.process_health =
                 (self.state.process_health + feedback.reward * 0.01).min(1.0);
@@ -153,7 +177,10 @@ impl AutonomicKernel for DefaultKernel {
                 (self.state.process_health + feedback.reward * 0.1).max(0.0);
         }
 
+        debug!("Health updated: {} -> {}", old_health, self.state.process_health);
+
         if feedback.human_override {
+            warn!("Human override detected. Flagging drift.");
             self.state.drift_detected = true;
         }
     }

@@ -127,7 +127,11 @@ fn run_phase(_id: &str, phase: &str, idea: &str, working_dir: &Path, is_test: bo
     };
 
     let mut cmd = Command::new("gemini");
-    cmd.arg("--headless").arg("-p").arg(prompt);
+    cmd.arg("-p").arg(prompt);
+
+    if phase == "Implement" {
+        cmd.arg("--yolo");
+    }
 
     let output = cmd.output()?;
     if !output.status.success() {

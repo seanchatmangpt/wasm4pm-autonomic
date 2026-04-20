@@ -11,6 +11,7 @@ use crate::probabilistic::CountMinSketch;
 use crate::simd::SwarMarking;
 use crate::utils::bitset::select_u64;
 use crate::utils::dense_kernel::{fnv1a_64, KBitSet, PackedKeyTable};
+use log::{debug, info, warn};
 
 /// Operational dimensions for the LinUCB bandit
 const CONTEXT_DIM: usize = 10;
@@ -179,6 +180,7 @@ impl<const WORDS: usize> Vision2030Kernel<WORDS> {
 
 impl<const WORDS: usize> AutonomicKernel for Vision2030Kernel<WORDS> {
     fn observe(&mut self, event: AutonomicEvent) {
+        debug!("Vision 2030 Observing event: {} from {}", event.payload, event.source);
         self.sketch.add(&event.payload);
 
         let p = event.payload.to_lowercase();
@@ -221,6 +223,7 @@ impl<const WORDS: usize> AutonomicKernel for Vision2030Kernel<WORDS> {
 
             // Artificial divergence trigger
             if p.contains("divergence") {
+                warn!("Artificial divergence trigger detected in payload!");
                 for i in 0..10 {
                     if mock_objects_len < 16 {
                         mock_objects[mock_objects_len] = (id_hash + i, type_hash, qualifier_hash);
@@ -249,6 +252,7 @@ impl<const WORDS: usize> AutonomicKernel for Vision2030Kernel<WORDS> {
             self.oc_dfg
                 .observe_object_change(fnv1a_64(event.source.as_bytes()), fnv1a_64(b"amount"));
             if p.contains("critical") {
+                warn!("Critical object change detected for source: {}", event.source);
                 ocpm_drift = true;
             }
         }
@@ -263,6 +267,7 @@ impl<const WORDS: usize> AutonomicKernel for Vision2030Kernel<WORDS> {
             if self.oc_dfg.binding_frequencies[binding_idx] > OCPM_DIVERGENCE_THRESHOLD
                 && p.contains("divergence")
             {
+                warn!("OCPM Binding frequency threshold exceeded at index: {}", binding_idx);
                 ocpm_drift = true;
             }
         }
@@ -271,6 +276,7 @@ impl<const WORDS: usize> AutonomicKernel for Vision2030Kernel<WORDS> {
         self.state.drift_detected =
             select_u64(ocpm_drift as u64, 1, self.state.drift_detected as u64) != 0;
         if ocpm_drift {
+            warn!("OCPM drift detected. Reducing health and conformance.");
             self.state.conformance_score =
                 (self.state.conformance_score - CONFORMANCE_PENALTY_SWAR_VIOLATION).max(0.0);
             self.state.process_health =
@@ -278,6 +284,7 @@ impl<const WORDS: usize> AutonomicKernel for Vision2030Kernel<WORDS> {
         }
 
         if let Some(idx) = act_idx_opt {
+            debug!("Activity matched to index: {}", idx);
             if self.trace_cursor < 256 {
                 self.trace_buffer[self.trace_cursor] = idx;
                 self.trace_cursor += 1;
@@ -295,6 +302,7 @@ impl<const WORDS: usize> AutonomicKernel for Vision2030Kernel<WORDS> {
             );
 
             if !is_valid {
+                warn!("Semantic violation (POWL) detected for activity index: {}", idx);
                 self.state.process_health =
                     (self.state.process_health - HEALTH_PENALTY_POWL_VIOLATION).max(0.0);
             }
@@ -315,10 +323,13 @@ impl<const WORDS: usize> AutonomicKernel for Vision2030Kernel<WORDS> {
 
             // Update conformance score branchlessly-ish
             if !fired {
+                warn!("Token replay failure (SWAR) for activity index: {}", idx);
                 self.state.conformance_score =
                     (self.state.conformance_score - CONFORMANCE_PENALTY_SWAR_VIOLATION).max(0.0);
                 self.state.process_health =
                     (self.state.process_health - HEALTH_PENALTY_SWAR_VIOLATION).max(0.0);
+            } else {
+                debug!("Token replay fired successfully. New marking: {:X}", self.marking.words[0]);
             }
 
             // Phase 2 State tracking: active cases
@@ -336,6 +347,7 @@ impl<const WORDS: usize> AutonomicKernel for Vision2030Kernel<WORDS> {
         // Phase 4: Contextual Bandit Action Selection (Zero-Heap)
         let context = self.extract_context("current_state");
         let action_idx = self.bandit.select_action(&context, 3);
+        debug!("Contextual Bandit selected action index: {}", action_idx);
 
         // BCINR Optimization: Use MCTS UCT to weight recovery vs optimization
         let uct_score_repair =
@@ -348,10 +360,12 @@ impl<const WORDS: usize> AutonomicKernel for Vision2030Kernel<WORDS> {
                 ((0.5 * 1000.0) as u64) << 32 | 500, // Q=0.5, visits=500
                 1000,
             );
+        debug!("MCTS Scores: Repair={}, Optimize={}", uct_score_repair, uct_score_opt);
 
         if state.drift_detected {
             // If MCTS UCT favors repair (it should given the scores above)
             if uct_score_repair > uct_score_opt {
+                info!("Drift detected and MCTS favors repair. Proposing structural repair.");
                 return vec![
                     AutonomicAction::new(
                         102,
@@ -370,28 +384,42 @@ impl<const WORDS: usize> AutonomicKernel for Vision2030Kernel<WORDS> {
         }
 
         match action_idx {
-            0 => vec![AutonomicAction::recommend(101, "Throughput optimization")],
-            1 => vec![AutonomicAction::new(
-                102,
-                ActionType::Repair,
-                ActionRisk::Medium,
-                "Patching trace buffer",
-            )],
-            _ => vec![AutonomicAction::new(
-                103,
-                ActionType::Escalate,
-                ActionRisk::High,
-                "Critical escalation",
-            )],
+            0 => {
+                debug!("Bandit proposing throughput optimization");
+                vec![AutonomicAction::recommend(101, "Throughput optimization")]
+            },
+            1 => {
+                debug!("Bandit proposing trace buffer patch");
+                vec![AutonomicAction::new(
+                    102,
+                    ActionType::Repair,
+                    ActionRisk::Medium,
+                    "Patching trace buffer",
+                )]
+            },
+            _ => {
+                warn!("Bandit proposing critical escalation");
+                vec![AutonomicAction::new(
+                    103,
+                    ActionType::Escalate,
+                    ActionRisk::High,
+                    "Critical escalation",
+                )]
+            },
         }
     }
 
     fn accept(&self, action: &AutonomicAction, state: &AutonomicState) -> bool {
         let sim = Simulator::new(state.clone());
         let (_, expected_reward) = sim.evaluate_action(action);
+        debug!("Simulator evaluated action '{}': expected_reward={}", action.parameters, expected_reward);
 
         if action.risk_profile >= ActionRisk::High {
-            return expected_reward > 0.0;
+            let accepted = expected_reward > 0.0;
+            if !accepted {
+                warn!("Rejecting high-risk action due to negative expected reward: {}", action.parameters);
+            }
+            return accepted;
         }
 
         let threshold = match self.config.autonomic.guards.risk_threshold.as_str() {
@@ -405,6 +433,7 @@ impl<const WORDS: usize> AutonomicKernel for Vision2030Kernel<WORDS> {
     }
 
     fn execute(&mut self, action: AutonomicAction) -> AutonomicResult {
+        info!("Vision 2030 executing action: {}", action.parameters);
         let is_repair = (action.action_type == ActionType::Repair) as u64;
 
         // Branchless state mutation via BCINR select
@@ -414,6 +443,7 @@ impl<const WORDS: usize> AutonomicKernel for Vision2030Kernel<WORDS> {
         // Instead of hard resetting to p0, we attempt to preserve the process context
         // in a bisimilar way. For this K-Tier engine, we preserve the executed mask.
         if is_repair != 0 {
+            info!("Executing axiomatic structural repair: performing marking migration.");
             // "Repair" means we acknowledge the current state and validly
             // continue from where we are, effectively 'fixing' the history.
             // In a more complex engine, this would project the old marking
@@ -425,6 +455,7 @@ impl<const WORDS: usize> AutonomicKernel for Vision2030Kernel<WORDS> {
             self.state.conformance_score =
                 (self.state.conformance_score + CONFORMANCE_REWARD_REPAIR).min(1.0);
             self.state.process_health = (self.state.process_health + HEALTH_REWARD_REPAIR).min(1.0);
+            debug!("Repair complete. New health={}, conformance={}", self.state.process_health, self.state.conformance_score);
         }
 
         AutonomicResult {
@@ -442,6 +473,7 @@ impl<const WORDS: usize> AutonomicKernel for Vision2030Kernel<WORDS> {
     }
 
     fn adapt(&mut self, feedback: AutonomicFeedback) {
+        info!("Vision 2030 adapting with feedback: reward={}", feedback.reward);
         let context = self.extract_context("adaptation");
         self.bandit.update(&context, feedback.reward);
 
@@ -450,6 +482,8 @@ impl<const WORDS: usize> AutonomicKernel for Vision2030Kernel<WORDS> {
         } else {
             -HEALTH_IMPROVEMENT_POSITIVE_REWARD
         };
+        let old_health = self.state.process_health;
         self.state.process_health = (self.state.process_health - decay).clamp(0.0, 1.0);
+        debug!("Health decay/improvement: {} -> {}", old_health, self.state.process_health);
     }
 }

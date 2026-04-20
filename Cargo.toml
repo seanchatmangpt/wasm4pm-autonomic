@@ -8,6 +8,7 @@ description = "Deterministic Process Intelligence Engine (dteam) - Digital Team"
 [workspace]
 
 [dependencies]
+log = "0.4"
 bcinr = "26.4.18"
 rustc-hash = "1.1.0"
 fastrand = "2.1"
@@ -28,6 +29,7 @@ default = ["token-based-replay"]
 token-based-replay = []
 
 [dev-dependencies]
+env_logger = "0.11"
 criterion = "0.5"
 process_mining = "0.5.4"
 dhat = "0.3.3"
