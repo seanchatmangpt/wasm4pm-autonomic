@@ -25,6 +25,9 @@ fn main() -> anyhow::Result<()> {
     let content = fs::read_to_string(ideas_path)?;
     let ideas: Vec<&str> = content.lines().filter(|l| !l.trim().is_empty()).collect();
 
+    // Ensure dev branch exists
+    ensure_dev_branch()?;
+
     for (i, idea) in ideas.iter().enumerate() {
         let id = format!("{:03}", i + 1);
         let slug = idea
@@ -41,58 +44,106 @@ fn main() -> anyhow::Result<()> {
         println!("\n[Idea {}] Processing: {}", id, idea);
 
         // Git branch management
-        let original_branch = Command::new("git")
-            .args(["branch", "--show-current"])
-            .output()
-            .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string())
-            .unwrap_or_else(|_| "main".to_string());
-
         let branch_name = format!("wreckit/{}", slug);
+        let worktree_path = working_dir.join("worktree");
         println!("  >> Branch: {}", branch_name);
+        println!("  >> Worktree: {}", worktree_path.display());
 
-        // Check if branch exists
-        let branch_exists = Command::new("git")
-            .args([
-                "show-ref",
-                "--verify",
-                &format!("refs/heads/{}", branch_name),
-            ])
-            .status()
-            .map(|s| s.success())
-            .unwrap_or(false);
+        // 1. Setup Branch and Worktree
+        setup_worktree(&branch_name, &worktree_path)?;
 
-        if branch_exists {
-            Command::new("git")
-                .args(["checkout", &branch_name])
-                .status()?;
-        } else {
-            Command::new("git")
-                .args(["checkout", "-b", &branch_name])
-                .status()?;
-        }
+        // 2. Research (Run inside worktree)
+        run_phase(
+            &id,
+            "Research",
+            idea,
+            &working_dir,
+            is_test,
+            Some(&worktree_path),
+        )?;
 
-        // 1. Research
-        run_phase(&id, "Research", idea, &working_dir, is_test)?;
+        // 3. Plan (Run inside worktree)
+        run_phase(
+            &id,
+            "Plan",
+            idea,
+            &working_dir,
+            is_test,
+            Some(&worktree_path),
+        )?;
 
-        // 2. Plan
-        run_phase(&id, "Plan", idea, &working_dir, is_test)?;
+        // 4. Inject Supervisor Hook (In the worktree)
+        inject_supervisor(&worktree_path)?;
 
-        // 3. Inject Supervisor Hook
-        inject_supervisor(&working_dir)?;
+        // 5. Implement (Run inside worktree)
+        run_phase(
+            &id,
+            "Implement",
+            idea,
+            &working_dir,
+            is_test,
+            Some(&worktree_path),
+        )?;
 
-        // 4. Implement
-        run_phase(&id, "Implement", idea, &working_dir, is_test)?;
+        // 6. Commit inside worktree
+        commit_changes_in_worktree(&worktree_path, &id, idea)?;
 
-        // 5. Commit
-        commit_changes(&id, idea)?;
+        // 7. Merge into dev
+        merge_into_dev(&branch_name)?;
 
-        // Return to original branch
-        let _ = Command::new("git")
-            .args(["checkout", &original_branch])
-            .status();
+        // 8. Cleanup Worktree
+        cleanup_worktree(&worktree_path)?;
     }
 
     println!("\n--- All ideas processed! ---");
+    Ok(())
+}
+
+fn ensure_dev_branch() -> anyhow::Result<()> {
+    let output = Command::new("git")
+        .args(["show-ref", "--verify", "refs/heads/dev"])
+        .status()?;
+
+    if !output.success() {
+        println!("  !! dev branch missing. Creating from main...");
+        Command::new("git").args(["checkout", "-b", "dev"]).status()?;
+        Command::new("git").args(["checkout", "main"]).status()?;
+    }
+    Ok(())
+}
+
+fn setup_worktree(branch: &str, path: &Path) -> anyhow::Result<()> {
+    // Check if branch exists
+    let branch_exists = Command::new("git")
+        .args([
+            "show-ref",
+            "--verify",
+            &format!("refs/heads/{}", branch),
+        ])
+        .status()
+        .map(|s| s.success())
+        .unwrap_or(false);
+
+    if !branch_exists {
+        Command::new("git").args(["branch", branch]).status()?;
+    }
+
+    // Add worktree
+    let status = Command::new("git")
+        .args(["worktree", "add", path.to_str().unwrap(), branch])
+        .status()?;
+
+    if !status.success() {
+        return Err(anyhow::anyhow!("Failed to create worktree"));
+    }
+    Ok(())
+}
+
+fn cleanup_worktree(path: &Path) -> anyhow::Result<()> {
+    println!("  >> Cleaning up worktree...");
+    Command::new("git")
+        .args(["worktree", "remove", path.to_str().unwrap(), "--force"])
+        .status()?;
     Ok(())
 }
 
@@ -102,6 +153,7 @@ fn run_phase(
     idea: &str,
     working_dir: &Path,
     is_test: bool,
+    worktree_dir: Option<&Path>,
 ) -> anyhow::Result<()> {
     println!("  >> Phase: {}", phase);
     let output_file = working_dir.join(format!("{}.md", phase.to_lowercase()));
@@ -160,6 +212,10 @@ fn run_phase(
         cmd.arg("--yolo");
     }
 
+    if let Some(dir) = worktree_dir {
+        cmd.current_dir(dir);
+    }
+
     let output = cmd.output()?;
     if !output.status.success() {
         let err = String::from_utf8_lossy(&output.stderr);
@@ -171,10 +227,10 @@ fn run_phase(
     Ok(())
 }
 
-fn inject_supervisor(_working_dir: &Path) -> anyhow::Result<()> {
+fn inject_supervisor(working_dir: &Path) -> anyhow::Result<()> {
     println!("  >> Injecting Supervisor Guardrails...");
 
-    let gemini_dir = Path::new(".gemini");
+    let gemini_dir = working_dir.join(".gemini");
     let hooks_dir = gemini_dir.join("hooks");
     fs::create_dir_all(&hooks_dir)?;
 
@@ -241,11 +297,33 @@ echo '{"decision": "allow"}'
     Ok(())
 }
 
-fn commit_changes(id: &str, idea: &str) -> anyhow::Result<()> {
-    println!("  >> Committing changes...");
-    Command::new("git").args(["add", "."]).status()?;
+fn commit_changes_in_worktree(path: &Path, id: &str, idea: &str) -> anyhow::Result<()> {
+    println!("  >> Committing changes in worktree...");
     Command::new("git")
+        .arg("-C")
+        .arg(path)
+        .args(["add", "."])
+        .status()?;
+    Command::new("git")
+        .arg("-C")
+        .arg(path)
         .args(["commit", "-m", &format!("ralph({}): {}", id, idea)])
         .status()?;
+    Ok(())
+}
+
+fn merge_into_dev(branch: &str) -> anyhow::Result<()> {
+    println!("  >> Merging {} into dev...", branch);
+    Command::new("git").args(["checkout", "dev"]).status()?;
+    let status = Command::new("git")
+        .args(["merge", branch, "--no-edit"])
+        .status()?;
+
+    if !status.success() {
+        println!("  !! Merge conflict detected. Skipping auto-merge for this branch.");
+        Command::new("git").args(["merge", "--abort"]).status()?;
+    }
+
+    Command::new("git").args(["checkout", "main"]).status()?;
     Ok(())
 }
