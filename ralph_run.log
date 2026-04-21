@@ -1,0 +1,152 @@
+==========================================================
+Starting DDS Ralph Overnight Orchestration Loop
+Target Models: gemini-3-flash-preview (1-20), gemini-3.1-flash-lite-preview (21+)
+Concurrency: 5
+==========================================================
+Running pre-flight structural checks...
+warning: unused imports: `debug`, `info`, and `warn`
+ --> src/autonomic/kernel.rs:3:11
+  |
+3 | use log::{debug, info, warn};
+  |           ^^^^^  ^^^^  ^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused imports: `debug`, `info`, and `warn`
+  --> src/autonomic/vision_2030_kernel.rs:14:11
+   |
+14 | use log::{debug, info, warn};
+   |           ^^^^^  ^^^^  ^^^^
+
+warning: unused variable: `hash`
+  --> src/autonomic/kernel.rs:43:13
+   |
+43 |         let hash = if let Some(last) = results.last() {
+   |             ^^^^ help: if this is intentional, prefix it with an underscore: `_hash`
+   |
+   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `action`
+   --> src/autonomic/kernel.rs:140:27
+    |
+140 |     fn execute(&mut self, action: AutonomicAction) -> AutonomicResult {
+    |                           ^^^^^^ help: if this is intentional, prefix it with an underscore: `_action`
+
+warning: unused variable: `old_health`
+   --> src/autonomic/kernel.rs:167:13
+    |
+167 |         let old_health = self.state.process_health;
+    |             ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_old_health`
+
+warning: unused variable: `old_drift`
+   --> src/autonomic/vision_2030_kernel.rs:416:13
+    |
+416 |         let old_drift = self.state.drift_detected;
+    |             ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_old_drift`
+
+warning: unused variable: `old_conf`
+   --> src/autonomic/vision_2030_kernel.rs:434:17
+    |
+434 |             let old_conf = self.state.conformance_score;
+    |                 ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_old_conf`
+
+warning: unused variable: `old_health`
+   --> src/autonomic/vision_2030_kernel.rs:435:17
+    |
+435 |             let old_health = self.state.process_health;
+    |                 ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_old_health`
+
+warning: unused variable: `old_health`
+   --> src/autonomic/vision_2030_kernel.rs:460:13
+    |
+460 |         let old_health = self.state.process_health;
+    |             ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_old_health`
+
+warning: `dteam` (lib) generated 9 warnings (run `cargo fix --lib -p dteam` to apply 9 suggestions)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.10s
+   Compiling dteam v1.3.0 (/Users/sac/dteam)
+warning: unused imports: `Arc`, `PetriNet`, `Place`, and `Transition`
+ --> src/proptest_kernel_verification.rs:4:57
+  |
+4 |     use crate::models::petri_net::{FlatIncidenceMatrix, PetriNet, Place, Transition, Arc};
+  |                                                         ^^^^^^^^  ^^^^^  ^^^^^^^^^^  ^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `Engine`
+ --> src/ontology_proptests.rs:4:39
+  |
+4 |     use crate::dteam::orchestration::{Engine, EngineResult};
+  |                                       ^^^^^^
+
+warning: unused imports: `debug`, `info`, and `warn`
+ --> src/autonomic/kernel.rs:3:11
+  |
+3 | use log::{debug, info, warn};
+  |           ^^^^^  ^^^^  ^^^^
+
+warning: unused imports: `debug`, `info`, and `warn`
+  --> src/autonomic/vision_2030_kernel.rs:14:11
+   |
+14 | use log::{debug, info, warn};
+   |           ^^^^^  ^^^^  ^^^^
+
+error[E0063]: missing field `universe` in initializer of `RlState<1>`
+  --> src/reinforcement_tests.rs:34:9
+   |
+34 |         RlState::<1> {
+   |         ^^^^^^^^^^^^ missing `universe`
+
+error[E0063]: missing field `universe` in initializer of `RlState<1>`
+  --> src/proptest_kernel_verification.rs:16:25
+   |
+16 |             let state = RlState::<1> {
+   |                         ^^^^^^^^^^^^ missing `universe`
+
+warning: unused variable: `hash`
+  --> src/autonomic/kernel.rs:43:13
+   |
+43 |         let hash = if let Some(last) = results.last() {
+   |             ^^^^ help: if this is intentional, prefix it with an underscore: `_hash`
+   |
+   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `action`
+   --> src/autonomic/kernel.rs:140:27
+    |
+140 |     fn execute(&mut self, action: AutonomicAction) -> AutonomicResult {
+    |                           ^^^^^^ help: if this is intentional, prefix it with an underscore: `_action`
+
+warning: unused variable: `old_health`
+   --> src/autonomic/kernel.rs:167:13
+    |
+167 |         let old_health = self.state.process_health;
+    |             ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_old_health`
+
+warning: unused variable: `old_drift`
+   --> src/autonomic/vision_2030_kernel.rs:416:13
+    |
+416 |         let old_drift = self.state.drift_detected;
+    |             ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_old_drift`
+
+warning: unused variable: `old_conf`
+   --> src/autonomic/vision_2030_kernel.rs:434:17
+    |
+434 |             let old_conf = self.state.conformance_score;
+    |                 ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_old_conf`
+
+warning: unused variable: `old_health`
+   --> src/autonomic/vision_2030_kernel.rs:435:17
+    |
+435 |             let old_health = self.state.process_health;
+    |                 ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_old_health`
+
+warning: unused variable: `old_health`
+   --> src/autonomic/vision_2030_kernel.rs:460:13
+    |
+460 |         let old_health = self.state.process_health;
+    |             ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_old_health`
+
+For more information about this error, try `rustc --explain E0063`.
+warning: `dteam` (lib test) generated 11 warnings
+error: could not compile `dteam` (lib test) due to 2 previous errors; 11 warnings emitted

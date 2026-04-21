@@ -43,6 +43,7 @@ mod tests {
             marking_mask: KBitSet::zero(),
             activities_hash: 0,
             ontology_mask: crate::utils::dense_kernel::KBitSet::<16>::zero(),
+                universe: None,
         }
     }
 
