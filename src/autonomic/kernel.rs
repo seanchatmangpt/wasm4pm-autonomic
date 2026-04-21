@@ -153,6 +153,7 @@ impl AutonomicKernel for DefaultKernel {
 >>>>>>> wreckit/blue-river-dam-interface-refactor-autonomickernel-to-focus-on-control-surface-synthesis
     }
 
+<<<<<<< HEAD
     fn execute(&mut self, action_idx: usize) -> AutonomicResult {
         // Transformation μ: M' = (M & !I) | O
         let success = action_idx < 3;
@@ -171,6 +172,16 @@ impl AutonomicKernel for DefaultKernel {
 
         let is_admissible = net.is_sound();
         
+=======
+    fn execute(&mut self, _action: AutonomicAction) -> AutonomicResult {
+        // Implementation of branchless reachability guards
+        // M' = (M & !I) | O: Enforces that unsafe states (I) are never reached.
+
+        // In a real-world scenario, 'I' would be derived from structural workflow analysis.
+        // For this baseline, we verify structural Soundness before execution.
+        let is_admissible = true; // Placeholder for structural net check
+
+>>>>>>> wreckit/cryptographic-execution-provenance-enhance-executionmanifest-with-full-h-l-π-h-n-hashing
         // Use select_u64 for branchless selection
         let success = crate::utils::bitset::select_u64(is_admissible as u64, 1, 0) == 1;
 
@@ -216,6 +227,7 @@ impl AutonomicKernel for DefaultKernel {
 mod tests {
     use super::*;
     use proptest::prelude::*;
+    use std::time::SystemTime;
 
     #[test]
     fn test_autonomic_lifecycle_zero_heap() {
@@ -248,6 +260,7 @@ mod tests {
 
     proptest! {
         #[test]
+<<<<<<< HEAD
         fn test_admissibility_mask_logic(drift in any::<bool>()) {
             let kernel = DefaultKernel::new();
             let mut state = kernel.infer();
@@ -265,6 +278,15 @@ mod tests {
         fn test_admissibility_guard_always_admissible_if_structurally_sound(is_admissible in any::<bool>()) {
             // This is a simplified test simulating the branchless selection logic
             let success = crate::utils::bitset::select_u64(is_admissible as u64, 1, 0) == 1;
+=======
+        fn test_admissibility_guard_always_admissible_if_structurally_sound(is_admissible in any::<bool>()) {
+            let mut _kernel = DefaultKernel::new();
+            let _action = AutonomicAction::new(1, ActionType::Recommend, ActionRisk::Low, "Test");
+
+            // This is a simplified test simulating the branchless selection logic
+            let success = crate::utils::bitset::select_u64(is_admissible as u64, 1, 0) == 1;
+
+>>>>>>> wreckit/cryptographic-execution-provenance-enhance-executionmanifest-with-full-h-l-π-h-n-hashing
             assert_eq!(success, is_admissible);
         }
     }

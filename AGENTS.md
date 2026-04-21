@@ -152,8 +152,13 @@ Notable public items:
 ## 10. Test suites inside the library crate
 
 - **`jtbd_tests` / `jtbd_counterfactual_tests`**: Scenario-driven **`Vision2030Kernel`** runs; assert health bounds, manifest prefixes (`VISION_2030_MANIFEST`), deterministic `hash=` substrings, drift/reward feedback, governance cases.
+<<<<<<< HEAD
 - **`reinforcement_tests`**: Convergence and serialization roundtrips for tabular agents. Now includes **`proptest`** for KTier marking admissibility.
 - **`proptest_kernel_verification`**: Property-based tests for μ-kernel determinism, bitset logic, and Engine KTier enforcement.
+=======
+- **`proptest_kernel_verification`**: μ-kernel property tests; verifies $Var(\tau) = 0$ determinism, `KTier` capacity boundaries, MDL formula correctness, and cryptographic manifest integrity.
+- **`reinforcement_tests`**: Convergence and serialization roundtrips for tabular agents.
+>>>>>>> wreckit/cryptographic-execution-provenance-enhance-executionmanifest-with-full-h-l-π-h-n-hashing
 - **`io/xes_tests`**, **`conformance/case_centric/adversarial_tests`**, **`automation`**, **`dteam::orchestration`**, **`autonomic::kernel`**, **`skeptic_harness`**: narrower unit tests.
 
 Run everything: **`cargo test --lib`**.

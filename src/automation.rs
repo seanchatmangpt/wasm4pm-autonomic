@@ -51,6 +51,7 @@ pub fn train_with_provenance_projected(
     use crate::utils::dense_kernel::KBitSet;
     let mut model = PetriNet::default();
 <<<<<<< HEAD
+<<<<<<< HEAD
     let agent: QLearning<RlState<1>, RlAction> = QLearning::with_hyperparams(
 =======
     
@@ -79,10 +80,15 @@ pub fn train_with_provenance_projected(
 
     let agent: QLearning<RlState, RlAction> = QLearning::with_hyperparams(
 >>>>>>> wreckit/formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o
+=======
+    // Use fixed seed for deterministic discovery trajectory
+    let mut agent: QLearning<RlState, RlAction> = QLearning::new_with_seed(
+>>>>>>> wreckit/cryptographic-execution-provenance-enhance-executionmanifest-with-full-h-l-π-h-n-hashing
         config.rl.learning_rate,
         config.rl.discount_factor,
-        config.rl.exploration_rate,
+        0xDEADBEEF,
     );
+    agent.set_exploration_rate(config.rl.exploration_rate);
 
     let mut trajectory = Vec::new();
     let ontology_mask = ontology.map(|o| o.bitset).unwrap_or_else(|| crate::utils::dense_kernel::KBitSet::<16>::zero());

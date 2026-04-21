@@ -43,7 +43,205 @@ fn init_telemetry() -> anyhow::Result<SdkTracerProvider> {
         .with(telemetry_layer)
         .init();
 
+<<<<<<< HEAD
     Ok(provider)
+=======
+    for (i, idea) in ideas.iter().enumerate() {
+        let id = format!("{:03}", i + 1);
+        let slug = idea
+            .to_lowercase()
+            .replace(|c: char| !c.is_alphanumeric(), "-")
+            .split('-')
+            .filter(|s| !s.is_empty())
+            .collect::<Vec<_>>()
+            .join("-");
+
+        let working_dir = PathBuf::from(".wreckit").join(format!("{}-{}", id, slug));
+        fs::create_dir_all(&working_dir)?;
+
+        println!("\n[Idea {}] Processing: {}", id, idea);
+
+        // Git branch management
+        let branch_name = format!("wreckit/{}", slug);
+        let worktree_path = working_dir.join("worktree");
+        println!("  >> Branch: {}", branch_name);
+        println!("  >> Worktree: {}", worktree_path.display());
+
+        // 1. Setup Branch and Worktree
+        setup_worktree(&branch_name, &worktree_path)?;
+
+        // 2. Research (Run inside worktree)
+        run_phase(
+            &id,
+            "Research",
+            idea,
+            &working_dir,
+            is_test,
+            Some(&worktree_path),
+        )?;
+
+        // 3. Plan (Run inside worktree)
+        run_phase(
+            &id,
+            "Plan",
+            idea,
+            &working_dir,
+            is_test,
+            Some(&worktree_path),
+        )?;
+
+        // 4. Inject Supervisor Hook (In the worktree)
+        inject_supervisor(&worktree_path)?;
+
+        // 5. Implement (Run inside worktree)
+        run_phase(
+            &id,
+            "Implement",
+            idea,
+            &working_dir,
+            is_test,
+            Some(&worktree_path),
+        )?;
+
+        // 6. Commit inside worktree
+        commit_changes_in_worktree(&worktree_path, &id, idea)?;
+
+        // 7. Merge into dev
+        merge_into_dev(&branch_name)?;
+
+        // 8. Cleanup Worktree
+        cleanup_worktree(&worktree_path)?;
+    }
+
+    println!("\n--- All ideas processed! ---");
+    Ok(())
+}
+
+fn ensure_dev_branch() -> anyhow::Result<()> {
+    let output = Command::new("git")
+        .args(["show-ref", "--verify", "refs/heads/dev"])
+        .status()?;
+
+    if !output.success() {
+        println!("  !! dev branch missing. Creating from main...");
+        Command::new("git")
+            .args(["checkout", "-b", "dev"])
+            .status()?;
+        Command::new("git").args(["checkout", "main"]).status()?;
+    }
+    Ok(())
+}
+
+fn setup_worktree(branch: &str, path: &Path) -> anyhow::Result<()> {
+    // Check if branch exists
+    let branch_exists = Command::new("git")
+        .args(["show-ref", "--verify", &format!("refs/heads/{}", branch)])
+        .status()
+        .map(|s| s.success())
+        .unwrap_or(false);
+
+    if !branch_exists {
+        Command::new("git").args(["branch", branch]).status()?;
+    }
+
+    // Add worktree
+    let status = Command::new("git")
+        .args(["worktree", "add", path.to_str().unwrap(), branch])
+        .status()?;
+
+    if !status.success() {
+        return Err(anyhow::anyhow!("Failed to create worktree"));
+    }
+    Ok(())
+}
+
+fn cleanup_worktree(path: &Path) -> anyhow::Result<()> {
+    println!("  >> Cleaning up worktree...");
+    Command::new("git")
+        .args(["worktree", "remove", path.to_str().unwrap(), "--force"])
+        .status()?;
+    Ok(())
+}
+
+fn run_phase(
+    _id: &str,
+    phase: &str,
+    idea: &str,
+    working_dir: &Path,
+    is_test: bool,
+    worktree_dir: Option<&Path>,
+) -> anyhow::Result<()> {
+    println!("  >> Phase: {}", phase);
+    let output_file = working_dir.join(format!("{}.md", phase.to_lowercase()));
+
+    if is_test {
+        let mock_content = match phase {
+            "Research" => format!(
+                "MOCK RESEARCH for idea: {}\nPatterns: bitset, branchless\nFiles: src/lib.rs",
+                idea
+            ),
+            "Plan" => format!("MOCK PLAN for idea: {}\n1. Step A\n2. Step B", idea),
+            "Implement" => format!(
+                "MOCK IMPLEMENTATION for idea: {}\nSuccess signal: <promise>COMPLETE</promise>",
+                idea
+            ),
+            _ => "MOCK CONTENT".to_string(),
+        };
+        fs::write(output_file, mock_content)?;
+        return Ok(());
+    }
+
+    let prompt = match phase {
+        "Research" => format!(
+            "RESEARCH DIRECTIVE: Research the codebase for the following idea: '{}'. \
+             Analyze existing patterns, file paths, and integration points. \
+             Output a detailed research.md report.",
+            idea
+        ),
+        "Plan" => {
+            let research_path = working_dir.join("research.md");
+            format!(
+                "PLANNING DIRECTIVE: Given the following idea: '{}' and the research findings below, \
+                 write a detailed implementation plan. \
+                 [RESEARCH]\n@{}\n\nOutput a detailed plan.md report.", 
+                idea, research_path.display()
+            )
+        }
+        "Implement" => {
+            let plan_path = working_dir.join("plan.md");
+            format!(
+                "IMPLEMENTATION DIRECTIVE: You are an autonomous agent. \
+                 Execute the following implementation plan for the idea: '{}'. \
+                 Modify the files directly on the filesystem and run standard checks. \
+                 \n\n[PLAN]\n@{}",
+                idea,
+                plan_path.display()
+            )
+        }
+        _ => unreachable!(),
+    };
+
+    let mut cmd = Command::new("gemini");
+    cmd.arg("-p").arg(prompt);
+
+    if phase == "Implement" {
+        cmd.arg("--yolo");
+    }
+
+    if let Some(dir) = worktree_dir {
+        cmd.current_dir(dir);
+    }
+
+    let output = cmd.output()?;
+    if !output.status.success() {
+        let err = String::from_utf8_lossy(&output.stderr);
+        println!("  !! {} Phase failed: {}", phase, err);
+        return Err(anyhow::anyhow!("Phase {} failed", phase));
+    }
+
+    fs::write(output_file, output.stdout)?;
+    Ok(())
+>>>>>>> wreckit/cryptographic-execution-provenance-enhance-executionmanifest-with-full-h-l-π-h-n-hashing
 }
 
 fn inject_supervisor(working_dir: &Path) -> anyhow::Result<()> {
