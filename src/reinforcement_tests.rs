@@ -181,11 +181,16 @@ mod tests {
 
     #[test]
     fn test_double_q_serialization_roundtrip() {
+<<<<<<< HEAD
         let mut agent = DoubleQLearning::<RlState<1>, RlAction>::new();
         let state = create_state(42);
+=======
+        let agent = DoubleQLearning::<RlState, RlAction>::new();
+        let state = create_state(0);
+>>>>>>> wreckit/admissibility-reachability-pruning-implement-branchless-guards-to-prevent-bad-states-in-markings
 
         for _ in 0..100 {
-            agent.update(state, RlAction::Optimize, 100.0, create_state(43), true);
+            agent.update(state, RlAction::Optimize, 100.0, create_state(1), true);
         }
 
         let serialized = agent.export_as_serialized(3);

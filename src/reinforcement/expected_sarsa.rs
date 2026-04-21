@@ -54,8 +54,32 @@ impl<S: WorkflowState, A: WorkflowAction> ExpectedSARSAAgent<S, A> {
     #[allow(dead_code)]
     pub fn select_action(&self, state: S) -> A {
         if self.rng.borrow_mut().f32() < self.exploration_rate {
-            let idx = self.rng.borrow_mut().usize(..A::ACTION_COUNT);
-            A::from_index(idx).unwrap()
+            // Randomly select an ADMISSIBLE action (Zero-heap)
+            let mut count = 0;
+            for i in 0..A::ACTION_COUNT {
+                if let Some(a) = A::from_index(i) {
+                    if state.is_admissible(a) {
+                        count += 1;
+                    }
+                }
+            }
+            
+            if count == 0 {
+                return A::from_index(0).unwrap();
+            }
+            
+            let mut choice = self.rng.borrow_mut().usize(..count);
+            for i in 0..A::ACTION_COUNT {
+                if let Some(a) = A::from_index(i) {
+                    if state.is_admissible(a) {
+                        if choice == 0 {
+                            return a;
+                        }
+                        choice -= 1;
+                    }
+                }
+            }
+            A::from_index(0).unwrap()
         } else {
             self.greedy_action(state)
         }
@@ -64,7 +88,23 @@ impl<S: WorkflowState, A: WorkflowAction> ExpectedSARSAAgent<S, A> {
     fn greedy_action(&self, state: S) -> A {
         let q_table = self.q_table.borrow();
         let q_vals = get_q_values::<S, A>(&*q_table, &state);
-        A::from_index(greedy_index(q_vals)).unwrap()
+        
+        let mut best_idx = 0;
+        let mut max_val = f32::NEG_INFINITY;
+        let mut found = false;
+
+        for i in 0..A::ACTION_COUNT {
+            if let Some(a) = A::from_index(i) {
+                if state.is_admissible(a) {
+                    if q_vals[i] > max_val || !found {
+                        max_val = q_vals[i];
+                        best_idx = i;
+                        found = true;
+                    }
+                }
+            }
+        }
+        A::from_index(best_idx).unwrap()
     }
 
     #[allow(dead_code)]
@@ -75,12 +115,62 @@ impl<S: WorkflowState, A: WorkflowAction> ExpectedSARSAAgent<S, A> {
             let q_table = self.q_table.borrow();
             let q_vals = get_q_values::<S, A>(&*q_table, &next_state);
 
+<<<<<<< HEAD
             let probs = epsilon_greedy_probs::<ACTION_MAX_LIMIT>(q_vals, self.exploration_rate);
             q_vals
                 .iter()
                 .zip(probs.iter())
                 .map(|(q, p)| q * p)
                 .sum::<f32>()
+=======
+            // Calculate probabilities only for admissible actions (Zero-heap)
+            let mut admissible_count = 0;
+            for i in 0..A::ACTION_COUNT {
+                if let Some(a) = A::from_index(i) {
+                    if next_state.is_admissible(a) {
+                        admissible_count += 1;
+                    }
+                }
+            }
+
+            if admissible_count == 0 {
+                0.0
+            } else {
+                let eps = clamp_probability(self.exploration_rate);
+                let greedy_idx = {
+                    let mut best_i = 0;
+                    let mut max_q = f32::NEG_INFINITY;
+                    let mut found_q = false;
+                    for i in 0..A::ACTION_COUNT {
+                        if let Some(a) = A::from_index(i) {
+                            if next_state.is_admissible(a) {
+                                if q_vals[i] > max_q || !found_q {
+                                    max_q = q_vals[i];
+                                    best_i = i;
+                                    found_q = true;
+                                }
+                            }
+                        }
+                    }
+                    best_i
+                };
+
+                let uniform = eps / admissible_count as f32;
+                let mut sum = 0.0;
+                for i in 0..A::ACTION_COUNT {
+                    if let Some(a) = A::from_index(i) {
+                        if next_state.is_admissible(a) {
+                            let mut p = uniform;
+                            if i == greedy_idx {
+                                p += 1.0 - eps;
+                            }
+                            sum += q_vals[i] * p;
+                        }
+                    }
+                }
+                sum
+            }
+>>>>>>> wreckit/admissibility-reachability-pruning-implement-branchless-guards-to-prevent-bad-states-in-markings
         };
 
         let mut q_table = self.q_table.borrow_mut();

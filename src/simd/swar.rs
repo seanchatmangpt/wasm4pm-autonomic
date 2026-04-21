@@ -21,18 +21,18 @@ impl<const WORDS: usize> SwarMarking<WORDS> {
     /// Returns (new_marking, was_fired).
     #[inline(always)]
     pub fn try_fire_branchless(&self, req: &[u64; WORDS], out: &[u64; WORDS]) -> (Self, bool) {
-        let mut is_enabled = true;
-        for (i, &r) in req.iter().enumerate().take(WORDS) {
-            if (self.words[i] & r) != r {
-                is_enabled = false;
-            }
-        }
+        use crate::utils::dense_kernel::KBitSet;
+        
+        let current = KBitSet { words: self.words };
+        let required = KBitSet { words: *req };
+        
+        let cond = current.is_enabled_mask(required);
+        let is_enabled = cond != 0;
 
         let mut next_words = [0u64; WORDS];
-        let cond = is_enabled as u64;
 
-        for (i, &next_val) in out.iter().enumerate().take(WORDS) {
-            let next = (self.words[i] & !req[i]) | next_val;
+        for i in 0..WORDS {
+            let next = (self.words[i] & !req[i]) | out[i];
             next_words[i] = select_u64(cond, next, self.words[i]);
         }
 

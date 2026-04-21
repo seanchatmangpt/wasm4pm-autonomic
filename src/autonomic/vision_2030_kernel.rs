@@ -294,10 +294,9 @@ impl<const WORDS: usize> AutonomicKernel for Vision2030Kernel<WORDS> {
                 self.powl_prev_idx,
             );
 
-            if !is_valid {
-                self.state.process_health =
-                    (self.state.process_health - HEALTH_PENALTY_POWL_VIOLATION).max(0.0);
-            }
+            use crate::utils::bitset::select_f32;
+            let powl_penalty = select_f32(is_valid as u64, 0.0, HEALTH_PENALTY_POWL_VIOLATION);
+            self.state.process_health = (self.state.process_health - powl_penalty).max(0.0);
 
             // Update execution state branchlessly
             let _ = self.powl_executed_mask.set(idx as usize);
@@ -313,13 +312,13 @@ impl<const WORDS: usize> AutonomicKernel for Vision2030Kernel<WORDS> {
             let (new_marking, fired) = self.marking.try_fire_branchless(req, out);
             self.marking = new_marking;
 
-            // Update conformance score branchlessly-ish
-            if !fired {
-                self.state.conformance_score =
-                    (self.state.conformance_score - CONFORMANCE_PENALTY_SWAR_VIOLATION).max(0.0);
-                self.state.process_health =
-                    (self.state.process_health - HEALTH_PENALTY_SWAR_VIOLATION).max(0.0);
-            }
+            // Update conformance score branchlessly
+            let fired_u64 = fired as u64;
+            let conf_penalty = select_f32(fired_u64, 0.0, CONFORMANCE_PENALTY_SWAR_VIOLATION);
+            let health_swar_penalty = select_f32(fired_u64, 0.0, HEALTH_PENALTY_SWAR_VIOLATION);
+            
+            self.state.conformance_score = (self.state.conformance_score - conf_penalty).max(0.0);
+            self.state.process_health = (self.state.process_health - health_swar_penalty).max(0.0);
 
             // Phase 2 State tracking: active cases
             self.state.active_cases = self.sketch.estimate(&event.payload) as usize;

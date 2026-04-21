@@ -29,6 +29,11 @@ pub trait WorkflowState: Clone + Copy + Eq + Hash {
 
     /// Is this a terminal state?
     fn is_terminal(&self) -> bool;
+
+    /// Is this action admissible in the current state?
+    fn is_admissible<A: WorkflowAction>(&self, _action: A) -> bool {
+        true
+    }
 }
 
 /// Action for reinforcement learning (must be copyable)
@@ -123,9 +128,22 @@ where
     S: WorkflowState,
     A: WorkflowAction,
 {
-    get_q_values::<S, A>(table, state)
-        .iter()
-        .fold(f32::NEG_INFINITY, |a, &b| a.max(b))
+    let q_values = get_q_values::<S, A>(table, state);
+    let mut m = f32::NEG_INFINITY;
+    let mut found = false;
+    for i in 0..A::ACTION_COUNT {
+        if let Some(a) = A::from_index(i) {
+            if state.is_admissible(a) {
+                m = m.max(q_values[i]);
+                found = true;
+            }
+        }
+    }
+    if found {
+        m
+    } else {
+        0.0
+    }
 }
 
 pub(crate) fn epsilon_greedy_probs<const N: usize>(values: &[f32], epsilon: f32) -> [f32; N] {

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 @plans/001-u64-k-t1-cell.md
 @plans/002-u64-k-t1-sparse.md
 @plans/003-u64-k-t0-atoms.md
@@ -40,3 +41,6 @@
 @plans/040-u64-a-exploration-mask.md
 @plans/041-u64-a-execution-manifest.md
 @plans/042-u64-a-ralph-loop.md
+=======
+Test Improvement: Add doc comments to bitset
+>>>>>>> wreckit/admissibility-reachability-pruning-implement-branchless-guards-to-prevent-bad-states-in-markings
