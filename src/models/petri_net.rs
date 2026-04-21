@@ -424,8 +424,13 @@ impl PetriNet {
         score
     }
 
+<<<<<<< HEAD
     /// Computes the MDL score of the model as: transitions + (arcs * log2(vocabulary_size))
     /// AC 3.1: Ontology size |O*| is treated as the theoretical upper bound for |T|.
+=======
+    /// Computes the MDL score of the model as: Φ(N) = |T| + (|A| * log2 |T|)
+    /// strictly following Section 3 of DDS_THESIS.md.
+>>>>>>> wreckit/mdl-refinement-upgrade-structural-scoring-in-src-models-petri-net-rs-to-follow-φ-n-exactly
     pub fn mdl_score(&self) -> f64 {
         self.mdl_score_with_ontology(None)
     }
@@ -433,11 +438,23 @@ impl PetriNet {
     pub fn mdl_score_with_ontology(&self, ontology_size: Option<usize>) -> f64 {
         let t = self.transitions.len() as f64;
         let a = self.arcs.len() as f64;
+
+        // Edge case handling as per AC_CRITERIA.md
         if t == 0.0 {
             return 0.0;
         }
+<<<<<<< HEAD
         let vocabulary_size = ontology_size.map(|s| s as f64).unwrap_or(t);
         t + (a * vocabulary_size.log2())
+=======
+        if t == 1.0 {
+            return 1.0;
+        }
+
+        // Exact formula: |T| + (|A| * log2(|T|))
+        // This ensures the penalty for arcs scales with the logarithm of the number of transitions.
+        t + (a * t.log2())
+>>>>>>> wreckit/mdl-refinement-upgrade-structural-scoring-in-src-models-petri-net-rs-to-follow-φ-n-exactly
     }
 
     pub fn explain(&self) -> String {
@@ -479,6 +496,7 @@ impl PetriNet {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use proptest::prelude::*;
 
     #[test]
     fn test_incidence_matrix_flat_parity() {
@@ -563,6 +581,7 @@ mod tests {
     }
 
     #[test]
+<<<<<<< HEAD
     fn test_is_sound_validation() {
         let mut net = PetriNet::default();
         net.places.push(Place { id: "p1".to_string() });
@@ -623,6 +642,99 @@ mod proptests {
             // If it satisfies the structural requirements, it might be sound.
             // This test ensures no panics and consistent results.
             let _ = net.is_sound();
+=======
+    fn test_mdl_edge_cases() {
+        let mut net = PetriNet::default();
+        assert_eq!(net.mdl_score(), 0.0); // |T|=0
+
+        net.transitions.push(Transition {
+            id: "t1".to_string(),
+            label: "A".to_string(),
+            is_invisible: None,
+        });
+        assert_eq!(net.mdl_score(), 1.0); // |T|=1, |A|=0
+
+        net.arcs.push(Arc {
+            from: "p1".to_string(),
+            to: "t1".to_string(),
+            weight: None,
+        });
+        assert_eq!(net.mdl_score(), 1.0); // |T|=1, |A|=1 -> 1 + (1 * log2(1)) = 1
+
+        net.transitions.push(Transition {
+            id: "t2".to_string(),
+            label: "B".to_string(),
+            is_invisible: None,
+        });
+        // |T|=2, |A|=1 -> 2 + (1 * log2(2)) = 3.0
+        assert_eq!(net.mdl_score(), 3.0);
+    }
+
+    proptest! {
+        #[test]
+        fn test_mdl_score_non_negative(
+            t_count in 0..1000usize,
+            a_count in 0..5000usize,
+        ) {
+            let mut net = PetriNet::default();
+            for i in 0..t_count {
+                net.transitions.push(Transition {
+                    id: format!("t{}", i),
+                    label: format!("T{}", i),
+                    is_invisible: None,
+                });
+            }
+            for _ in 0..a_count {
+                net.arcs.push(Arc {
+                    from: "p".to_string(),
+                    to: "t".to_string(),
+                    weight: None,
+                });
+            }
+            let score = net.mdl_score();
+            prop_assert!(score >= 0.0);
+
+            if t_count > 1 {
+                // If |T| > 1, adding an arc MUST increase the score
+                let current_score = net.mdl_score();
+                net.arcs.push(Arc { from: "p".to_string(), to: "t".to_string(), weight: None });
+                prop_assert!(net.mdl_score() > current_score);
+            }
+        }
+
+        #[test]
+        fn test_mdl_monotonicity_transitions(
+            t_count in 2..100usize,
+            a_count in 1..10usize,
+        ) {
+            let mut net = PetriNet::default();
+            for i in 0..t_count {
+                net.transitions.push(Transition {
+                    id: format!("t{}", i),
+                    label: format!("T{}", i),
+                    is_invisible: None,
+                });
+            }
+            for _ in 0..a_count {
+                net.arcs.push(Arc {
+                    from: "p".to_string(),
+                    to: "t".to_string(),
+                    weight: None,
+                });
+            }
+
+            let score1 = net.mdl_score();
+
+            // Add another transition
+            net.transitions.push(Transition {
+                id: "new_t".to_string(),
+                label: "NEW".to_string(),
+                is_invisible: None,
+            });
+
+            let score2 = net.mdl_score();
+            prop_assert!(score2 > score1, "MDL score must be monotonic with respect to |T| for |T| >= 2");
+>>>>>>> wreckit/mdl-refinement-upgrade-structural-scoring-in-src-models-petri-net-rs-to-follow-φ-n-exactly
         }
     }
 }

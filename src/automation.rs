@@ -104,9 +104,17 @@ pub fn train_with_provenance_projected(
 
     for _epoch in 0..config.discovery.max_training_epochs {
         let avg_f = token_replay_projected(train_log, &model);
+<<<<<<< HEAD
         
         // MDL Minimality check
         let _mdl = model.mdl_score();
+=======
+
+        let _unsoundness_u = model.structural_unsoundness_score();
+        let mdl_score = model.mdl_score() as f32;
+        let _structural_penalty = mdl_score * config.autonomic.policy.mdl_penalty;
+
+>>>>>>> wreckit/mdl-refinement-upgrade-structural-scoring-in-src-models-petri-net-rs-to-follow-φ-n-exactly
         let is_sound = model.is_structural_workflow_net();
         let verifies_calculus = model.verifies_state_equation_calculus();
 

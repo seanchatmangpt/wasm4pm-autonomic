@@ -186,6 +186,7 @@ mod proptests {
             };
             let action = RlAction::from_index(a).unwrap();
 <<<<<<< HEAD
+<<<<<<< HEAD
             
             let admissible = state.is_admissible(action);
             match action {
@@ -194,6 +195,8 @@ mod proptests {
                 RlAction::Rework => assert_eq!(admissible, h > 0),
             }
 =======
+=======
+>>>>>>> wreckit/mdl-refinement-upgrade-structural-scoring-in-src-models-petri-net-rs-to-follow-φ-n-exactly
 
             // Execute twice to check variancy τ
 <<<<<<< HEAD

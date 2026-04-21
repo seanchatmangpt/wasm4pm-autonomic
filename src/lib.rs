@@ -8,12 +8,15 @@ pub mod reinforcement;
 pub mod reinforcement_tests;
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 pub mod proptest_kernel_verification;
 =======
 >>>>>>> wreckit/1-formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o-and-prevent-out-of-ontology-state-reachability
 pub mod ontology_proptests;
 =======
 >>>>>>> wreckit/cryptographic-execution-provenance-enhance-executionmanifest-with-full-h-l-π-h-n-hashing
+=======
+>>>>>>> wreckit/mdl-refinement-upgrade-structural-scoring-in-src-models-petri-net-rs-to-follow-φ-n-exactly
 pub mod utils;
 pub use agentic::ralph::patterns::universe64::Universe64;
 

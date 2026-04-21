@@ -7,9 +7,16 @@ use iai_callgrind::{library_benchmark, library_benchmark_group, main};
 use std::collections::HashMap;
 
 fn generate_random_graph<const WORDS: usize>(density: f64) -> Vec<KBitSet<WORDS>> {
+<<<<<<< HEAD
     let mut adj = vec![KBitSet::<WORDS>::zero(); WORDS * 64];
     for (i, row) in adj.iter_mut().enumerate().take(WORDS * 64) {
         for j in 0..WORDS * 64 {
+=======
+    let nodes = WORDS * 64;
+    let mut adj = vec![KBitSet::<WORDS>::zero(); nodes];
+    for (i, row) in adj.iter_mut().enumerate() {
+        for j in 0..nodes {
+>>>>>>> wreckit/mdl-refinement-upgrade-structural-scoring-in-src-models-petri-net-rs-to-follow-φ-n-exactly
             // Using a simple deterministic "random" for density
             if ((i * 31 + j * 7) % 100) < (density * 100.0) as usize {
                 row.set(j).unwrap();

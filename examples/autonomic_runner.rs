@@ -4,6 +4,7 @@ use log::{debug, info, warn};
 use std::thread;
 use std::time::{Duration, SystemTime};
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 use dteam::autonomic::{AutonomicEvent, AutonomicFeedback, AutonomicKernel, DefaultKernel};
 use std::thread;
@@ -12,6 +13,8 @@ use log::{debug, info, warn};
 >>>>>>> wreckit/blue-river-dam-interface-refactor-autonomickernel-to-focus-on-control-surface-synthesis
 =======
 >>>>>>> wreckit/cryptographic-execution-provenance-enhance-executionmanifest-with-full-h-l-π-h-n-hashing
+=======
+>>>>>>> wreckit/mdl-refinement-upgrade-structural-scoring-in-src-models-petri-net-rs-to-follow-φ-n-exactly
 
 fn main() {
     env_logger::init();
@@ -66,12 +69,15 @@ fn main() {
                 event.source
             );
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
         if executed_count == 0 {
             warn!("  ℹ️  No actions were executed for event.");
 >>>>>>> wreckit/blue-river-dam-interface-refactor-autonomickernel-to-focus-on-control-surface-synthesis
 =======
 >>>>>>> wreckit/cryptographic-execution-provenance-enhance-executionmanifest-with-full-h-l-π-h-n-hashing
+=======
+>>>>>>> wreckit/mdl-refinement-upgrade-structural-scoring-in-src-models-petri-net-rs-to-follow-φ-n-exactly
         } else {
             // Adapt with a small penalty to simulate operational decay
             debug!("Applying simulated operational decay penalty.");

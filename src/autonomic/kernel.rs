@@ -181,7 +181,10 @@ impl AutonomicKernel for DefaultKernel {
         // For this baseline, we verify structural Soundness before execution.
         let is_admissible = true; // Placeholder for structural net check
 
+<<<<<<< HEAD
 >>>>>>> wreckit/cryptographic-execution-provenance-enhance-executionmanifest-with-full-h-l-π-h-n-hashing
+=======
+>>>>>>> wreckit/mdl-refinement-upgrade-structural-scoring-in-src-models-petri-net-rs-to-follow-φ-n-exactly
         // Use select_u64 for branchless selection
         let success = crate::utils::bitset::select_u64(is_admissible as u64, 1, 0) == 1;
 
@@ -300,7 +303,10 @@ mod tests {
             // This is a simplified test simulating the branchless selection logic
             let success = crate::utils::bitset::select_u64(is_admissible as u64, 1, 0) == 1;
 
+<<<<<<< HEAD
 >>>>>>> wreckit/cryptographic-execution-provenance-enhance-executionmanifest-with-full-h-l-π-h-n-hashing
+=======
+>>>>>>> wreckit/mdl-refinement-upgrade-structural-scoring-in-src-models-petri-net-rs-to-follow-φ-n-exactly
             assert_eq!(success, is_admissible);
         }
     }
