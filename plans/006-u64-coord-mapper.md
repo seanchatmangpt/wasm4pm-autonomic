@@ -1,11 +1,12 @@
 # U64-Coord-Mapper
 
 ## Objective
-Compile 3D (domain, cell, place) coordinates into 4096-word memory offsets.
+Implement UCoord Mapping: Compile 3D (domain, cell, place) coordinates into 32 KiB memory offsets.
 
 ## Requirements
+- Every state motion must emit a UDelta and update the UReceipt.
 - Conform to the 200ns T1 admissibility threshold (where applicable).
-- Adhere to the Universe64 Dual-Plane L1 Architecture.
+- Adhere to the UniverseOS Dual-Plane L1 Architecture.
 - Zero heap allocations in the hot path.
 - Branchless execution logic (CC=1).
 

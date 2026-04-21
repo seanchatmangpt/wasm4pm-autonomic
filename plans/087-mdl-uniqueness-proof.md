@@ -4,8 +4,9 @@
 Formal test that MDL finds the global minimum.
 
 ## Requirements
+- Every state motion must emit a UDelta and update the UReceipt.
 - Conform to the 200ns T1 admissibility threshold (where applicable).
-- Adhere to the Universe64 Dual-Plane L1 Architecture.
+- Adhere to the UniverseOS Dual-Plane L1 Architecture.
 - Zero heap allocations in the hot path.
 - Branchless execution logic (CC=1).
 

@@ -1,11 +1,12 @@
 # U64-T1-Sparse
 
 ## Objective
-Implement active-word-scoped transition for T1-admissible multi-cell firing.
+Implement sparse UTransition microkernel for T1-admissible active-word state motion.
 
 ## Requirements
+- Every state motion must emit a UDelta and update the UReceipt.
 - Conform to the 200ns T1 admissibility threshold (where applicable).
-- Adhere to the Universe64 Dual-Plane L1 Architecture.
+- Adhere to the UniverseOS Dual-Plane L1 Architecture.
 - Zero heap allocations in the hot path.
 - Branchless execution logic (CC=1).
 

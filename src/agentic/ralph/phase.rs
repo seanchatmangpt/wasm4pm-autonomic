@@ -57,7 +57,7 @@ impl PhaseRunner for GeminiPhaseRunner {
             "UserStory" => format!(
                 "DDS STORY GENERATION: Convert this idea into a formal User Story: '{}'. \
                  Analyze the system against DDS paradigms in @docs/DDS_THESIS.md and the \
-                 Universe64 Dual-Plane L1 Architecture in @src/agentic/ralph/patterns/U64_ARCHITECTURE.md. \
+                 UniverseOS Deterministic Operating Environment in @src/agentic/ralph/patterns/U64_ARCHITECTURE.md. \
                  Output a STORY.md with 'As a...', 'I want...', and 'So that...' sections.",
                 idea
             ),
@@ -66,7 +66,8 @@ impl PhaseRunner for GeminiPhaseRunner {
                 format!(
                     "DDS SPRINT PLANNING: Given the STORY.md in @{}, define the formal \
                      Acceptance Criteria (AC) required for a DDS-grade implementation. \
-                     Consult @docs/DDS_THESIS.md and @src/agentic/ralph/patterns/U64_ARCHITECTURE.md for architectural constraints. \
+                     Consult @docs/DDS_THESIS.md and @src/agentic/ralph/patterns/U64_ARCHITECTURE.md for \
+                     UniverseOS architectural constraints (UInstruction, UDelta, UReceipt, UProjection). \
                      Output a detailed AC_CRITERIA.md report.",
                     story_path.display()
                 )
@@ -74,15 +75,15 @@ impl PhaseRunner for GeminiPhaseRunner {
             "Implementation" => {
                 let ac_path = working_dir.join("AC_CRITERIA.md");
                 format!(
-                    "DDS DEVELOPMENT PHASE: You are a DDS Synthesis Agent. \
+                    "DDS DEVELOPMENT PHASE: You are a DDS Synthesis Agent for UniverseOS. \
                      Implement the solution such that it meets all Acceptance Criteria in @{}. \
                      You MUST satisfy the following Definition of Done (DoD):\n \
-                     1. ADMISSIBILITY: No unreachable states or unsafe panics.\n \
+                     1. ADMISSIBILITY: No unreachable states or unsafe panics. Every transition must be checked against the resident Data Plane.\n \
                      2. MINIMALITY: Satisfy MDL Φ(N) formula.\n \
-                     3. PERFORMANCE: Zero-heap, branchless hot-path adhering to the T1 (<200ns) microkernel threshold.\n \
-                     4. PROVENANCE: Manifest updated.\n \
+                     3. PERFORMANCE: Zero-heap, branchless hot-path adhering to the T1 (<200ns) microkernel threshold for UTransitions.\n \
+                     4. PROVENANCE: Every state motion must emit a UDelta and update the UReceipt rolling proof state.\n \
                      5. RIGOR: Include property-based tests (proptests) that assert both successful execution and expected failure/admissibility violations.\n \
-                     Consult @docs/DDS_THESIS.md and @src/agentic/ralph/patterns/U64_ARCHITECTURE.md for formal definitions and C4 big-picture architecture. \
+                     Consult @docs/DDS_THESIS.md and @src/agentic/ralph/patterns/U64_ARCHITECTURE.md for UniverseOS law and C4 architecture. \
                      Modify files directly and output a DOD_VERIFICATION.md report.",
                     ac_path.display()
                 )
