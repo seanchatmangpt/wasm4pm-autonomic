@@ -46,11 +46,13 @@ pub fn train_with_provenance_projected(
     _lambda: f32,
 ) -> (PetriNet, Vec<u8>) {
     let mut model = PetriNet::default();
-    let agent: QLearning<RlState, RlAction> = QLearning::with_hyperparams(
+    // Use fixed seed for deterministic discovery trajectory
+    let mut agent: QLearning<RlState, RlAction> = QLearning::new_with_seed(
         config.rl.learning_rate,
         config.rl.discount_factor,
-        config.rl.exploration_rate,
+        0xDEADBEEF,
     );
+    agent.set_exploration_rate(config.rl.exploration_rate);
 
     let mut trajectory = Vec::new();
 

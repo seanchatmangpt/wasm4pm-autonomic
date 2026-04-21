@@ -3,9 +3,9 @@ pub mod io;
 pub mod jtbd_counterfactual_tests;
 pub mod jtbd_tests;
 pub mod models;
+pub mod proptest_kernel_verification;
 pub mod reinforcement;
 pub mod reinforcement_tests;
-pub mod proptest_kernel_verification;
 pub mod utils;
 
 // Re-export models for easier access
@@ -294,64 +294,65 @@ pub mod dteam {
             }
 
             fn compare(&self, a: &ExecutionManifest, b: &ExecutionManifest) -> String {
-                let input = if a.input_log_hash == b.input_log_hash {
+                let input = if a.h_l == b.h_l {
                     "identical"
                 } else {
                     "different"
                 };
-                let policy_trace = if a.action_sequence == b.action_sequence {
+                let policy_trace = if a.pi == b.pi {
                     "identical".to_string()
                 } else {
-                    let div = a
-                        .action_sequence
-                        .iter()
-                        .zip(b.action_sequence.iter())
-                        .position(|(x, y)| x != y)
-                        .unwrap_or(std::cmp::min(
-                            a.action_sequence.len(),
-                            b.action_sequence.len(),
-                        ));
+                    let div =
+                        a.pi.iter()
+                            .zip(b.pi.iter())
+                            .position(|(x, y)| x != y)
+                            .unwrap_or(std::cmp::min(a.pi.len(), b.pi.len()));
                     format!("different at step {}", div)
                 };
-                let model_hash = if a.model_canonical_hash == b.model_canonical_hash {
+                let model_hash = if a.h_n == b.h_n {
                     "identical"
                 } else {
                     "different"
                 };
-                let verdict = if a.model_canonical_hash == b.model_canonical_hash {
-                    "stable"
+                let integrity = if a.integrity_hash == b.integrity_hash {
+                    "matched"
                 } else {
                     "divergent"
                 };
-                let equivalence = if a.model_canonical_hash == b.model_canonical_hash {
-                    "bisimulation-equivalent"
+                let verdict = if a.h_n == b.h_n && a.integrity_hash == b.integrity_hash {
+                    "stable"
                 } else {
-                    "non-equivalent"
+                    "divergent"
                 };
 
                 format!(
                     "input: {}\n\
                          policy trace: {}\n\
                          model hash: {}\n\
-                         artifact equivalence: {}\n\
+                         integrity: {}\n\
                          verdict: {}",
-                    input, policy_trace, model_hash, equivalence, verdict
+                    input, policy_trace, model_hash, integrity, verdict
                 )
             }
 
             fn reproduce(&self, manifest: &ExecutionManifest, log: &EventLog) -> String {
-                let log_hash = log.canonical_hash();
-                let input_match = log_hash == manifest.input_log_hash;
+                let h_l = log.canonical_hash();
+                let input_match = h_l == manifest.h_l;
 
                 let result = self.run(log);
                 if let EngineResult::Success(_, new_manifest) = result {
-                    let trace_match = new_manifest.action_sequence == manifest.action_sequence;
-                    let model_match =
-                        new_manifest.model_canonical_hash == manifest.model_canonical_hash;
+                    let trace_match = new_manifest.pi == manifest.pi;
+                    let model_match = new_manifest.h_n == manifest.h_n;
                     let mdl_match =
                         (new_manifest.mdl_score - manifest.mdl_score).abs() < f64::EPSILON;
+                    let integrity_match = new_manifest.integrity_hash == manifest.integrity_hash;
 
-                    let verdict = if input_match && trace_match && model_match && mdl_match {
+                    let verdict = if input_match
+                        && trace_match
+                        && model_match
+                        && mdl_match
+                        && integrity_match
+                    {
                         "VERIFIED"
                     } else {
                         "FAILED"
@@ -361,11 +362,17 @@ pub mod dteam {
                              policy_trace: {}\n\
                              model_hash: {}\n\
                              mdl_score: {}\n\
+                             integrity: {}\n\
                              verdict: {}",
                         if input_match { "matched" } else { "divergent" },
                         if trace_match { "replayed" } else { "divergent" },
                         if model_match { "matched" } else { "divergent" },
                         if mdl_match { "matched" } else { "divergent" },
+                        if integrity_match {
+                            "verified"
+                        } else {
+                            "failed"
+                        },
                         verdict
                     )
                 } else {
@@ -376,9 +383,13 @@ pub mod dteam {
 
         #[derive(Debug, Clone, Serialize, Deserialize)]
         pub struct ExecutionManifest {
-            pub input_log_hash: u64,
-            pub action_sequence: Vec<u8>,
-            pub model_canonical_hash: u64,
+            #[serde(rename = "H(L)")]
+            pub h_l: u64,
+            #[serde(rename = "pi")]
+            pub pi: Vec<u8>,
+            #[serde(rename = "H(N)")]
+            pub h_n: u64,
+            pub integrity_hash: u64,
             pub mdl_score: f64,
             pub k_tier: String,
             pub latency_ns: u64,
@@ -417,11 +428,24 @@ pub mod dteam {
                     crate::automation::train_with_provenance(log, &config, beta, lambda);
                 let execution_time_ns = start_time.elapsed().as_nanos() as u64;
 
+                let h_l = log.canonical_hash();
+                let h_n = net.canonical_hash();
+                let mdl = net.mdl_score();
+
+                // Compute integrity hash: fnv1a_64(H(L) | pi | H(N) | MDL)
+                let mut hasher_bytes = Vec::new();
+                hasher_bytes.extend_from_slice(&h_l.to_le_bytes());
+                hasher_bytes.extend_from_slice(&trajectory);
+                hasher_bytes.extend_from_slice(&h_n.to_le_bytes());
+                hasher_bytes.extend_from_slice(&mdl.to_bits().to_le_bytes());
+                let integrity_hash = crate::utils::dense_kernel::fnv1a_64(&hasher_bytes);
+
                 let manifest = ExecutionManifest {
-                    input_log_hash: log.canonical_hash(),
-                    action_sequence: trajectory,
-                    model_canonical_hash: net.canonical_hash(),
-                    mdl_score: net.mdl_score(),
+                    h_l,
+                    pi: trajectory,
+                    h_n,
+                    integrity_hash,
+                    mdl_score: mdl,
                     k_tier: format!("{:?}", self.k_tier),
                     latency_ns: execution_time_ns,
                 };

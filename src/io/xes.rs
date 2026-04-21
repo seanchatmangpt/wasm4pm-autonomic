@@ -25,9 +25,15 @@ impl fmt::Display for XesError {
             XesError::IoError { message } => write!(f, "IO error: {}", message),
             XesError::XmlError { message } => write!(f, "XML parsing error: {}", message),
             XesError::MissingAttribute { element, attribute } => {
-                write!(f, "Missing attribute '{}' in element '{}'", attribute, element)
+                write!(
+                    f,
+                    "Missing attribute '{}' in element '{}'",
+                    attribute, element
+                )
             }
-            XesError::InvalidUtf8 { element } => write!(f, "Invalid UTF-8 in element '{}'", element),
+            XesError::InvalidUtf8 { element } => {
+                write!(f, "Invalid UTF-8 in element '{}'", element)
+            }
             XesError::MalformedFormat { reason } => write!(f, "Malformed XES format: {}", reason),
         }
     }
@@ -78,7 +84,11 @@ impl XESReader {
     }
 
     /// Parse XES XML from bytes
-    pub fn parse_bytes(&self, content: &[u8], source_path: Option<&Path>) -> Result<EventLog, XesError> {
+    pub fn parse_bytes(
+        &self,
+        content: &[u8],
+        source_path: Option<&Path>,
+    ) -> Result<EventLog, XesError> {
         let mut log = EventLog::new();
         if let Some(p) = source_path {
             log.attributes.push(Attribute {
@@ -141,9 +151,10 @@ impl XESReader {
                             });
                         }
 
-                        let key = std::str::from_utf8(&attr_key).map_err(|_| XesError::InvalidUtf8 {
-                            element: "attribute key".to_string(),
-                        })?;
+                        let key =
+                            std::str::from_utf8(&attr_key).map_err(|_| XesError::InvalidUtf8 {
+                                element: "attribute key".to_string(),
+                            })?;
                         let value = std::str::from_utf8(&attr_value).map_err(|_| {
                             XesError::InvalidUtf8 {
                                 element: format!("attribute value for key '{}'", key),

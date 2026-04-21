@@ -80,8 +80,10 @@ fn handle_discover(_cmd: &Value) -> Result<String> {
             "arcs_count": 0,
         },
         "manifest": {
-            "input_log_hash": 0,
-            "model_canonical_hash": 0,
+            "H(L)": 0,
+            "pi": [],
+            "H(N)": 0,
+            "integrity_hash": 0,
             "mdl_score": 0.0,
             "k_tier": "K256",
             "latency_ns": 0,

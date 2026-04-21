@@ -106,7 +106,9 @@ fn ensure_dev_branch() -> anyhow::Result<()> {
 
     if !output.success() {
         println!("  !! dev branch missing. Creating from main...");
-        Command::new("git").args(["checkout", "-b", "dev"]).status()?;
+        Command::new("git")
+            .args(["checkout", "-b", "dev"])
+            .status()?;
         Command::new("git").args(["checkout", "main"]).status()?;
     }
     Ok(())
@@ -115,11 +117,7 @@ fn ensure_dev_branch() -> anyhow::Result<()> {
 fn setup_worktree(branch: &str, path: &Path) -> anyhow::Result<()> {
     // Check if branch exists
     let branch_exists = Command::new("git")
-        .args([
-            "show-ref",
-            "--verify",
-            &format!("refs/heads/{}", branch),
-        ])
+        .args(["show-ref", "--verify", &format!("refs/heads/{}", branch)])
         .status()
         .map(|s| s.success())
         .unwrap_or(false);

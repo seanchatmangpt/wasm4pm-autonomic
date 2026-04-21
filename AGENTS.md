@@ -150,6 +150,7 @@ Notable public items:
 ## 10. Test suites inside the library crate
 
 - **`jtbd_tests` / `jtbd_counterfactual_tests`**: Scenario-driven **`Vision2030Kernel`** runs; assert health bounds, manifest prefixes (`VISION_2030_MANIFEST`), deterministic `hash=` substrings, drift/reward feedback, governance cases.
+- **`proptest_kernel_verification`**: μ-kernel property tests; verifies $Var(\tau) = 0$ determinism, `KTier` capacity boundaries, MDL formula correctness, and cryptographic manifest integrity.
 - **`reinforcement_tests`**: Convergence and serialization roundtrips for tabular agents.
 - **`io/xes_tests`**, **`conformance/case_centric/adversarial_tests`**, **`automation`**, **`dteam::orchestration`**, **`autonomic::kernel`**, **`skeptic_harness`**: narrower unit tests.
 
