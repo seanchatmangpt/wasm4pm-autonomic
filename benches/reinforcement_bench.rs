@@ -39,7 +39,11 @@ fn bench_rl_ops(c: &mut Criterion) {
     let reward = 1.0f32;
 
     // 1. Q-Learning
+<<<<<<< HEAD
     let mut q_agent = QLearning::<RlState<4>, RlAction>::with_hyperparams(0.1, 0.9, 0.1);
+=======
+    let mut q_agent = QLearning::<RlState, RlAction>::with_hyperparams(0.1, 0.9, 0.1);
+>>>>>>> wreckit/wf-net-soundness-judge-implement-dr-wil-s-soundness-proofs-as-branchless-bitmask-checks
     group.bench_function("QLearning/select_action", |b| {
         b.iter(|| q_agent.select_action(black_box(state)))
     });
@@ -56,7 +60,11 @@ fn bench_rl_ops(c: &mut Criterion) {
     });
 
     // 2. SARSA
+<<<<<<< HEAD
     let mut sarsa_agent = SARSAAgent::<RlState<4>, RlAction>::new();
+=======
+    let mut sarsa_agent = SARSAAgent::<RlState, RlAction>::new();
+>>>>>>> wreckit/wf-net-soundness-judge-implement-dr-wil-s-soundness-proofs-as-branchless-bitmask-checks
     group.bench_function("SARSA/select_action", |b| {
         b.iter(|| sarsa_agent.select_action(black_box(state)))
     });
@@ -73,7 +81,11 @@ fn bench_rl_ops(c: &mut Criterion) {
     });
 
     // 3. Double Q-Learning
+<<<<<<< HEAD
     let mut double_q = DoubleQLearning::<RlState<4>, RlAction>::with_hyperparams(0.1, 0.9, 0.1);
+=======
+    let mut double_q = DoubleQLearning::<RlState, RlAction>::with_hyperparams(0.1, 0.9, 0.1);
+>>>>>>> wreckit/wf-net-soundness-judge-implement-dr-wil-s-soundness-proofs-as-branchless-bitmask-checks
     group.bench_function("DoubleQLearning/select_action", |b| {
         b.iter(|| double_q.select_action(black_box(state)))
     });

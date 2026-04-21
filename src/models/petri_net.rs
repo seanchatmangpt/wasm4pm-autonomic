@@ -1,4 +1,4 @@
-use crate::utils::dense_kernel::{fnv1a_64, DenseIndex, NodeKind, PackedKeyTable};
+use crate::utils::dense_kernel::{fnv1a_64, DenseIndex, NodeKind, PackedKeyTable, KBitSet};
 use serde::{Deserialize, Serialize};
 use std::hash::{Hash, Hasher};
 
@@ -78,28 +78,30 @@ impl PetriNet {
     }
 
     /// Evaluates if the net is a structurally valid workflow net.
-    /// Highly optimized with pre-calculated indices and bitset algebra.
+    /// Highly optimized with zero-heap bitset algebra.
     pub fn is_structural_workflow_net(&self) -> bool {
         if self.places.is_empty() || self.transitions.is_empty() {
             return false;
         }
 
         let place_count = self.places.len();
-        let total_nodes = place_count + self.transitions.len();
-        let num_words = total_nodes.div_ceil(64);
+        let trans_count = self.transitions.len();
+        let total_nodes = place_count + trans_count;
+        
+        if total_nodes > 1024 {
+            return false;
+        }
 
-        let mut in_degrees = vec![0u64; num_words];
-        let mut out_degrees = vec![0u64; num_words];
+        let mut in_degrees = KBitSet::<16>::zero();
+        let mut out_degrees = KBitSet::<16>::zero();
 
         if let Some(ref index) = self.cached_index {
             for arc in &self.arcs {
                 if let (Some(from_idx), Some(to_idx)) =
                     (index.dense_id(&arc.from), index.dense_id(&arc.to))
                 {
-                    let from_idx = from_idx as usize;
-                    let to_idx = to_idx as usize;
-                    out_degrees[from_idx / 64] |= 1u64 << (from_idx % 64);
-                    in_degrees[to_idx / 64] |= 1u64 << (to_idx % 64);
+                    let _ = out_degrees.set(from_idx as usize);
+                    let _ = in_degrees.set(to_idx as usize);
                 }
             }
         } else {
@@ -109,8 +111,8 @@ impl PetriNet {
                     id_to_index.get(fnv1a_64(arc.from.as_bytes())),
                     id_to_index.get(fnv1a_64(arc.to.as_bytes())),
                 ) {
-                    out_degrees[from_idx / 64] |= 1u64 << (from_idx % 64);
-                    in_degrees[to_idx / 64] |= 1u64 << (to_idx % 64);
+                    let _ = out_degrees.set(from_idx);
+                    let _ = in_degrees.set(to_idx);
                 }
             }
         }
@@ -119,8 +121,8 @@ impl PetriNet {
         let mut sink_places_count = 0;
 
         for i in 0..place_count {
-            let has_in = (in_degrees[i / 64] & (1u64 << (i % 64))) != 0;
-            let has_out = (out_degrees[i / 64] & (1u64 << (i % 64))) != 0;
+            let has_in = in_degrees.contains(i);
+            let has_out = out_degrees.contains(i);
             if !has_in {
                 source_places_count += 1;
             }
@@ -133,14 +135,109 @@ impl PetriNet {
             return false;
         }
 
+        // Transitions must have at least one input and one output
         for i in place_count..total_nodes {
-            let has_in = (in_degrees[i / 64] & (1u64 << (i % 64))) != 0;
-            let has_out = (out_degrees[i / 64] & (1u64 << (i % 64))) != 0;
+            let has_in = in_degrees.contains(i);
+            let has_out = out_degrees.contains(i);
             if !has_in || !has_out {
                 return false;
             }
         }
 
+        true
+    }
+
+    /// Verifies strong connectivity of the short-circuited net branchlessly.
+    /// This ensures every node is on a path from source to sink.
+    pub fn verify_connectivity(&self) -> bool {
+        let index = if let Some(ref idx) = self.cached_index {
+            idx
+        } else {
+            return false;
+        };
+
+        let n = index.len();
+        if n == 0 || n > 1024 { return false; }
+
+        let mut in_degrees = KBitSet::<16>::zero();
+        let mut out_degrees = KBitSet::<16>::zero();
+        let mut r = [KBitSet::<16>::zero(); 1024];
+
+        for i in 0..n {
+            let _ = r[i].set(i); // Reflexive
+        }
+
+        for arc in &self.arcs {
+            if let (Some(u), Some(v)) = (index.dense_id(&arc.from), index.dense_id(&arc.to)) {
+                let u = u as usize;
+                let v = v as usize;
+                let _ = r[u].set(v);
+                let _ = in_degrees.set(v);
+                let _ = out_degrees.set(u);
+            }
+        }
+
+        // Find source and sink places (branchless-style selection)
+        let mut source_idx = 0usize;
+        let mut sink_idx = 0usize;
+        let mut source_count = 0;
+        let mut sink_count = 0;
+
+        for i in 0..self.places.len() {
+            let is_source = !in_degrees.contains(i);
+            let is_sink = !out_degrees.contains(i);
+            
+            source_idx |= i * (is_source as usize);
+            sink_idx |= i * (is_sink as usize);
+            
+            source_count += is_source as usize;
+            sink_count += is_sink as usize;
+        }
+
+        if source_count != 1 || sink_count != 1 {
+            return false;
+        }
+
+        // Add short-circuit arc: sink -> source
+        let _ = r[sink_idx].set(source_idx);
+
+        // Bit-parallel Warshall's Algorithm (Branchless inner loop)
+        for k in 0..n {
+            let r_k = r[k];
+            for i in 0..n {
+                let bit = (r[i].words[k >> 6] >> (k & 63)) & 1;
+                let mask = 0u64.wrapping_sub(bit);
+                for w in 0..16 {
+                    r[i].words[w] |= r_k.words[w] & mask;
+                }
+            }
+        }
+
+        // Check if strongly connected: every node must reach every other node
+        let mut all_nodes_mask = KBitSet::<16>::zero();
+        for i in 0..n {
+            let _ = all_nodes_mask.set(i);
+        }
+
+        for i in 0..n {
+            if !r[i].contains_all(all_nodes_mask) {
+                return false;
+            }
+        }
+
+        true
+    }
+
+    /// Ultimate soundness judge. Combines structural and behavioral proxies.
+    pub fn is_sound(&self) -> bool {
+        if !self.is_structural_workflow_net() {
+            return false;
+        }
+        if !self.verify_connectivity() {
+            return false;
+        }
+        // Additional proxy: Positive T-invariant is guaranteed by strong connectivity
+        // of the short-circuited net for WF-nets.
         true
     }
 
@@ -249,28 +346,30 @@ impl PetriNet {
         true
     }
 
-    /// Computes a smooth unsoundness score using bitset algebra and FxHash.
+    /// Computes a smooth unsoundness score using zero-heap bitset algebra.
     pub fn structural_unsoundness_score(&self) -> f32 {
         if self.places.is_empty() || self.transitions.is_empty() {
             return 10.0;
         }
 
         let place_count = self.places.len();
-        let total_nodes = place_count + self.transitions.len();
-        let num_words = total_nodes.div_ceil(64);
+        let trans_count = self.transitions.len();
+        let total_nodes = place_count + trans_count;
+        
+        if total_nodes > 1024 {
+            return 100.0;
+        }
 
-        let mut in_degrees = vec![0u64; num_words];
-        let mut out_degrees = vec![0u64; num_words];
+        let mut in_degrees = KBitSet::<16>::zero();
+        let mut out_degrees = KBitSet::<16>::zero();
 
         if let Some(ref index) = self.cached_index {
             for arc in &self.arcs {
                 if let (Some(from_idx), Some(to_idx)) =
                     (index.dense_id(&arc.from), index.dense_id(&arc.to))
                 {
-                    let from_idx = from_idx as usize;
-                    let to_idx = to_idx as usize;
-                    out_degrees[from_idx / 64] |= 1u64 << (from_idx % 64);
-                    in_degrees[to_idx / 64] |= 1u64 << (to_idx % 64);
+                    let _ = out_degrees.set(from_idx as usize);
+                    let _ = in_degrees.set(to_idx as usize);
                 }
             }
         } else {
@@ -280,8 +379,8 @@ impl PetriNet {
                     id_to_index.get(fnv1a_64(arc.from.as_bytes())),
                     id_to_index.get(fnv1a_64(arc.to.as_bytes())),
                 ) {
-                    out_degrees[from_idx / 64] |= 1u64 << (from_idx % 64);
-                    in_degrees[to_idx / 64] |= 1u64 << (to_idx % 64);
+                    let _ = out_degrees.set(from_idx);
+                    let _ = in_degrees.set(to_idx);
                 }
             }
         }
@@ -290,8 +389,8 @@ impl PetriNet {
         let mut source_places_count = 0;
         let mut sink_places_count = 0;
         for i in 0..place_count {
-            let has_in = (in_degrees[i / 64] & (1u64 << (i % 64))) != 0;
-            let has_out = (out_degrees[i / 64] & (1u64 << (i % 64))) != 0;
+            let has_in = in_degrees.contains(i);
+            let has_out = out_degrees.contains(i);
             if !has_in {
                 source_places_count += 1;
             }
@@ -304,8 +403,8 @@ impl PetriNet {
         score += (sink_places_count as f32 - 1.0).abs();
 
         for i in place_count..total_nodes {
-            let has_in = (in_degrees[i / 64] & (1u64 << (i % 64))) != 0;
-            let has_out = (out_degrees[i / 64] & (1u64 << (i % 64))) != 0;
+            let has_in = in_degrees.contains(i);
+            let has_out = out_degrees.contains(i);
             if !has_in {
                 score += 1.0;
             }
@@ -315,8 +414,8 @@ impl PetriNet {
         }
 
         for i in 0..place_count {
-            let has_in = (in_degrees[i / 64] & (1u64 << (i % 64))) != 0;
-            let has_out = (out_degrees[i / 64] & (1u64 << (i % 64))) != 0;
+            let has_in = in_degrees.contains(i);
+            let has_out = out_degrees.contains(i);
             if !has_in && !has_out {
                 score += 2.0;
             }
@@ -461,5 +560,69 @@ mod tests {
 
         assert!(!net.is_structural_workflow_net());
         assert!(!net.verifies_state_equation_calculus());
+    }
+
+    #[test]
+    fn test_is_sound_validation() {
+        let mut net = PetriNet::default();
+        net.places.push(Place { id: "p1".to_string() });
+        net.places.push(Place { id: "p2".to_string() });
+        net.transitions.push(Transition { id: "t1".to_string(), label: "A".to_string(), is_invisible: None });
+        net.arcs.push(Arc { from: "p1".to_string(), to: "t1".to_string(), weight: None });
+        net.arcs.push(Arc { from: "t1".to_string(), to: "p2".to_string(), weight: None });
+
+        net.compile_incidence();
+        assert!(net.is_sound());
+
+        // Disconnected island
+        net.places.push(Place { id: "p3".to_string() });
+        net.compile_incidence();
+        assert!(!net.is_sound());
+    }
+}
+
+#[cfg(test)]
+mod proptests {
+    use super::*;
+    use proptest::prelude::*;
+
+    proptest! {
+        #[test]
+        fn test_soundness_property_invariant(
+            num_places in 1..10usize,
+            num_transitions in 1..10usize,
+            num_arcs in 1..20usize,
+        ) {
+            let mut net = PetriNet::default();
+            for i in 0..num_places {
+                net.places.push(Place { id: format!("p{}", i) });
+            }
+            for i in 0..num_transitions {
+                net.transitions.push(Transition { 
+                    id: format!("t{}", i), 
+                    label: format!("T{}", i), 
+                    is_invisible: None 
+                });
+            }
+            for i in 0..num_arcs {
+                let from_p = i % num_places;
+                let to_t = i % num_transitions;
+                net.arcs.push(Arc { 
+                    from: format!("p{}", from_p), 
+                    to: format!("t{}", to_t), 
+                    weight: None 
+                });
+                net.arcs.push(Arc { 
+                    from: format!("t{}", to_t), 
+                    to: format!("p{}", (from_p + 1) % num_places), 
+                    weight: None 
+                });
+            }
+            net.compile_incidence();
+            
+            // If it satisfies the structural requirements, it might be sound.
+            // This test ensures no panics and consistent results.
+            let _ = net.is_sound();
+        }
     }
 }

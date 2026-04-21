@@ -479,6 +479,8 @@ pub mod dteam {
             pub action_sequence: Vec<u8>,
             pub model_canonical_hash: u64,
             pub mdl_score: f64,
+            pub soundness_score: f32,
+            pub is_sound: bool,
             pub k_tier: String,
             pub latency_ns: u64,
             pub ontology_hash: Option<u64>,
@@ -583,7 +585,13 @@ pub mod dteam {
                     input_log_hash: log.canonical_hash(),
                     action_sequence: trajectory,
                     model_canonical_hash: net.canonical_hash(),
+<<<<<<< HEAD
                     mdl_score: net.mdl_score_with_ontology(self.ontology.as_ref().map(|o| o.index.len())),
+=======
+                    mdl_score: net.mdl_score(),
+                    soundness_score: net.structural_unsoundness_score(),
+                    is_sound: net.is_sound(),
+>>>>>>> wreckit/wf-net-soundness-judge-implement-dr-wil-s-soundness-proofs-as-branchless-bitmask-checks
                     k_tier: format!("{:?}", self.k_tier),
                     latency_ns: execution_time_ns,
                     ontology_hash: self.ontology.as_ref().map(|o| o.hash()),

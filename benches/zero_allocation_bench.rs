@@ -15,8 +15,13 @@ fn main() {
     println!("Starting Zero-Allocation Benchmark...");
 
     // 1. RL Hot Path
+<<<<<<< HEAD
     let mut agent = SARSAAgent::<RlState<4>, RlAction>::new();
     let state = RlState::<4> {
+=======
+    let mut agent = SARSAAgent::<RlState, RlAction>::new();
+    let state = RlState {
+>>>>>>> wreckit/wf-net-soundness-judge-implement-dr-wil-s-soundness-proofs-as-branchless-bitmask-checks
         health_level: 1,
         event_rate_q: 0,
         activity_count_q: 0,

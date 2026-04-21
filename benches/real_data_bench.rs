@@ -78,8 +78,13 @@ fn bench_real_data_processing(c: &mut Criterion) {
     let actions = load_real_actions();
     println!("Loaded {} actions from real data", actions.len());
 
+<<<<<<< HEAD
     let mut q = QLearning::<RlState<4>, RlAction>::new();
     let mut sarsa = SARSAAgent::<RlState<4>, RlAction>::new();
+=======
+    let mut q = QLearning::<RlState, RlAction>::new();
+    let mut sarsa = SARSAAgent::<RlState, RlAction>::new();
+>>>>>>> wreckit/wf-net-soundness-judge-implement-dr-wil-s-soundness-proofs-as-branchless-bitmask-checks
 
     let mut group = c.benchmark_group("RealDataProcessing");
 
