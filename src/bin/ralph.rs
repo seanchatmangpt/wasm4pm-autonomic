@@ -129,13 +129,15 @@ async fn main() -> anyhow::Result<()> {
         }
     }
 
-    let mut model = Some("gemini-3-flash-preview".to_string()); 
+    let mut model = Some("gemini-3.1-flash-lite-preview".to_string());
     if let Some(pos) = args.iter().position(|a| a == "--model") {
         if let Some(val) = args.get(pos + 1) {
+            if val.to_lowercase().contains("pro") {
+                panic!("CRITICAL ERROR: Using a 'pro' model is strictly forbidden for Ralph. Use gemini-3.1-flash-lite-preview.");
+            }
             model = Some(val.clone());
         }
     }
-
     let mut offset = 0;
     if let Some(pos) = args.iter().position(|a| a == "--offset") {
         if let Some(val) = args.get(pos + 1) {
