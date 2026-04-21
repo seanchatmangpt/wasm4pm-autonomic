@@ -1,0 +1,1232 @@
+@startuml
+title Full Vertical Stack: Human Globe to Nightly Rust
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+actor "Human operator /\nexecutive / analyst" as Human
+
+component "Globe UI + Forms" as UI
+component "Verified Projection State" as VP
+component "DTEAM API" as DAPI
+component "DTEAM Globe Math" as GlobeMath
+component "DTEAM Supply Chain Planner" as Planner
+component "GlobeMotion" as Motion
+component "dteam-unios Adapter" as Adapter
+component "unios Public API" as Unios
+component "Admission / Capability /\nLaw / Scenario Binding" as Admission
+component "Typed Hot Handle" as Handle
+component "unibit Public Substrate API" as Unibit
+component "unibit-nightly\nRust Kernel Layer" as Nightly
+component "Pinned Resident Region" as Region
+component "Truth Region" as Truth
+component "Scratch Region" as Scratch
+component "Branchless Mask Algebra" as Algebra
+component "Sparse Delta" as Delta
+component "Receipt Fragment" as Fragment
+component "Receipt Chain" as Chain
+component "Projection Update" as Projection
+
+Human --> UI
+UI --> VP
+VP --> DAPI
+DAPI --> GlobeMath
+GlobeMath --> Planner
+Planner --> Motion
+Motion --> Adapter
+Adapter --> Unios
+Unios --> Admission
+Admission --> Handle
+Handle --> Unibit
+Unibit --> Nightly
+Nightly --> Region
+Region --> Truth
+Region --> Scratch
+Nightly --> Algebra
+Algebra --> Delta
+Algebra --> Fragment
+Delta --> Chain
+Fragment --> Chain
+Chain --> Projection
+Projection --> VP
+VP --> UI
+
+@enduml
+
+@startuml
+title Human Globe Interaction to Verified Projection
+
+actor Human
+participant "Globe UI" as Globe
+participant "Forms UI" as Forms
+participant "DTEAM API" as DTEAM
+participant "unios" as Unios
+participant "Receipt Verifier" as Receipt
+
+Human -> Globe : Inspect global supply-chain state
+Globe -> DTEAM : Request verified projection
+DTEAM -> Unios : project_globe(request)
+Unios --> DTEAM : projection + receipt
+DTEAM --> Globe : verified projection state
+Globe --> Human : Render routes, disruptions, admissions
+
+Human -> Forms : Submit reroute / override / scenario
+Forms -> DTEAM : Process challenge
+DTEAM -> Unios : admit_globe_motion(motion)
+Unios --> DTEAM : admitted/denied + receipt
+DTEAM -> Receipt : verify(receipt)
+Receipt --> DTEAM : verified
+DTEAM --> Globe : projection update
+Globe --> Human : Show verified result
+
+@enduml
+
+@startuml
+title Globe/Form Input Becomes DTEAM Semantic Motion
+
+skinparam shadowing false
+
+start
+:Human input;
+if (Input source?) then (Globe click)
+  :Selected GlobeCell;
+  :DTEAM Globe Predicate;
+elseif (Route drag)
+  :Candidate RouteSegment;
+  :ShipmentTrajectory;
+elseif (Form submit)
+  :Structured ProcessIntent;
+  :ProcessChallenge;
+else (Scenario toggle)
+  :ScenarioKind;
+  :Scenario Motion;
+endif
+
+:GlobeMotion;
+fork
+  :Requires Predicates;
+fork again
+  :Produces Predicates;
+fork again
+  :Consumes Predicates;
+fork again
+  :Law Predicates;
+fork again
+  :Capability Predicates;
+fork again
+  :Scenario Predicates;
+end fork
+
+:Submit to dteam-unios;
+stop
+
+@enduml
+
+@startuml
+title DTEAM Knows unios Contract, Not unibit Internals
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+package "Public DTEAM process layer" {
+  component "GlobeMotion" as A
+  component "DTeamUnios trait" as B
+  component "DTeamReceipt" as C
+  A --> B
+  B --> C
+}
+
+package "Hidden operating layer" {
+  component "unios API" as D
+  component "Admission" as E
+  component "Typed Handle" as F
+  D --> E
+  E --> F
+}
+
+package "Hidden substrate" {
+  component "unibit API" as G
+  component "Nightly Rust Kernel" as H
+  component "Pinned Region" as I
+  G --> H
+  H --> I
+}
+
+B ..> D : calls
+F --> G
+
+A ..> G : does not import
+A ..> H : does not import
+
+@enduml
+
+@startuml
+title Branches Allowed Only Before Hot Handle
+
+start
+:GlobeMotion;
+if (Planning choice?) then (small footprint)
+  :Work tier 8^2;
+elseif (semantic line)
+  :Work tier 8^3;
+elseif (attention block)
+  :Work tier 8^4;
+else (active tile)
+  :Work tier 8^5;
+endif
+
+:Typed Hot Handle;
+:Branchless Hot Execution;
+:Delta + Receipt;
+
+if (Branch inside hot path?) then (Assembly proves faster)
+  :Allowed with benchmark receipt;
+else (No proof)
+  :Rejected; 
+  :Use mask algebra;
+endif
+
+stop
+@enduml
+
+@startuml
+title DTEAM Globe Motion Lowering into Masks
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+component "GlobeMotion" as GM
+
+component "requires" as Requires
+component "law" as Law
+component "capability" as Capability
+component "scenario" as Scenario
+component "consume" as Consume
+component "produce" as Produce
+
+component "Prereq mask" as PrereqMask
+component "Law mask" as LawMask
+component "Capability mask" as CapMask
+component "Scenario mask" as ScenarioMask
+component "Consume mask" as ConsumeMask
+component "Produce mask" as ProduceMask
+
+component "Compiled Motion Packet" as Packet
+component "unios admit" as Admit
+component "unibit execute" as Execute
+
+GM --> Requires
+GM --> Law
+GM --> Capability
+GM --> Scenario
+GM --> Consume
+GM --> Produce
+
+Requires --> PrereqMask
+Law --> LawMask
+Capability --> CapMask
+Scenario --> ScenarioMask
+Consume --> ConsumeMask
+Produce --> ProduceMask
+
+PrereqMask --> Packet
+LawMask --> Packet
+CapMask --> Packet
+ScenarioMask --> Packet
+ConsumeMask --> Packet
+ProduceMask --> Packet
+
+Packet --> Admit
+Admit --> Execute
+
+@enduml
+
+@startuml
+title Branchless Hot Execution Kernel
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+component "State word" as S
+
+component "deny_prereq =\n(S & prereq) ^ prereq" as A
+component "deny_law =\n(S & law) ^ law" as B
+component "deny_cap =\n(S & capability) ^ capability" as C
+component "deny_scenario =\n(S & scenario) ^ scenario" as D
+
+component "deny =\ndeny_prereq | deny_law |\ndeny_cap | deny_scenario" as E
+component "candidate =\n(S & !consume) | produce" as F
+component "admitted_mask =\nmask(deny == 0)" as G
+component "next =\n(candidate & admitted_mask) |\n(S & !admitted_mask)" as H
+component "delta = S ^ next" as I
+component "denial result" as J
+component "receipt fragment" as K
+
+S --> A
+S --> B
+S --> C
+S --> D
+
+A --> E
+B --> E
+C --> E
+D --> E
+
+S --> F
+E --> G
+F --> H
+G --> H
+S --> H
+H --> I
+E --> J
+I --> K
+
+@enduml
+
+@startuml
+title Nightly Rust Capabilities Supporting Branchless Execution
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+component "Nightly Rust" as NR
+
+component "generic_const_exprs" as GCE
+component "adt_const_params" as ADT
+component "generic_const_items" as GCI
+component "portable_simd" as SIMD
+component "strict_provenance_lints" as SPL
+component "inline asm" as ASM
+component "target_feature" as TF
+component "repr(C, align(64))" as REPR
+component "Pin<Box<Region>>" as PIN
+
+component "Compile-time work sizes" as WorkSizes
+component "Tier and receipt mode in type" as TierType
+component "Work/memory constants" as Consts
+component "Vector mask algebra" as Vector
+component "Pointer discipline" as Provenance
+component "Exact assembly smoke" as Smoke
+component "CPU-specialized kernels" as CPU
+component "Validated resident layout" as Layout
+component "Stable semantic position" as Position
+
+component "Typed Hot Handle" as Handle
+component "Fast Kernel" as Kernel
+component "Pinned Region" as Region
+
+NR --> GCE
+NR --> ADT
+NR --> GCI
+NR --> SIMD
+NR --> SPL
+NR --> ASM
+NR --> TF
+NR --> REPR
+NR --> PIN
+
+GCE --> WorkSizes
+ADT --> TierType
+GCI --> Consts
+SIMD --> Vector
+SPL --> Provenance
+ASM --> Smoke
+TF --> CPU
+REPR --> Layout
+PIN --> Position
+
+WorkSizes --> Handle
+TierType --> Handle
+Consts --> Handle
+Vector --> Kernel
+Provenance --> Kernel
+Smoke --> Kernel
+CPU --> Kernel
+Layout --> Region
+Position --> Region
+
+@enduml
+
+@startuml
+title Pinned Position as Semantic Contract
+
+start
+:Allocate L1 Region;
+:Pin region;
+:Validate base address;
+:Validate truth offset;
+:Validate scratch offset;
+:Validate alignment;
+:Attempt OS memory lock;
+:Emit L1 Position Receipt;
+:Allow hot execution;
+
+fork
+  :Truth Region;
+  :Current state;
+fork again
+  :Scratch Region;
+  :Motion workspace;
+end fork
+
+stop
+@enduml
+
+@startuml
+title Storm Reroute Flow
+
+actor Human
+participant "Globe UI" as Globe
+participant "DTEAM Globe" as DTEAM
+participant "SupplyChainPlanner" as Planner
+participant "unios" as Unios
+participant "unibit/nightly" as Kernel
+participant "Receipt" as Receipt
+
+Human -> Globe : Toggle storm scenario
+Globe -> DTEAM : ScenarioKind::Storm at affected cells
+DTEAM -> Planner : Build storm_update_motion
+Planner --> DTEAM : GlobeMotion
+DTEAM -> Unios : admit_globe_motion(storm motion)
+Unios -> Kernel : execute typed hot handle
+Kernel --> Unios : delta + receipt fragment
+Unios --> DTEAM : admitted + receipt
+
+Human -> Globe : Request reroute
+Globe -> DTEAM : Candidate route
+DTEAM -> Planner : Build reroute_motion
+Planner --> DTEAM : GlobeMotion with law/capability/scenario predicates
+DTEAM -> Unios : admit_globe_motion(reroute)
+Unios -> Kernel : branchless admit/commit
+Kernel --> Unios : route delta + receipt
+Unios --> DTEAM : admitted/denied + verified receipt
+DTEAM --> Globe : projection update
+Globe --> Human : Show admitted route or denial reason
+
+@enduml
+
+@startuml
+title Full Proof Loop from UI to Assembly-Verified Result
+
+start
+:Human proposes action;
+:Form validates shape;
+:DTEAM creates GlobeMotion;
+:DTEAM compiles semantic predicates;
+:dteam-unios submits motion;
+:unios binds law/capability/scenario;
+:unios selects typed handle;
+:unibit API receives admitted handle;
+:Nightly Rust monomorphized kernel;
+:Assembly-checked branchless code;
+:Pinned truth/scratch;
+:Delta;
+:Receipt fragment;
+:unios receipt;
+:DTEAM receipt;
+:Globe projection;
+:Human sees verified result;
+stop
+@enduml
+
+@startuml
+title No Hidden Runtime Interpretation
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+component "Hot Path" as Hot
+
+package "Allowed" {
+  component "Fixed pointers" as A1
+  component "Fixed masks" as A2
+  component "Fixed work tier" as A3
+  component "Mask algebra" as A4
+  component "Sparse delta" as A5
+  component "Receipt fragment" as A6
+}
+
+package "Forbidden" {
+  component "String lookup" as F1
+  component "Hash map" as F2
+  component "Dynamic dispatch" as F3
+  component "Allocation" as F4
+  component "Policy engine" as F5
+  component "Graph traversal" as F6
+  component "JSON parsing" as F7
+  component "Semantic branching" as F8
+}
+
+Hot --> A1
+Hot --> A2
+Hot --> A3
+Hot --> A4
+Hot --> A5
+Hot --> A6
+
+Hot -[#red]-> F1
+Hot -[#red]-> F2
+Hot -[#red]-> F3
+Hot -[#red]-> F4
+Hot -[#red]-> F5
+Hot -[#red]-> F6
+Hot -[#red]-> F7
+Hot -[#red]-> F8
+
+@enduml
+
+@startuml
+title 8^n Work Tier Selection
+
+start
+:Motion footprint;
+if (Footprint size?) then (64 bits)
+  :8^2 word;
+  :Monomorphized word kernel;
+elseif (512 bits)
+  :8^3 semantic line;
+  :Monomorphized line kernel;
+elseif (4,096 bits)
+  :8^4 attention block;
+  :Monomorphized block kernel;
+else (32,768 bits)
+  :8^5 active tile;
+  :Monomorphized tile kernel;
+endif
+
+:No runtime tier branch;
+stop
+@enduml
+
+@startuml
+title 64^n Memory Projection for Globe
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+component "64^2 attention memory" as A
+component "Where should DTEAM look?" as B
+component "64^3 active world" as C
+component "What is currently true?" as D
+component "64^4 meaning field" as E
+component "What do facts mean?" as F
+
+component "Globe focus cells" as G
+component "Route/state/control truth" as H
+component "Law/risk/reward/\nscenario/projection planes" as I
+component "DTEAM GlobeProjection" as J
+
+A --> B
+C --> D
+E --> F
+
+B --> G
+D --> H
+F --> I
+
+G --> J
+H --> J
+I --> J
+
+@enduml
+
+@startuml
+title Public Black-Box Story vs Private Execution
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+package "Public / Customer Visible" {
+  component "Globe UI" as A
+  component "Forms" as B
+  component "DTEAM verified result" as C
+  component "DTEAM receipt" as D
+  component "Projection" as E
+}
+
+package "Private / Hidden" {
+  component "unios" as F
+  component "unibit" as G
+  component "Nightly Rust kernels" as H
+  component "Pinned region" as I
+  component "Assembly checks" as J
+}
+
+A --> C
+B --> C
+C --> D
+C --> E
+
+C ..> F : implemented by
+F ..> G : uses
+G ..> H : uses
+H ..> I : operates on
+H ..> J : proved by
+
+@enduml
+
+@startuml
+title Final Governing Flow
+
+start
+:Human intent;
+:DTEAM semantic motion;
+:unios admission;
+
+if (Denied?) then (yes)
+  :Return denial receipt;
+  :Verified projection;
+  :Human decision;
+  stop
+else (no)
+  :Typed hot handle;
+endif
+
+:unibit execution;
+:Nightly Rust branchless kernel;
+:Pinned truth/scratch;
+:Delta;
+:Receipt;
+:Verified projection;
+:Human decision;
+stop
+
+@enduml
+
+@startuml
+title C4 Context - DTEAM / UniverseOS Ecosystem
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+actor "Executive / Operator" as Exec
+actor "Auditor / Regulator" as Auditor
+actor "Internal Systems Engineer" as Engineer
+
+rectangle "DTEAM\nBlack-box deterministic process intelligence.\nReturns verified results and receipts." as DTEAM
+rectangle "AtomVM Boundary\nOutside-world disorder membrane." as AtomVM
+rectangle "unios\nPrivate admission, proof, projection,\nand operating contract layer." as Unios
+rectangle "unibit\nPrivate sealed lawful-motion substrate\nbuilt with nightly Rust techniques." as Unibit
+cloud "External World\nSensors, weather, logistics systems,\nERP, EDI, ports, suppliers,\nmarkets, humans." as World
+cloud "Enterprise Systems\nSAP, Celonis, Microsoft,\nServiceNow, BI, workflow,\naudit platforms." as Incumbents
+rectangle "Receipt Verifiers\nInternal/external systems that verify\nreceipts and replay commitments." as Verifiers
+
+Exec --> DTEAM : Submits process challenges;\nviews verified globe projections
+Auditor --> DTEAM : Requests receipts and verification status
+Auditor --> Verifiers : Independently verifies receipts
+World --> AtomVM : Messy real-world events
+AtomVM --> DTEAM : Canonical facts
+DTEAM --> Unios : Calls only public operating contract
+Unios --> Unibit : Submits admitted typed handles
+DTEAM --> Verifiers : Publishes receipts
+Incumbents --> DTEAM : Consume verified results/projections
+Engineer --> Unibit : Builds private sealed substrate
+Engineer --> Unios : Builds private operating layer
+
+@enduml
+
+@startuml
+title C4 Container - DTEAM / unios / unibit Container View
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+actor "Human User" as User
+
+package "Public / Customer-Visible Product" {
+  rectangle "Globe UI\nReact / Three.js\nHuman projection of verified state" as GlobeUI
+  rectangle "Forms UI\nWeb UI\nReroutes, scenarios, overrides" as FormsUI
+  rectangle "DTEAM API\nRust / HTTP / SDK\nAccepts process challenges" as DteamAPI
+  rectangle "Receipt API\nRust\nReceipts, replay commitments,\nverification status" as ReceiptAPI
+}
+
+package "DTEAM Deterministic Intelligence" {
+  rectangle "Canonical Fact Layer\nRust\nClean canonical facts" as Canonical
+  rectangle "Process Compiler\nRust\nCompiles facts into motions" as ProcessCompiler
+  rectangle "Globe Math\nRust\nCoordinates, planes, trajectories" as GlobeMath
+  rectangle "DTEAM Runtime\nRust\nChallenge execution through trait" as Runtime
+  rectangle "DTEAM Receipts\nRust\nPublic proof surface" as Receipts
+}
+
+package "Outside-World Boundary" {
+  rectangle "AtomVM Boundary\nAtomVM / actor runtime\nSupervises IO, crashes, retries" as Atom
+  rectangle "Canonicalizer\nRust/AtomVM adapter\nTurns disorder into facts" as CanonAdapter
+}
+
+package "Private Operating Layer" {
+  rectangle "dteam-unios Adapter\nRust trait adapter" as Adapter
+  rectangle "unios API\nRust\nAdmission, capability, law,\nscenario, projection, receipt" as UniosAPI
+  rectangle "unios Planner\nRust\nSelects work tier and typed handle" as Planner
+  rectangle "unios Supervisor\nRust\nObserves deltas, receipts, recovery" as Supervisor
+}
+
+package "Private Sealed Substrate" {
+  rectangle "unibit API\nRust\nBoot, validate, execute, restore" as UnibitAPI
+  rectangle "Nightly Rust Kernels\nRust nightly / asm / SIMD\nBranchless execution" as Kernels
+  rectangle "Pinned Resident Region\nrepr(C, align(64))\nTruth + scratch region" as Resident
+  rectangle "Assembly Check\nxtask / cargo asm\nVerifies machine-code shape" as AsmCheck
+}
+
+User --> GlobeUI : Views verified globe
+User --> FormsUI : Submits challenge
+GlobeUI --> DteamAPI : Requests projection
+FormsUI --> DteamAPI : Submits process intent
+DteamAPI --> Canonical : Reads canonical facts
+DteamAPI --> ProcessCompiler : Creates process challenge
+ProcessCompiler --> GlobeMath : Builds GlobeMotion
+GlobeMath --> Runtime : Submits semantic motion
+Runtime --> Adapter : Calls DTeamUnios trait
+Adapter --> UniosAPI : Private call
+UniosAPI --> Planner : Admit / plan
+Planner --> UnibitAPI : Execute admitted typed handle
+UnibitAPI --> Kernels : Dispatch sealed kernel
+Kernels --> Resident : Reads truth, writes scratch/delta
+Kernels --> AsmCheck : Verified by
+Kernels --> UnibitAPI : Returns delta / fragment
+UnibitAPI --> UniosAPI : Returns result
+UniosAPI --> Receipts : Returns public receipt
+Receipts --> ReceiptAPI : Publishes proof
+ReceiptAPI --> GlobeUI : Projection receipt
+Atom --> CanonAdapter : Boundary events
+CanonAdapter --> Canonical : Canonical facts
+
+@enduml
+
+@startuml
+title C4 Component - DTEAM
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+package "DTEAM" {
+  component "DTEAM API" as API
+  component "CanonicalFact" as CanonicalFact
+  component "CanonicalTrace" as Trace
+  component "ProcessChallenge" as Challenge
+  component "GlobeCell" as Cell
+  component "GlobePlane" as Plane
+  component "ShipmentTrajectory" as Trajectory
+  component "GlobeMotion" as Motion
+  component "DTeamRuntime" as Runtime
+  component "DTeamUnios trait" as UniosTrait
+  component "DTeamReceipt" as Receipt
+  component "GlobeProjection" as Projection
+}
+
+API --> CanonicalFact : Receives
+CanonicalFact --> Trace : Forms
+Trace --> Challenge : Inputs
+Challenge --> Cell : Maps facts to
+Cell --> Plane : Interpreted by
+Plane --> Trajectory : Defines route semantics
+Trajectory --> Motion : Compiles to
+Motion --> Runtime : Submitted to
+Runtime --> UniosTrait : Calls
+UniosTrait --> Receipt : Returns
+Receipt --> Projection : Authorizes
+Projection --> API : Returned by
+
+@enduml
+
+@startuml
+title C4 Component - unios
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+package "unios" {
+  component "unios Public API" as API
+  component "Admission Engine" as Admission
+  component "Scope Planner" as Scope
+  component "Frontier Compiler" as Frontier
+  component "Capability Binder" as Capability
+  component "Law Binder" as Law
+  component "Scenario Binder" as Scenario
+  component "Typed Hot Handle" as Handle
+  component "Receipt Policy" as ReceiptPolicy
+  component "Projection Engine" as Projection
+  component "Supervisor" as Supervisor
+  component "unibit Client" as Client
+}
+
+API --> Admission : Candidate motion
+Admission --> Capability
+Admission --> Law
+Admission --> Scenario
+Admission --> Scope : If admissible
+Scope --> Frontier : Chooses work tier
+Frontier --> ReceiptPolicy : Binds proof mode
+ReceiptPolicy --> Handle : Creates
+Handle --> Client : Executes via
+Client --> Supervisor : Delta/fragment
+Supervisor --> Projection : Updates
+Projection --> API : Returns projection
+
+@enduml
+
+@startuml
+title C4 Component - unibit Nightly Rust
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+package "unibit private substrate" {
+  component "unibit API\nboot, validate, execute, restore" as API
+  component "Nightly Toolchain\nrust-toolchain.toml" as Toolchain
+  component "Const Geometry\ngeneric_const_exprs" as ConstGeometry
+  component "Const Tier Types\nadt_const_params" as Tiers
+  component "Pinned Resident Region\nPin + repr(C, align(64))" as Region
+  component "Position Validator" as Position
+  component "OS Lock Attempt" as Lock
+  component "Strict Provenance Discipline" as Provenance
+  component "Branchless Kernel" as Kernel
+  component "SIMD Kernel" as SIMD
+  component "Inline Assembly Smoke\nasm!" as ASM
+  component "Assembly Verification\ncargo asm / llvm-ir" as AsmCheck
+  component "Sparse Delta" as Delta
+  component "Receipt Fragment" as Fragment
+  component "Sealed Artifact Build" as Sealed
+}
+
+API --> Toolchain : Built with
+Toolchain --> ConstGeometry : Enables
+Toolchain --> Tiers : Enables
+API --> Region : Boots
+Region --> Position : Validated by
+Region --> Lock : May be locked by
+Region --> Kernel : Operated on by
+Kernel --> Provenance : Constrained by
+Kernel --> SIMD : Optional faster variant
+Kernel --> ASM : Assembly path smoke
+Kernel --> Delta : Emits
+Kernel --> Fragment : Emits
+Kernel --> AsmCheck : Verified by
+API --> Sealed : Packaged as
+
+@enduml
+
+@startuml
+title Deployment - Build and Deployment View
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+node "Developer Machine\nmacOS / Linux" {
+  component "rustup + nightly\nPinned nightly compiler" as Rustup
+  component "cargo xtask\ndx, prove, doctor, asm,\nbench, sealed" as Xtask
+  component "unrdf\nOntology generator" as Unrdf
+  component "Lexicon Check\nNode script" as Lexicon
+}
+
+node "Proof Build\nLocal / CI" {
+  component "Tests + Doctests\ncargo test" as Tests
+  component "Compile-fail Tests\ntrybuild" as Trybuild
+  component "Assembly Check\ncargo asm / llvm-ir" as AsmCheck
+  component "Sanitizers\nnightly" as Sanitizers
+}
+
+node "Benchmark Build\nNative target" {
+  component "Bench Runner\ndivan / criterion" as Bench
+  component "Perf Counters\ncycles, instructions,\nbranch misses, cache misses" as Perf
+}
+
+node "Sealed Artifact Build\nRelease profile" {
+  component "Sealed Binary\nsymbols stripped, paths trimmed" as Binary
+  component "Build Manifest\ncompiler, target, profile,\nhash commitments" as Manifest
+}
+
+Rustup --> Xtask : Runs
+Xtask --> Lexicon : First gate
+Xtask --> Tests : Runs
+Xtask --> Trybuild : Runs
+Xtask --> AsmCheck : Runs
+Xtask --> Bench : Runs
+Bench --> Perf : Collects
+Xtask --> Binary : Builds
+Binary --> Manifest : Emits
+
+@enduml
+
+@startuml
+title Public Story vs Private Reality
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+actor "Customer" as Customer
+actor "Board / Buyer" as Board
+actor "Internal Builder" as Builder
+
+package "Public Story" {
+  rectangle "DTEAM\nBlack-box process intelligence.\nWhite-box proof." as DTEAM
+  rectangle "Globe Projection\nHuman-visible verified global process state." as Globe
+  rectangle "Receipts\nReproducible proof surface." as Receipts
+}
+
+package "Private Reality" {
+  rectangle "AtomVM Boundary\nCanonicalizes real-world disorder." as Atom
+  rectangle "unios\nPrivate admission/proof operating layer." as Unios
+  rectangle "unibit\nPrivate sealed substrate." as Unibit
+  rectangle "Nightly Rust\nPrivate compiler and proving surface." as Nightly
+}
+
+Customer --> DTEAM : Submits challenge
+DTEAM --> Receipts : Returns
+DTEAM --> Globe : Projects
+Board --> Receipts : Verifies
+Builder --> Atom : Builds
+Builder --> Unios : Builds
+Builder --> Unibit : Builds
+Builder --> Nightly : Uses
+
+DTEAM --> Atom : Receives canonical facts from
+DTEAM --> Unios : Calls only operating contract
+Unios --> Unibit : Executes admitted handles
+Unibit --> Nightly : Implemented with
+
+@enduml
+
+@startuml
+title Future Code Manufacturing View
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+package "Ontology-to-Repo Manufacturing" {
+  component "Ontology O*\nRDF/Turtle" as Ontology
+  component "SHACL Shapes\nReject invalid ontology" as Shapes
+  component "SPARQL Projections\nSelect crates/modules/docs" as Sparql
+  component "Templates\nRender files" as Templates
+  component "unrdf Generator\nCLI" as Unrdf
+  component "ostar Closure Report\nfuture CLI" as Ostar
+  component "Generated Repo\nRust workspace" as Repo
+}
+
+Ontology --> Shapes : Validated by
+Shapes --> Sparql : If valid
+Sparql --> Templates : Feeds
+Templates --> Unrdf : Rendered by
+Unrdf --> Repo : Generates
+Repo --> Ostar : Summarized by
+
+@enduml
+
+@startuml
+title Final Ecosystem Dependency Law
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+component "External world" as A
+component "AtomVM canonicalization" as B
+component "DTEAM canonical facts" as C
+component "DTEAM process/globe math" as D
+component "DTeamUnios trait" as E
+component "unios admission/proof" as F
+component "unibit sealed substrate" as G
+component "Nightly Rust branchless kernels" as H
+component "Pinned truth/scratch" as I
+component "Delta + receipt" as J
+component "DTEAM verified result" as K
+component "Globe/forms projection" as L
+
+A --> B
+B --> C
+C --> D
+D --> E
+E --> F
+F --> G
+G --> H
+H --> I
+I --> J
+J --> K
+K --> L
+
+D ..> G : does not know
+D ..> H : does not know
+F ..> H : does not know implementation of
+L ..> I : is not authority
+
+@enduml
+
+@startuml
+title Browser Black Hole Projection Context
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+actor "Viewer" as Viewer
+actor "Projection Author" as Author
+
+rectangle "Black Hole Browser App\nThree.js/WebGL visualization of\nan EHT-style boundary object." as App
+rectangle "DTEAM Projection Payload\nObject preset, ring parameters,\nreceipt id, overlays." as Payload
+rectangle "Receipt / Verification Surface\nVerification status for rendered projection state." as Receipt
+cloud "Browser Runtime\nWebGL/WebGPU-capable browser." as Browser
+node "Client GPU\nExecutes shaders and draws scene." as GPU
+
+Viewer --> App : Interacts with
+Author --> Payload : Publishes projection payload
+Payload --> App : Configures projection
+App --> Receipt : Displays receipt / verification status
+App --> Browser : Runs inside
+Browser --> GPU : Uses for rendering
+
+@enduml
+
+@startuml
+title Three.js Black Hole App Container View
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+actor "Viewer" as Viewer
+
+package "Browser Black Hole App" {
+  rectangle "React UI Shell\nPreset selection, receipt drawer,\ncontrols, labels." as UI
+  rectangle "Render Canvas\nReact Three Fiber Canvas\nScene, camera, renderer, frame loop." as Canvas
+  rectangle "Black Hole Scene\nThree.js\nShadow, accretion disc,\nphoton ring, overlays, grid." as Scene
+  rectangle "Shader Library\nGLSL\nDisc emissivity, turbulence,\nDoppler asymmetry, alpha blending." as Shaders
+  rectangle "Projection Store\nTypeScript\nVerified payload and render parameters." as Store
+  rectangle "Receipt Panel\nReact\nReceipt id, verification status,\nprojection metadata." as Panel
+}
+
+cloud "Receipt API" as ReceiptAPI
+node "Client GPU" as GPU
+
+Viewer --> UI : Selects preset / interacts
+UI --> Store : Reads/writes projection state
+UI --> Panel : Displays proof state
+Store --> Scene : Feeds render parameters
+Scene --> Shaders : Uses
+Scene --> Canvas : Rendered by
+Canvas --> GPU : Draws through
+Panel --> ReceiptAPI : Verifies receipt
+
+@enduml
+
+@startuml
+title Black Hole Scene Component View
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+package "Black Hole Scene" {
+  component "Event Horizon / Shadow Core\nDark central occlusion region." as Core
+  component "Accretion Disc\nPrimary luminous rotating matter disc." as Disc
+  component "Disc Geometry\nPlane/Ring geometry." as Geometry
+  component "Accretion Disc Shader\nComputes ring intensity,\ncolor, alpha, turbulence." as DiscShader
+  component "Doppler / Brightness Asymmetry\nBrightens selected arc." as Doppler
+  component "Turbulence / Emissivity Noise\nPlasma-like structure." as Turbulence
+  component "Photon Ring / Lensing Glow\nThin shimmer layer." as Photon
+  component "Polarization Overlay\nVector glyph layer." as Polarization
+  component "Optional Jet Axis\nFaint M87-style orientation layer." as Jet
+  component "Reference Grid\nInstrument-frame projection grid." as Grid
+  component "Camera + Orbit Controls\nHuman inspection." as Camera
+}
+
+Core --> Disc : Occludes center of
+Disc --> Geometry : Uses
+Disc --> DiscShader : Material
+DiscShader --> Doppler : Uses uniforms from
+DiscShader --> Turbulence : Calls
+Disc --> Photon : Surrounded by
+Disc --> Polarization : Annotated by
+Jet --> Grid : Aligned with
+Camera --> Core : Views
+Camera --> Disc : Views
+Camera --> Photon : Views
+
+@enduml
+
+@startuml
+title Accretion Disc Component View
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+package "Accretion Disc" {
+  component "Disc Parameters\nRing radius, shadow radius,\nthickness, inclination,\nasymmetry, turbulence." as Params
+  component "Disc Surface Geometry\nPlane/Ring mesh." as Geometry
+  component "Vertex Shader\nPasses UV and position." as Vertex
+  component "Fragment Shader\nComputes luminous disc color/opacity." as Fragment
+  component "Radial Emission Profile\nCreates ring shape." as Radial
+  component "Shadow Mask\nSuppresses emission in center." as Shadow
+  component "Doppler-Like Asymmetry\nBrightens selected arc." as Asym
+  component "Turbulence Noise\nRotating plasma texture." as Noise
+  component "Thermal Color Ramp\nDark red -> orange -> yellow -> white-hot." as Color
+  component "Additive Alpha Blend\nBlends luminous disc over scene." as Blend
+  component "Time Uniform\nFrame loop animation." as Time
+}
+
+Params --> Geometry : Configures scale/inclination
+Params --> Fragment : Supplies uniforms
+Geometry --> Vertex : Provides UV/position
+Vertex --> Fragment : Passes varyings
+Fragment --> Radial : Computes
+Fragment --> Shadow : Applies
+Fragment --> Asym : Applies
+Fragment --> Noise : Samples
+Fragment --> Color : Maps intensity
+Color --> Blend : Outputs color/opacity
+Time --> Noise : Animates
+Time --> Asym : May animate
+
+@enduml
+
+@startuml
+title Render Frame Loop
+
+participant "React UI" as UI
+participant "Projection Store" as Store
+participant "R3F Canvas" as Canvas
+participant "Black Hole Scene" as Scene
+participant "Accretion Disc" as Disc
+participant "Disc Shader" as Shader
+participant "Browser GPU" as GPU
+
+UI -> Store : Select preset / load verified projection
+Store -> Scene : Provide black hole parameters
+Scene -> Disc : Set radius, thickness, asymmetry, turbulence
+Canvas -> Scene : useFrame tick
+Scene -> Disc : Update rotation / time uniform
+Disc -> Shader : uTime, uRingRadius, uShadowRadius, uThickness
+Shader -> Shader : Compute radial emission profile
+Shader -> Shader : Apply shadow mask
+Shader -> Shader : Apply Doppler-like asymmetry
+Shader -> Shader : Apply turbulence noise
+Shader -> Shader : Map intensity to thermal color ramp
+Shader -> GPU : Submit fragment output
+GPU --> Canvas : Draw accretion disc + shadow + overlays
+
+@enduml
+
+@startuml
+title Projection Payload to Visual Object
+
+participant "DTEAM Projection Payload" as Payload
+participant "Projection Store" as Store
+participant "Black Hole Scene" as Scene
+participant "Shadow Core" as Core
+participant "Accretion Disc" as Disc
+participant "Photon Ring" as Ring
+participant "Polarization/Jet Overlays" as Overlay
+participant "Receipt Panel" as Receipt
+
+Payload -> Store : object, receiptId, verified,\nring parameters, overlays
+Store -> Scene : Apply projection state
+Scene -> Core : Set shadow radius
+Scene -> Disc : Set disc radius/thickness/asymmetry/turbulence
+Scene -> Ring : Set shimmer radius and density
+Scene -> Overlay : Enable polarization / jet / grid
+Store -> Receipt : Show receipt id and verification status
+Scene --> Store : Projection rendered
+
+@enduml
+
+@startuml
+title Black Hole Projection Data Model
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+package "Projection Payload" {
+  component "Object Id\nM87* or Sagittarius A*" as ObjectId
+  component "Verification State\nverified / pending / rejected" as Verification
+  component "Ring Parameters\nradius, thickness, asymmetry, turbulence" as RingParams
+  component "Shadow Parameters\ncentral shadow radius and occlusion strength" as ShadowParams
+  component "Accretion Disc Parameters\ninclination, emissivity,\ncolor ramp, swirl rate" as DiscParams
+  component "Photon Ring Parameters\nparticle density, shimmer,\nadditive opacity" as PhotonParams
+  component "Overlay Parameters\npolarization, jet axis,\nreference grid" as OverlayParams
+  component "Render Parameters\ncamera, exposure, bloom, animation" as RenderParams
+}
+
+ObjectId --> RingParams : Selects defaults
+ObjectId --> ShadowParams : Selects defaults
+ObjectId --> DiscParams : Selects defaults
+Verification --> RenderParams : Controls proof display
+RingParams --> DiscParams : Feeds
+DiscParams --> PhotonParams : Aligns
+OverlayParams --> RenderParams : Toggles layers
+
+@enduml
+
+@startuml
+title Browser Black Hole Rendering Deployment
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+node "User Device\nLaptop / Desktop / Tablet" {
+  node "Browser\nChrome / Safari / Firefox / Edge" {
+    component "UI Bundle\nTypeScript/React" as UIBundle
+    component "Three.js Runtime\nScene graph, camera, materials, meshes" as Three
+    component "Shader Programs\nGLSL" as Shaders
+    component "Orbit Controls\nInteractive camera navigation" as Controls
+  }
+
+  node "Client GPU\nWebGL Pipeline" {
+    component "Vertex Stage" as Vertex
+    component "Fragment Stage" as Fragment
+    component "Frame Buffer" as Framebuffer
+  }
+}
+
+UIBundle --> Three : Initializes
+Three --> Shaders : Compiles
+Controls --> Three : Updates camera
+Shaders --> Vertex : Runs on
+Vertex --> Fragment : Feeds
+Fragment --> Framebuffer : Writes
+
+@enduml
+
+@startuml
+title Black Hole Demo as Projection Philosophy
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+actor "Viewer" as Viewer
+
+rectangle "Browser Black Hole\nInteractive EHT-style projection." as BlackHole
+rectangle "Accretion Disc Model\nPrimary luminous disc visualization;\nnot just a black sphere." as Disc
+rectangle "Proof Surface\nReceipt-backed projection parameters." as Proof
+cloud "EHT Cultural Reference\nBlack hole image as instrument-mediated boundary object." as EHT
+cloud "Browser\nUniversal distribution surface." as Browser
+
+Viewer --> BlackHole : Inspects
+BlackHole --> Disc : Composes
+BlackHole --> Proof : Displays verification
+BlackHole --> EHT : Evokes
+BlackHole --> Browser : Runs in
+
+@enduml
+
+@startuml
+title Black Hole Projection Architecture Rule
+
+start
+:Black sphere only;
+:Insufficient model;
+
+fork
+  :Shadow core;
+fork again
+  :Accretion disc;
+fork again
+  :Photon ring;
+fork again
+  :Doppler asymmetry;
+fork again
+  :Turbulence shader;
+fork again
+  :Polarization overlay;
+fork again
+  :Receipt metadata;
+end fork
+
+:Boundary object;
+:Browser-native verified projection;
+stop
+
+@enduml

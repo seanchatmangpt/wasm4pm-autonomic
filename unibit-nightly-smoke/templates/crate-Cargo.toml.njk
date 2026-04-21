@@ -1,0 +1,25 @@
+[package]
+name = "{{ name }}"
+version = "0.1.0"
+edition = "2024"
+
+{% if executionClass and executionClass.endsWith("HotEligible") %}
+[features]
+default = []
+{% endif %}
+
+[dependencies]
+{% for dep in dependsOn %}
+{{ dep.name }} = { path = "../{{ dep.name }}" }
+{% endfor %}
+{% if name == "unibit-smoke" %}
+libc = "0.2"
+{% endif %}
+
+[lints.rust]
+unsafe_op_in_unsafe_fn = "deny"
+missing_docs = "deny"
+
+[lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
