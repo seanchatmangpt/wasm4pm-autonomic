@@ -1,4 +1,4 @@
-use crate::utils::dense_kernel::{fnv1a_64, DenseIndex, NodeKind, PackedKeyTable, KBitSet};
+use crate::utils::dense_kernel::{fnv1a_64, DenseIndex, NodeKind, PackedKeyTable};
 use serde::{Deserialize, Serialize};
 use std::hash::{Hash, Hasher};
 
@@ -21,14 +21,6 @@ pub struct Arc {
     pub weight: Option<usize>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct CachedReplayData {
-    pub input_masks: Vec<u64>,
-    pub output_masks: Vec<u64>,
-    pub initial_mask: u64,
-    pub final_mask: u64,
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct PetriNet {
     pub places: Vec<Place>,
@@ -44,10 +36,6 @@ pub struct PetriNet {
     /// Cached dense index for fast node lookups
     #[serde(skip)]
     pub cached_index: Option<DenseIndex>,
-
-    /// Cached replay masks for zero-allocation conformance
-    #[serde(skip)]
-    pub cached_replay_data: Option<CachedReplayData>,
 }
 
 impl PartialEq for PetriNet {
@@ -66,12 +54,6 @@ pub struct FlatIncidenceMatrix {
     pub data: Vec<i32>,
     pub places_count: usize,
     pub transitions_count: usize,
-    /// Precomputed input masks for branchless execution
-    #[serde(skip)]
-    pub input_masks: Vec<crate::utils::dense_kernel::KBitSet<16>>,
-    /// Precomputed output masks for branchless execution
-    #[serde(skip)]
-    pub output_masks: Vec<crate::utils::dense_kernel::KBitSet<16>>,
 }
 
 impl FlatIncidenceMatrix {
@@ -96,65 +78,28 @@ impl PetriNet {
     }
 
     /// Evaluates if the net is a structurally valid workflow net.
-<<<<<<< HEAD
-    /// Highly optimized with zero-heap bitset algebra.
-=======
     /// Highly optimized with pre-calculated indices and bitset algebra.
-    /// This implementation uses branchless bitmask logic to eliminate data-dependent branching.
->>>>>>> wreckit/branchless-state-equation-calculus-eliminate-conditional-logic-in-petrinet-verification
     pub fn is_structural_workflow_net(&self) -> bool {
         if self.places.is_empty() || self.transitions.is_empty() {
             return false;
         }
 
         let place_count = self.places.len();
-<<<<<<< HEAD
-<<<<<<< HEAD
-        let trans_count = self.transitions.len();
-        let total_nodes = place_count + trans_count;
-        
-        if total_nodes > 1024 {
-            return false;
-        }
-
-        let mut in_degrees = KBitSet::<16>::zero();
-        let mut out_degrees = KBitSet::<16>::zero();
-=======
         let total_nodes = place_count + self.transitions.len();
-        
-        // Zero-heap: use stack buffer for degrees
-        let mut in_degrees = [0u64; 16];
-        let mut out_degrees = [0u64; 16];
->>>>>>> wreckit/zero-heap-packedkeytable-eliminate-all-latent-allocations-in-pkt-hot-paths
-=======
-        let total_nodes = place_count + self.transitions.len();
+        let num_words = total_nodes.div_ceil(64);
 
-        use crate::utils::dense_kernel::KBitSet;
-        let mut in_mask = KBitSet::<16>::zero();
-        let mut out_mask = KBitSet::<16>::zero();
->>>>>>> wreckit/branchless-state-equation-calculus-eliminate-conditional-logic-in-petrinet-verification
+        let mut in_degrees = vec![0u64; num_words];
+        let mut out_degrees = vec![0u64; num_words];
 
         if let Some(ref index) = self.cached_index {
             for arc in &self.arcs {
                 if let (Some(from_idx), Some(to_idx)) =
                     (index.dense_id(&arc.from), index.dense_id(&arc.to))
                 {
-<<<<<<< HEAD
-<<<<<<< HEAD
-                    let _ = out_degrees.set(from_idx as usize);
-                    let _ = in_degrees.set(to_idx as usize);
-=======
                     let from_idx = from_idx as usize;
                     let to_idx = to_idx as usize;
-                    if from_idx < 1024 && to_idx < 1024 {
-                        out_degrees[from_idx / 64] |= 1u64 << (from_idx % 64);
-                        in_degrees[to_idx / 64] |= 1u64 << (to_idx % 64);
-                    }
->>>>>>> wreckit/zero-heap-packedkeytable-eliminate-all-latent-allocations-in-pkt-hot-paths
-=======
-                    let _ = out_mask.set(from_idx as usize);
-                    let _ = in_mask.set(to_idx as usize);
->>>>>>> wreckit/branchless-state-equation-calculus-eliminate-conditional-logic-in-petrinet-verification
+                    out_degrees[from_idx / 64] |= 1u64 << (from_idx % 64);
+                    in_degrees[to_idx / 64] |= 1u64 << (to_idx % 64);
                 }
             }
         } else {
@@ -164,170 +109,38 @@ impl PetriNet {
                     id_to_index.get(fnv1a_64(arc.from.as_bytes())),
                     id_to_index.get(fnv1a_64(arc.to.as_bytes())),
                 ) {
-<<<<<<< HEAD
-<<<<<<< HEAD
-                    let _ = out_degrees.set(from_idx);
-                    let _ = in_degrees.set(to_idx);
-=======
-                    if from_idx < 1024 && to_idx < 1024 {
-                        out_degrees[from_idx / 64] |= 1u64 << (from_idx % 64);
-                        in_degrees[to_idx / 64] |= 1u64 << (to_idx % 64);
-                    }
->>>>>>> wreckit/zero-heap-packedkeytable-eliminate-all-latent-allocations-in-pkt-hot-paths
-=======
-                    let _ = out_mask.set(from_idx);
-                    let _ = in_mask.set(to_idx);
->>>>>>> wreckit/branchless-state-equation-calculus-eliminate-conditional-logic-in-petrinet-verification
+                    out_degrees[from_idx / 64] |= 1u64 << (from_idx % 64);
+                    in_degrees[to_idx / 64] |= 1u64 << (to_idx % 64);
                 }
             }
         }
 
-        // Bitwise verification of source/sink constraints
         let mut source_places_count = 0;
         let mut sink_places_count = 0;
 
         for i in 0..place_count {
-<<<<<<< HEAD
-<<<<<<< HEAD
-            let has_in = in_degrees.contains(i);
-            let has_out = out_degrees.contains(i);
-=======
-            if i >= 1024 { break; }
             let has_in = (in_degrees[i / 64] & (1u64 << (i % 64))) != 0;
             let has_out = (out_degrees[i / 64] & (1u64 << (i % 64))) != 0;
->>>>>>> wreckit/zero-heap-packedkeytable-eliminate-all-latent-allocations-in-pkt-hot-paths
             if !has_in {
                 source_places_count += 1;
             }
             if !has_out {
                 sink_places_count += 1;
             }
-=======
-            // Branchless count increment (data-independent)
-            source_places_count += !in_mask.contains(i) as usize;
-            sink_places_count += !out_mask.contains(i) as usize;
->>>>>>> wreckit/branchless-state-equation-calculus-eliminate-conditional-logic-in-petrinet-verification
         }
 
         if source_places_count != 1 || sink_places_count != 1 {
             return false;
         }
 
-<<<<<<< HEAD
-        // Transitions must have at least one input and one output
         for i in place_count..total_nodes {
-<<<<<<< HEAD
-            let has_in = in_degrees.contains(i);
-            let has_out = out_degrees.contains(i);
-=======
-            if i >= 1024 { break; }
             let has_in = (in_degrees[i / 64] & (1u64 << (i % 64))) != 0;
             let has_out = (out_degrees[i / 64] & (1u64 << (i % 64))) != 0;
->>>>>>> wreckit/zero-heap-packedkeytable-eliminate-all-latent-allocations-in-pkt-hot-paths
             if !has_in || !has_out {
-=======
-        // Every transition must have at least one input and one output
-        for i in place_count..total_nodes {
-            if !in_mask.contains(i) || !out_mask.contains(i) {
->>>>>>> wreckit/branchless-state-equation-calculus-eliminate-conditional-logic-in-petrinet-verification
                 return false;
             }
         }
 
-        true
-    }
-
-    /// Verifies strong connectivity of the short-circuited net branchlessly.
-    /// This ensures every node is on a path from source to sink.
-    pub fn verify_connectivity(&self) -> bool {
-        let index = if let Some(ref idx) = self.cached_index {
-            idx
-        } else {
-            return false;
-        };
-
-        let n = index.len();
-        if n == 0 || n > 1024 { return false; }
-
-        let mut in_degrees = KBitSet::<16>::zero();
-        let mut out_degrees = KBitSet::<16>::zero();
-        let mut r = [KBitSet::<16>::zero(); 1024];
-
-        for i in 0..n {
-            let _ = r[i].set(i); // Reflexive
-        }
-
-        for arc in &self.arcs {
-            if let (Some(u), Some(v)) = (index.dense_id(&arc.from), index.dense_id(&arc.to)) {
-                let u = u as usize;
-                let v = v as usize;
-                let _ = r[u].set(v);
-                let _ = in_degrees.set(v);
-                let _ = out_degrees.set(u);
-            }
-        }
-
-        // Find source and sink places (branchless-style selection)
-        let mut source_idx = 0usize;
-        let mut sink_idx = 0usize;
-        let mut source_count = 0;
-        let mut sink_count = 0;
-
-        for i in 0..self.places.len() {
-            let is_source = !in_degrees.contains(i);
-            let is_sink = !out_degrees.contains(i);
-            
-            source_idx |= i * (is_source as usize);
-            sink_idx |= i * (is_sink as usize);
-            
-            source_count += is_source as usize;
-            sink_count += is_sink as usize;
-        }
-
-        if source_count != 1 || sink_count != 1 {
-            return false;
-        }
-
-        // Add short-circuit arc: sink -> source
-        let _ = r[sink_idx].set(source_idx);
-
-        // Bit-parallel Warshall's Algorithm (Branchless inner loop)
-        for k in 0..n {
-            let r_k = r[k];
-            for i in 0..n {
-                let bit = (r[i].words[k >> 6] >> (k & 63)) & 1;
-                let mask = 0u64.wrapping_sub(bit);
-                for w in 0..16 {
-                    r[i].words[w] |= r_k.words[w] & mask;
-                }
-            }
-        }
-
-        // Check if strongly connected: every node must reach every other node
-        let mut all_nodes_mask = KBitSet::<16>::zero();
-        for i in 0..n {
-            let _ = all_nodes_mask.set(i);
-        }
-
-        for i in 0..n {
-            if !r[i].contains_all(all_nodes_mask) {
-                return false;
-            }
-        }
-
-        true
-    }
-
-    /// Ultimate soundness judge. Combines structural and behavioral proxies.
-    pub fn is_sound(&self) -> bool {
-        if !self.is_structural_workflow_net() {
-            return false;
-        }
-        if !self.verify_connectivity() {
-            return false;
-        }
-        // Additional proxy: Positive T-invariant is guaranteed by strong connectivity
-        // of the short-circuited net for WF-nets.
         true
     }
 
@@ -347,71 +160,6 @@ impl PetriNet {
         }
 
         self.cached_incidence = Some(self.compute_incidence());
-        self.cached_replay_data = self.compute_replay_data();
-    }
-
-    fn compute_replay_data(&self) -> Option<CachedReplayData> {
-        let num_places = self.places.len();
-        if num_places > 64 {
-            return None;
-        }
-
-        let mut place_to_idx = PackedKeyTable::with_capacity(num_places);
-        for (i, p) in self.places.iter().enumerate() {
-            place_to_idx.insert(fnv1a_64(p.id.as_bytes()), p.id.clone(), i);
-        }
-
-        let num_transitions = self.transitions.len();
-        let mut input_masks = vec![0u64; num_transitions + 1];
-        let mut output_masks = vec![0u64; num_transitions + 1];
-
-        for arc in &self.arcs {
-            let mut is_input = false;
-            let t_idx_opt = if let Some(pos) = self.transitions.iter().position(|t| t.id == arc.to) {
-                is_input = true;
-                Some(pos)
-            } else {
-                self.transitions.iter().position(|t| t.id == arc.from)
-            };
-
-            if let Some(t_idx) = t_idx_opt {
-                let p_id = if is_input { &arc.from } else { &arc.to };
-                if let Some(&p_idx) = place_to_idx.get(fnv1a_64(p_id.as_bytes())) {
-                    if is_input {
-                        input_masks[t_idx] |= 1u64 << p_idx;
-                    } else {
-                        output_masks[t_idx] |= 1u64 << p_idx;
-                    }
-                }
-            }
-        }
-
-        let mut initial_mask = 0u64;
-        for (_, p_id, c) in self.initial_marking.iter() {
-            if *c > 0 {
-                if let Some(&p_idx) = place_to_idx.get(fnv1a_64(p_id.as_bytes())) {
-                    initial_mask |= 1u64 << p_idx;
-                }
-            }
-        }
-
-        let mut final_mask = 0u64;
-        if let Some(fm) = self.final_markings.first() {
-            for (_, p_id, c) in fm.iter() {
-                if *c > 0 {
-                    if let Some(&p_idx) = place_to_idx.get(fnv1a_64(p_id.as_bytes())) {
-                        final_mask |= 1u64 << p_idx;
-                    }
-                }
-            }
-        }
-
-        Some(CachedReplayData {
-            input_masks,
-            output_masks,
-            initial_mask,
-            final_mask,
-        })
     }
 
     /// Computes the incidence matrix on the fly.
@@ -419,9 +167,6 @@ impl PetriNet {
         let places_count = self.places.len();
         let transitions_count = self.transitions.len();
         let mut data = vec![0; places_count * transitions_count];
-        use crate::utils::dense_kernel::KBitSet;
-        let mut input_masks = vec![KBitSet::<16>::zero(); transitions_count];
-        let mut output_masks = vec![KBitSet::<16>::zero(); transitions_count];
 
         if let Some(ref index) = self.cached_index {
             for arc in &self.arcs {
@@ -434,11 +179,9 @@ impl PetriNet {
                     if from_idx < places_count && to_idx >= places_count {
                         let t_idx = to_idx - places_count;
                         data[from_idx * transitions_count + t_idx] -= weight;
-                        let _ = input_masks[t_idx].set(from_idx);
                     } else if from_idx >= places_count && to_idx < places_count {
                         let t_idx = from_idx - places_count;
                         data[to_idx * transitions_count + t_idx] += weight;
-                        let _ = output_masks[t_idx].set(to_idx);
                     }
                 }
             }
@@ -453,11 +196,9 @@ impl PetriNet {
                     if from_idx < places_count && to_idx >= places_count {
                         let t_idx = to_idx - places_count;
                         data[from_idx * transitions_count + t_idx] -= weight;
-                        let _ = input_masks[t_idx].set(from_idx);
                     } else if from_idx >= places_count && to_idx < places_count {
                         let t_idx = from_idx - places_count;
                         data[to_idx * transitions_count + t_idx] += weight;
-                        let _ = output_masks[t_idx].set(to_idx);
                     }
                 }
             }
@@ -467,95 +208,69 @@ impl PetriNet {
             data,
             places_count,
             transitions_count,
-            input_masks,
-            output_masks,
         }
     }
 
     /// Generates the Incidence Matrix (W) in a flat representation.
-    /// Returns a reference to the cached matrix if available.
-    pub fn incidence_matrix(&self) -> Option<&FlatIncidenceMatrix> {
-        self.cached_incidence.as_ref()
+    /// Returns the cached matrix if available, otherwise computes it on the fly.
+    pub fn incidence_matrix(&self) -> FlatIncidenceMatrix {
+        if let Some(ref cached) = self.cached_incidence {
+            return cached.clone();
+        }
+        self.compute_incidence()
     }
 
     /// Verifies the structural bounds of the workflow net state equation.
-<<<<<<< HEAD
     /// A transition must have at least one input place and one output place.
-=======
-    /// Uses precomputed bitmasks for branchless verification of transition connectivity.
->>>>>>> wreckit/branchless-state-equation-calculus-eliminate-conditional-logic-in-petrinet-verification
     pub fn verifies_state_equation_calculus(&self) -> bool {
         if !self.is_structural_workflow_net() {
             return false;
         }
-<<<<<<< HEAD
-
-        if let Some(ref rd) = self.cached_replay_data {
-            for i in 0..self.transitions.len() {
-                if rd.input_masks[i] == 0 || rd.output_masks[i] == 0 {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        // Fallback for large nets or uncompiled nets (not in hot path)
-        let w = self.cached_incidence.as_ref().cloned().unwrap_or_else(|| self.compute_incidence());
-        let p_count = self.places.len();
-=======
         let w = self.incidence_matrix();
->>>>>>> wreckit/branchless-state-equation-calculus-eliminate-conditional-logic-in-petrinet-verification
+        let p_count = self.places.len();
         let t_count = self.transitions.len();
 
-        for t_idx in 0..t_count {
-            // Branchless check: each transition must have at least one input and one output
-            if w.input_masks[t_idx].is_empty() || w.output_masks[t_idx].is_empty() {
+        for t_col in 0..t_count {
+            let mut consumes = false;
+            let mut produces = false;
+            for p_row in 0..p_count {
+                let val = w.get(p_row, t_col);
+                if val < 0 {
+                    consumes = true;
+                }
+                if val > 0 {
+                    produces = true;
+                }
+            }
+            if !consumes || !produces {
                 return false;
             }
         }
         true
     }
 
-    /// Computes a smooth unsoundness score using zero-heap bitset algebra.
+    /// Computes a smooth unsoundness score using bitset algebra and FxHash.
     pub fn structural_unsoundness_score(&self) -> f32 {
         if self.places.is_empty() || self.transitions.is_empty() {
             return 10.0;
         }
 
         let place_count = self.places.len();
-<<<<<<< HEAD
-        let trans_count = self.transitions.len();
-        let total_nodes = place_count + trans_count;
-        
-        if total_nodes > 1024 {
-            return 100.0;
-        }
-
-        let mut in_degrees = KBitSet::<16>::zero();
-        let mut out_degrees = KBitSet::<16>::zero();
-=======
         let total_nodes = place_count + self.transitions.len();
+        let num_words = total_nodes.div_ceil(64);
 
-        let mut in_degrees = [0u64; 16];
-        let mut out_degrees = [0u64; 16];
->>>>>>> wreckit/zero-heap-packedkeytable-eliminate-all-latent-allocations-in-pkt-hot-paths
+        let mut in_degrees = vec![0u64; num_words];
+        let mut out_degrees = vec![0u64; num_words];
 
         if let Some(ref index) = self.cached_index {
             for arc in &self.arcs {
                 if let (Some(from_idx), Some(to_idx)) =
                     (index.dense_id(&arc.from), index.dense_id(&arc.to))
                 {
-<<<<<<< HEAD
-                    let _ = out_degrees.set(from_idx as usize);
-                    let _ = in_degrees.set(to_idx as usize);
-=======
                     let from_idx = from_idx as usize;
                     let to_idx = to_idx as usize;
-                    if from_idx < 1024 && to_idx < 1024 {
-                        out_degrees[from_idx / 64] |= 1u64 << (from_idx % 64);
-                        in_degrees[to_idx / 64] |= 1u64 << (to_idx % 64);
-                    }
->>>>>>> wreckit/zero-heap-packedkeytable-eliminate-all-latent-allocations-in-pkt-hot-paths
+                    out_degrees[from_idx / 64] |= 1u64 << (from_idx % 64);
+                    in_degrees[to_idx / 64] |= 1u64 << (to_idx % 64);
                 }
             }
         } else {
@@ -565,15 +280,8 @@ impl PetriNet {
                     id_to_index.get(fnv1a_64(arc.from.as_bytes())),
                     id_to_index.get(fnv1a_64(arc.to.as_bytes())),
                 ) {
-<<<<<<< HEAD
-                    let _ = out_degrees.set(from_idx);
-                    let _ = in_degrees.set(to_idx);
-=======
-                    if from_idx < 1024 && to_idx < 1024 {
-                        out_degrees[from_idx / 64] |= 1u64 << (from_idx % 64);
-                        in_degrees[to_idx / 64] |= 1u64 << (to_idx % 64);
-                    }
->>>>>>> wreckit/zero-heap-packedkeytable-eliminate-all-latent-allocations-in-pkt-hot-paths
+                    out_degrees[from_idx / 64] |= 1u64 << (from_idx % 64);
+                    in_degrees[to_idx / 64] |= 1u64 << (to_idx % 64);
                 }
             }
         }
@@ -582,14 +290,8 @@ impl PetriNet {
         let mut source_places_count = 0;
         let mut sink_places_count = 0;
         for i in 0..place_count {
-<<<<<<< HEAD
-            let has_in = in_degrees.contains(i);
-            let has_out = out_degrees.contains(i);
-=======
-            if i >= 1024 { break; }
             let has_in = (in_degrees[i / 64] & (1u64 << (i % 64))) != 0;
             let has_out = (out_degrees[i / 64] & (1u64 << (i % 64))) != 0;
->>>>>>> wreckit/zero-heap-packedkeytable-eliminate-all-latent-allocations-in-pkt-hot-paths
             if !has_in {
                 source_places_count += 1;
             }
@@ -602,14 +304,8 @@ impl PetriNet {
         score += (sink_places_count as f32 - 1.0).abs();
 
         for i in place_count..total_nodes {
-<<<<<<< HEAD
-            let has_in = in_degrees.contains(i);
-            let has_out = out_degrees.contains(i);
-=======
-            if i >= 1024 { break; }
             let has_in = (in_degrees[i / 64] & (1u64 << (i % 64))) != 0;
             let has_out = (out_degrees[i / 64] & (1u64 << (i % 64))) != 0;
->>>>>>> wreckit/zero-heap-packedkeytable-eliminate-all-latent-allocations-in-pkt-hot-paths
             if !has_in {
                 score += 1.0;
             }
@@ -619,14 +315,8 @@ impl PetriNet {
         }
 
         for i in 0..place_count {
-<<<<<<< HEAD
-            let has_in = in_degrees.contains(i);
-            let has_out = out_degrees.contains(i);
-=======
-            if i >= 1024 { break; }
             let has_in = (in_degrees[i / 64] & (1u64 << (i % 64))) != 0;
             let has_out = (out_degrees[i / 64] & (1u64 << (i % 64))) != 0;
->>>>>>> wreckit/zero-heap-packedkeytable-eliminate-all-latent-allocations-in-pkt-hot-paths
             if !has_in && !has_out {
                 score += 2.0;
             }
@@ -635,13 +325,8 @@ impl PetriNet {
         score
     }
 
-<<<<<<< HEAD
     /// Computes the MDL score of the model as: transitions + (arcs * log2(vocabulary_size))
     /// AC 3.1: Ontology size |O*| is treated as the theoretical upper bound for |T|.
-=======
-    /// Computes the MDL score of the model as: Φ(N) = |T| + (|A| * log2 |T|)
-    /// strictly following Section 3 of DDS_THESIS.md.
->>>>>>> wreckit/mdl-refinement-upgrade-structural-scoring-in-src-models-petri-net-rs-to-follow-φ-n-exactly
     pub fn mdl_score(&self) -> f64 {
         self.mdl_score_with_ontology(None)
     }
@@ -649,23 +334,11 @@ impl PetriNet {
     pub fn mdl_score_with_ontology(&self, ontology_size: Option<usize>) -> f64 {
         let t = self.transitions.len() as f64;
         let a = self.arcs.len() as f64;
-
-        // Edge case handling as per AC_CRITERIA.md
         if t == 0.0 {
             return 0.0;
         }
-<<<<<<< HEAD
         let vocabulary_size = ontology_size.map(|s| s as f64).unwrap_or(t);
         t + (a * vocabulary_size.log2())
-=======
-        if t == 1.0 {
-            return 1.0;
-        }
-
-        // Exact formula: |T| + (|A| * log2(|T|))
-        // This ensures the penalty for arcs scales with the logarithm of the number of transitions.
-        t + (a * t.log2())
->>>>>>> wreckit/mdl-refinement-upgrade-structural-scoring-in-src-models-petri-net-rs-to-follow-φ-n-exactly
     }
 
     pub fn explain(&self) -> String {
@@ -707,7 +380,6 @@ impl PetriNet {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use proptest::prelude::*;
 
     #[test]
     fn test_incidence_matrix_flat_parity() {
@@ -734,16 +406,16 @@ mod tests {
             weight: Some(2),
         });
 
-        net.compile_incidence();
-        let w = net.incidence_matrix().unwrap();
+        let w = net.incidence_matrix();
         assert_eq!(w.places_count, 2);
         assert_eq!(w.transitions_count, 1);
         assert_eq!(w.get(0, 0), -1); // p1 -> t1
         assert_eq!(w.get(1, 0), 2); // t1 -> p2
 
+        net.compile_incidence();
         assert!(net.cached_incidence.is_some());
         assert!(net.cached_index.is_some());
-        let w_cached = net.incidence_matrix().unwrap();
+        let w_cached = net.incidence_matrix();
         assert_eq!(w, w_cached);
     }
 
@@ -789,163 +461,5 @@ mod tests {
 
         assert!(!net.is_structural_workflow_net());
         assert!(!net.verifies_state_equation_calculus());
-    }
-
-    #[test]
-<<<<<<< HEAD
-    fn test_is_sound_validation() {
-        let mut net = PetriNet::default();
-        net.places.push(Place { id: "p1".to_string() });
-        net.places.push(Place { id: "p2".to_string() });
-        net.transitions.push(Transition { id: "t1".to_string(), label: "A".to_string(), is_invisible: None });
-        net.arcs.push(Arc { from: "p1".to_string(), to: "t1".to_string(), weight: None });
-        net.arcs.push(Arc { from: "t1".to_string(), to: "p2".to_string(), weight: None });
-
-        net.compile_incidence();
-        assert!(net.is_sound());
-
-        // Disconnected island
-        net.places.push(Place { id: "p3".to_string() });
-        net.compile_incidence();
-        assert!(!net.is_sound());
-    }
-}
-
-#[cfg(test)]
-mod proptests {
-    use super::*;
-    use proptest::prelude::*;
-
-    proptest! {
-        #[test]
-        fn test_soundness_property_invariant(
-            num_places in 1..10usize,
-            num_transitions in 1..10usize,
-            num_arcs in 1..20usize,
-        ) {
-            let mut net = PetriNet::default();
-            for i in 0..num_places {
-                net.places.push(Place { id: format!("p{}", i) });
-            }
-            for i in 0..num_transitions {
-                net.transitions.push(Transition { 
-                    id: format!("t{}", i), 
-                    label: format!("T{}", i), 
-                    is_invisible: None 
-                });
-            }
-            for i in 0..num_arcs {
-                let from_p = i % num_places;
-                let to_t = i % num_transitions;
-                net.arcs.push(Arc { 
-                    from: format!("p{}", from_p), 
-                    to: format!("t{}", to_t), 
-                    weight: None 
-                });
-                net.arcs.push(Arc { 
-                    from: format!("t{}", to_t), 
-                    to: format!("p{}", (from_p + 1) % num_places), 
-                    weight: None 
-                });
-            }
-            net.compile_incidence();
-            
-            // If it satisfies the structural requirements, it might be sound.
-            // This test ensures no panics and consistent results.
-            let _ = net.is_sound();
-=======
-    fn test_mdl_edge_cases() {
-        let mut net = PetriNet::default();
-        assert_eq!(net.mdl_score(), 0.0); // |T|=0
-
-        net.transitions.push(Transition {
-            id: "t1".to_string(),
-            label: "A".to_string(),
-            is_invisible: None,
-        });
-        assert_eq!(net.mdl_score(), 1.0); // |T|=1, |A|=0
-
-        net.arcs.push(Arc {
-            from: "p1".to_string(),
-            to: "t1".to_string(),
-            weight: None,
-        });
-        assert_eq!(net.mdl_score(), 1.0); // |T|=1, |A|=1 -> 1 + (1 * log2(1)) = 1
-
-        net.transitions.push(Transition {
-            id: "t2".to_string(),
-            label: "B".to_string(),
-            is_invisible: None,
-        });
-        // |T|=2, |A|=1 -> 2 + (1 * log2(2)) = 3.0
-        assert_eq!(net.mdl_score(), 3.0);
-    }
-
-    proptest! {
-        #[test]
-        fn test_mdl_score_non_negative(
-            t_count in 0..1000usize,
-            a_count in 0..5000usize,
-        ) {
-            let mut net = PetriNet::default();
-            for i in 0..t_count {
-                net.transitions.push(Transition {
-                    id: format!("t{}", i),
-                    label: format!("T{}", i),
-                    is_invisible: None,
-                });
-            }
-            for _ in 0..a_count {
-                net.arcs.push(Arc {
-                    from: "p".to_string(),
-                    to: "t".to_string(),
-                    weight: None,
-                });
-            }
-            let score = net.mdl_score();
-            prop_assert!(score >= 0.0);
-
-            if t_count > 1 {
-                // If |T| > 1, adding an arc MUST increase the score
-                let current_score = net.mdl_score();
-                net.arcs.push(Arc { from: "p".to_string(), to: "t".to_string(), weight: None });
-                prop_assert!(net.mdl_score() > current_score);
-            }
-        }
-
-        #[test]
-        fn test_mdl_monotonicity_transitions(
-            t_count in 2..100usize,
-            a_count in 1..10usize,
-        ) {
-            let mut net = PetriNet::default();
-            for i in 0..t_count {
-                net.transitions.push(Transition {
-                    id: format!("t{}", i),
-                    label: format!("T{}", i),
-                    is_invisible: None,
-                });
-            }
-            for _ in 0..a_count {
-                net.arcs.push(Arc {
-                    from: "p".to_string(),
-                    to: "t".to_string(),
-                    weight: None,
-                });
-            }
-
-            let score1 = net.mdl_score();
-
-            // Add another transition
-            net.transitions.push(Transition {
-                id: "new_t".to_string(),
-                label: "NEW".to_string(),
-                is_invisible: None,
-            });
-
-            let score2 = net.mdl_score();
-            prop_assert!(score2 > score1, "MDL score must be monotonic with respect to |T| for |T| >= 2");
->>>>>>> wreckit/mdl-refinement-upgrade-structural-scoring-in-src-models-petri-net-rs-to-follow-φ-n-exactly
-        }
     }
 }

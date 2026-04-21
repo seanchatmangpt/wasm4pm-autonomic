@@ -61,7 +61,6 @@ fn main() {
 
         // 4. Adapt (Sherman-Morrison update)
         kernel.adapt(AutonomicFeedback {
-            action_id: 1,
             reward,
             human_override: false,
             side_effects: vec![],

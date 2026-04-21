@@ -23,11 +23,7 @@ fn create_state<const WORDS: usize>(h: i32) -> RlState<WORDS> {
         rework_ratio_q: 0,
         circuit_state: 0,
         cycle_phase: 0,
-<<<<<<< HEAD
         marking_mask: KBitSet::zero(),
-=======
-        marking_mask: dteam::utils::dense_kernel::K1024::zero(),
->>>>>>> wreckit/formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o
         activities_hash: 0,
         ontology_mask: KBitSet::zero(),
         universe: None,
@@ -78,13 +74,8 @@ fn bench_real_data_processing(c: &mut Criterion) {
     let actions = load_real_actions();
     println!("Loaded {} actions from real data", actions.len());
 
-<<<<<<< HEAD
     let mut q = QLearning::<RlState<4>, RlAction>::new();
     let mut sarsa = SARSAAgent::<RlState<4>, RlAction>::new();
-=======
-    let mut q = QLearning::<RlState, RlAction>::new();
-    let mut sarsa = SARSAAgent::<RlState, RlAction>::new();
->>>>>>> wreckit/wf-net-soundness-judge-implement-dr-wil-s-soundness-proofs-as-branchless-bitmask-checks
 
     let mut group = c.benchmark_group("RealDataProcessing");
 

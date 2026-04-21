@@ -1,25 +1,18 @@
+use dteam::utils::dense_kernel::KBitSet;
+use dteam::utils::scc::compute_sccs_branchless;
 use dteam::ref_conformance::ref_token_replay::apply_token_based_replay_bcinr;
 use dteam::ref_models::ref_event_log::EventLogActivityProjection;
 use dteam::ref_models::ref_petri_net::{ArcType, PetriNet};
-use dteam::utils::dense_kernel::KBitSet;
-use dteam::utils::scc::compute_sccs_branchless;
 use iai_callgrind::{library_benchmark, library_benchmark_group, main};
 use std::collections::HashMap;
 
 fn generate_random_graph<const WORDS: usize>(density: f64) -> Vec<KBitSet<WORDS>> {
-<<<<<<< HEAD
     let mut adj = vec![KBitSet::<WORDS>::zero(); WORDS * 64];
-    for (i, row) in adj.iter_mut().enumerate().take(WORDS * 64) {
+    for i in 0..WORDS * 64 {
         for j in 0..WORDS * 64 {
-=======
-    let nodes = WORDS * 64;
-    let mut adj = vec![KBitSet::<WORDS>::zero(); nodes];
-    for (i, row) in adj.iter_mut().enumerate() {
-        for j in 0..nodes {
->>>>>>> wreckit/mdl-refinement-upgrade-structural-scoring-in-src-models-petri-net-rs-to-follow-φ-n-exactly
             // Using a simple deterministic "random" for density
             if ((i * 31 + j * 7) % 100) < (density * 100.0) as usize {
-                row.set(j).unwrap();
+                let _ = adj[i].set(j).unwrap();
             }
         }
     }

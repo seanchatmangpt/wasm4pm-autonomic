@@ -1,10 +1,7 @@
 use dteam::autonomic::{AutonomicEvent, AutonomicKernel, DefaultKernel};
 use dteam::dteam::orchestration::{DteamDoctor, Engine};
-<<<<<<< HEAD
 use log::{debug, info};
 use std::time::SystemTime;
-=======
->>>>>>> wreckit/blue-river-dam-interface-refactor-autonomickernel-to-focus-on-control-surface-synthesis
 
 fn main() {
     env_logger::init();
@@ -15,13 +12,11 @@ fn main() {
     info!("\n--- Autonomic Kernel Diagnostic ---");
     let mut kernel = DefaultKernel::new();
     let event = AutonomicEvent {
-        source_hash: 0x1234,
-        activity_idx: 0,
-        payload_hash: 0x5678,
-        timestamp_ns: 123456789,
+        source: "diagnostic_agent".to_string(),
+        payload: "Self-test sequence initiated".to_string(),
+        timestamp: SystemTime::now(),
     };
 
-<<<<<<< HEAD
     debug!("State before: {}", kernel.infer());
     let results = kernel.run_cycle(event);
     info!("Cycle executed. Result count: {}", results.len());
@@ -29,12 +24,6 @@ fn main() {
         info!("  {}", res);
     }
     debug!("State after:  {}", kernel.infer());
-=======
-    println!("State before: {}", kernel.infer());
-    let count = kernel.run_cycle(&event);
-    println!("Cycle executed. Result count: {}", count);
-    println!("State after:  {}", kernel.infer());
->>>>>>> wreckit/blue-river-dam-interface-refactor-autonomickernel-to-focus-on-control-surface-synthesis
 
     info!("\nDiagnostics complete. System status: NOMINAL");
 }

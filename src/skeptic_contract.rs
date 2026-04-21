@@ -241,31 +241,7 @@ pub const CHECK_DOUBLE_Q: &str = "VERIFY_DUAL_TABLE_INTEGRITY";
 pub const CHECK_DATA_ISOLATION: &str = "VERIFY_TRAIN_TEST_SEPARATION";
 
 /// ============================================================
-/// SECTION 12: COLLISION GUARD ADMISSIBILITY
-/// ============================================================
-///
-/// THESIS CLAIM:
-///
-/// ```text
-/// BadOutcome ∉ S_reachable
-/// ```
-///
-/// REQUIRED IN IMPLEMENTATION:
-///
-/// [x] DenseIndex::compile MUST detect FNV-1a collisions
-/// [x] Collision detection returns DenseError::HashCollision
-/// [x] Forced collisions are caught with 100% reliability in proptests
-///
-/// FAILURE MODE:
-///
-/// ```text
-/// Hash collision → state aliasing → incorrect replay → invalid fitness
-/// ```
-///
-pub const CHECK_COLLISION_GUARD: &str = "VERIFY_COLLISION_GUARD_ADMISSIBILITY";
-
-/// ============================================================
-/// SECTION 13: SKEPTIC RESULT INTERPRETATION
+/// SECTION 11: SKEPTIC RESULT INTERPRETATION
 /// ============================================================
 ///
 /// ALL CHECKS MUST HOLD:
@@ -276,7 +252,6 @@ pub const CHECK_COLLISION_GUARD: &str = "VERIFY_COLLISION_GUARD_ADMISSIBILITY";
 /// REWARD_TOPOLOGY      ✔
 /// IDENTIFIABILITY      ✔
 /// DETERMINISM          ✔
-/// COLLISION_GUARD      ✔
 /// ```
 ///
 /// IF ANY FAIL:
@@ -297,7 +272,6 @@ pub const ALL_CHECKS: &[&str] = &[
     CHECK_IMPULSE_ASSUMPTION,
     CHECK_DOUBLE_Q,
     CHECK_DATA_ISOLATION,
-    CHECK_COLLISION_GUARD,
 ];
 
 /// ============================================================

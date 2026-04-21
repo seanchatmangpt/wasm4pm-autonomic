@@ -24,11 +24,7 @@ pub struct ConformanceResult {
 pub struct ProjectedLog {
     pub activities: Vec<String>,
     pub traces: Vec<(Vec<usize>, u64)>, // (activity indices, frequency)
-<<<<<<< HEAD
     pub violation_count: usize,
-=======
-    pub ontology_hash: u64,
->>>>>>> wreckit/ontology-mapping-automated-activity-to-index-mapping-with-fnv-1a-collision-guards
 }
 
 impl ProjectedLog {
@@ -37,7 +33,6 @@ impl ProjectedLog {
     }
 
     pub fn generate_with_ontology(log: &EventLog, ontology: Option<&crate::models::Ontology>) -> Self {
-<<<<<<< HEAD
         let mut unique_activities = std::collections::HashSet::new();
         let mut violation_count = 0;
 
@@ -72,16 +67,6 @@ impl ProjectedLog {
 
         let mut traces_map = PackedKeyTable::new();
         let activities = activity_index.symbols().to_vec();
-<<<<<<< HEAD
-=======
-        let mut act_to_idx = PackedKeyTable::new();
-        let mut activities = Vec::new();
-        let mut traces_map = PackedKeyTable::new();
-        let mut violation_count = 0;
->>>>>>> wreckit/1-formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o-and-prevent-out-of-ontology-state-reachability
-=======
-        let ontology_hash = activity_index.ontology_hash();
->>>>>>> wreckit/ontology-mapping-automated-activity-to-index-mapping-with-fnv-1a-collision-guards
 
         for trace in &log.traces {
             let mut trace_acts = Vec::with_capacity(trace.events.len());
@@ -101,7 +86,6 @@ impl ProjectedLog {
 
                 if let Some(ont) = ontology {
                     if !ont.contains(activity) {
-<<<<<<< HEAD
                         continue;
                     }
                 }
@@ -109,23 +93,6 @@ impl ProjectedLog {
                 if let Some(idx) = activity_index.dense_id_by_symbol(activity) {
                     trace_acts.push(idx as usize);
                 }
-=======
-                        violation_count += 1;
-                        continue; // Prune out-of-ontology events (AC 1.2 option b)
-                    }
-                }
-
-                let h = fnv1a_64(activity.as_bytes());
-                let index = if let Some(&idx) = act_to_idx.get(h) {
-                    idx
-                } else {
-                    let idx = activities.len();
-                    activities.push(activity.to_string());
-                    act_to_idx.insert(h, activity.to_string(), idx);
-                    idx
-                };
-                trace_acts.push(index);
->>>>>>> wreckit/1-formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o-and-prevent-out-of-ontology-state-reachability
             }
 
             if trace_acts.is_empty() { continue; }
@@ -143,11 +110,7 @@ impl ProjectedLog {
         Self {
             activities,
             traces: traces_map.iter().map(|(_, k, v)| (k.clone(), *v)).collect(),
-<<<<<<< HEAD
             violation_count,
-=======
-            ontology_hash,
->>>>>>> wreckit/ontology-mapping-automated-activity-to-index-mapping-with-fnv-1a-collision-guards
         }
     }
 }
@@ -160,28 +123,18 @@ impl From<&EventLog> for ProjectedLog {
 
 pub fn token_replay_projected(log: &ProjectedLog, petri_net: &PetriNet) -> f64 {
     let num_places = petri_net.places.len();
-    if num_places > 1024 {
+    if num_places > 64 {
         return 0.0;
     }
 
-<<<<<<< HEAD
-    let replay_data = if let Some(ref rd) = petri_net.cached_replay_data {
-        rd
-    } else {
-        // Fallback or panic? For zero-allocation, we expect it to be cached.
-        return 0.0;
-    };
-
-    let input_masks = &replay_data.input_masks;
-    let output_masks = &replay_data.output_masks;
-    let initial_mask = replay_data.initial_mask;
-    let final_mask = replay_data.final_mask;
+    let mut place_to_idx = PackedKeyTable::with_capacity(num_places);
+    for (i, p) in petri_net.places.iter().enumerate() {
+        place_to_idx.insert(fnv1a_64(p.id.as_bytes()), p.id.clone(), i);
+    }
 
     let num_transitions = petri_net.transitions.len();
     let dummy_t_idx = num_transitions;
 
-<<<<<<< HEAD
-<<<<<<< HEAD
     #[derive(Clone, Copy)]
     struct TransMasks {
         in_mask: u64,
@@ -199,10 +152,6 @@ pub fn token_replay_projected(log: &ProjectedLog, petri_net: &PetriNet) -> f64 {
         };
         num_transitions + 1
     ];
-=======
-    let mut input_masks = vec![crate::utils::dense_kernel::KBitSet::<16>::zero(); num_transitions + 1];
-    let mut output_masks = vec![crate::utils::dense_kernel::KBitSet::<16>::zero(); num_transitions + 1];
->>>>>>> wreckit/formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o
 
     for arc in &petri_net.arcs {
         let mut is_input = false;
@@ -218,71 +167,42 @@ pub fn token_replay_projected(log: &ProjectedLog, petri_net: &PetriNet) -> f64 {
             let p_id = if is_input { &arc.from } else { &arc.to };
             if let Some(&p_idx) = place_to_idx.get(fnv1a_64(p_id.as_bytes())) {
                 if is_input {
-<<<<<<< HEAD
                     trans_masks[t_idx].in_mask |= 1u64 << p_idx;
                 } else {
                     trans_masks[t_idx].out_mask |= 1u64 << p_idx;
-=======
-                    let _ = input_masks[t_idx].set(p_idx);
-                } else {
-                    let _ = output_masks[t_idx].set(p_idx);
->>>>>>> wreckit/formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o
                 }
             }
         }
     }
 
     for i in 0..num_transitions {
-<<<<<<< HEAD
         trans_masks[i].in_count = trans_masks[i].in_mask.count_ones();
         trans_masks[i].out_count = trans_masks[i].out_mask.count_ones();
-=======
-        input_counts[i] = input_masks[i].pop_count();
-        output_counts[i] = output_masks[i].pop_count();
->>>>>>> wreckit/formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o
     }
-
-    let mut initial_mask = crate::utils::dense_kernel::KBitSet::<16>::zero();
-=======
-    let w = petri_net.incidence_matrix();
-    let num_transitions = petri_net.transitions.len();
-    let dummy_t_idx = num_transitions;
 
     let mut initial_mask = 0u64;
-    let mut place_to_idx = PackedKeyTable::with_capacity(num_places);
-    for (i, p) in petri_net.places.iter().enumerate() {
-        place_to_idx.insert(fnv1a_64(p.id.as_bytes()), p.id.clone(), i);
-    }
-
->>>>>>> wreckit/branchless-state-equation-calculus-eliminate-conditional-logic-in-petrinet-verification
     for (_, p_id, c) in petri_net.initial_marking.iter() {
         if *c > 0 {
             if let Some(&p_idx) = place_to_idx.get(fnv1a_64(p_id.as_bytes())) {
-                let _ = initial_mask.set(p_idx);
+                initial_mask |= 1u64 << p_idx;
             }
         }
     }
 
-    let mut final_mask = crate::utils::dense_kernel::KBitSet::<16>::zero();
+    let mut final_mask = 0u64;
     if let Some(fm) = petri_net.final_markings.first() {
         for (_, p_id, c) in fm.iter() {
             if *c > 0 {
                 if let Some(&p_idx) = place_to_idx.get(fnv1a_64(p_id.as_bytes())) {
-                    let _ = final_mask.set(p_idx);
+                    final_mask |= 1u64 << p_idx;
                 }
             }
         }
     }
-    let final_count = final_mask.pop_count();
+    let final_count = final_mask.count_ones();
 
     let mut act_to_t_idx = vec![dummy_t_idx; log.activities.len()];
     for (i, act) in log.activities.iter().enumerate() {
-=======
-    // Use a stack-allocated buffer for activity to transition mapping
-    // KTier 1024 is the max, so 1024 * 4 bytes = 4KB.
-    let mut act_to_t_idx = [dummy_t_idx; 1024];
-    for (i, act) in log.activities.iter().enumerate().take(1024) {
->>>>>>> wreckit/zero-heap-packedkeytable-eliminate-all-latent-allocations-in-pkt-hot-paths
         if let Some(pos) = petri_net.transitions.iter().position(|t| &t.label == act) {
             act_to_t_idx[i] = pos;
         }
@@ -291,17 +211,13 @@ pub fn token_replay_projected(log: &ProjectedLog, petri_net: &PetriNet) -> f64 {
     let mut total_fitness = 0.0;
     let mut total_freq = 0;
 
-    let final_count = final_mask.count_ones();
-
     for (trace, freq) in &log.traces {
-        let mut marking = initial_mask;
+        let mut marking: u64 = initial_mask;
         let mut missing_tokens = 0;
         let mut consumed_tokens = 0;
-        let mut produced_tokens = initial_mask.pop_count();
+        let mut produced_tokens = initial_mask.count_ones();
 
         for &act_idx in trace {
-<<<<<<< HEAD
-<<<<<<< HEAD
             unsafe {
                 let t_idx = *act_to_t_idx.get_unchecked(act_idx);
                 let tm = trans_masks.get_unchecked(t_idx);
@@ -310,42 +226,12 @@ pub fn token_replay_projected(log: &ProjectedLog, petri_net: &PetriNet) -> f64 {
                 consumed_tokens += tm.in_count;
                 produced_tokens += tm.out_count;
             }
-=======
-            let t_idx = act_to_t_idx[act_idx];
-            let in_mask = input_masks[t_idx];
-            missing_tokens += marking.missing_count(in_mask);
-            marking = marking.bitwise_and(in_mask.bitwise_not()).bitwise_or(output_masks[t_idx]);
-            consumed_tokens += input_counts[t_idx];
-            produced_tokens += output_counts[t_idx];
->>>>>>> wreckit/formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o
-=======
-            if act_idx >= 1024 {
-                continue;
-            }
-            let t_idx = act_to_t_idx[act_idx];
-            if t_idx == dummy_t_idx {
-                continue;
-            }
-            let in_mask = w.input_masks[t_idx].words[0];
-            let out_mask = w.output_masks[t_idx].words[0];
-
-            missing_tokens += (in_mask & !marking).count_ones();
-<<<<<<< HEAD
-            marking = (marking & !in_mask) | output_masks[t_idx];
-            consumed_tokens += in_mask.count_ones();
-            produced_tokens += output_masks[t_idx].count_ones();
->>>>>>> wreckit/zero-heap-packedkeytable-eliminate-all-latent-allocations-in-pkt-hot-paths
-=======
-            marking = (marking & !in_mask) | out_mask;
-            consumed_tokens += in_mask.count_ones();
-            produced_tokens += out_mask.count_ones();
->>>>>>> wreckit/branchless-state-equation-calculus-eliminate-conditional-logic-in-petrinet-verification
         }
 
-        missing_tokens += marking.missing_count(final_mask);
+        missing_tokens += (final_mask & !marking).count_ones();
         consumed_tokens += final_count;
-        marking = marking.bitwise_and(final_mask.bitwise_not());
-        let remaining_tokens = marking.pop_count();
+        marking &= !final_mask;
+        let remaining_tokens = marking.count_ones();
 
         let total_tokens_needed = consumed_tokens + missing_tokens;
         let fitness = if total_tokens_needed == 0 {
@@ -368,7 +254,7 @@ pub fn token_replay_projected(log: &ProjectedLog, petri_net: &PetriNet) -> f64 {
 
 pub fn token_replay(log: &EventLog, petri_net: &PetriNet) -> Vec<ConformanceResult> {
     let num_places = petri_net.places.len();
-    if num_places > 1024 {
+    if num_places > 64 {
         return log
             .traces
             .iter()
@@ -376,12 +262,8 @@ pub fn token_replay(log: &EventLog, petri_net: &PetriNet) -> Vec<ConformanceResu
             .collect();
     }
 
-    let w = petri_net.incidence_matrix();
-    let num_transitions = petri_net.transitions.len();
-    let dummy_t_idx = num_transitions;
-
     let mut place_to_idx = PackedKeyTable::with_capacity(num_places);
-    let mut act_to_t_idx = PackedKeyTable::with_capacity(num_transitions);
+    let mut act_to_t_idx = PackedKeyTable::with_capacity(petri_net.transitions.len());
 
     for (i, p) in petri_net.places.iter().enumerate() {
         place_to_idx.insert(fnv1a_64(p.id.as_bytes()), p.id.clone(), i);
@@ -390,11 +272,9 @@ pub fn token_replay(log: &EventLog, petri_net: &PetriNet) -> Vec<ConformanceResu
         act_to_t_idx.insert(fnv1a_64(t.label.as_bytes()), t.label.clone(), i);
     }
 
-<<<<<<< HEAD
     let num_transitions = petri_net.transitions.len();
     let dummy_t_idx = num_transitions;
 
-<<<<<<< HEAD
     #[derive(Clone, Copy)]
     struct TransMasks {
         in_mask: u64,
@@ -412,10 +292,6 @@ pub fn token_replay(log: &EventLog, petri_net: &PetriNet) -> Vec<ConformanceResu
         };
         num_transitions + 1
     ];
-=======
-    let mut input_masks = vec![crate::utils::dense_kernel::KBitSet::<16>::zero(); num_transitions + 1];
-    let mut output_masks = vec![crate::utils::dense_kernel::KBitSet::<16>::zero(); num_transitions + 1];
->>>>>>> wreckit/formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o
 
     for arc in &petri_net.arcs {
         let mut is_input = false;
@@ -432,61 +308,47 @@ pub fn token_replay(log: &EventLog, petri_net: &PetriNet) -> Vec<ConformanceResu
             let p_id = if is_input { &arc.from } else { &arc.to };
             if let Some(&p_idx) = place_to_idx.get(fnv1a_64(p_id.as_bytes())) {
                 if is_input {
-<<<<<<< HEAD
                     trans_masks[t_idx].in_mask |= 1u64 << p_idx;
                 } else {
                     trans_masks[t_idx].out_mask |= 1u64 << p_idx;
-=======
-                    let _ = input_masks[t_idx].set(p_idx);
-                } else {
-                    let _ = output_masks[t_idx].set(p_idx);
->>>>>>> wreckit/formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o
                 }
             }
         }
     }
 
     for i in 0..num_transitions {
-<<<<<<< HEAD
         trans_masks[i].in_count = trans_masks[i].in_mask.count_ones();
         trans_masks[i].out_count = trans_masks[i].out_mask.count_ones();
-=======
-        input_counts[i] = input_masks[i].pop_count();
-        output_counts[i] = output_masks[i].pop_count();
->>>>>>> wreckit/formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o
     }
 
-    let mut initial_mask = crate::utils::dense_kernel::KBitSet::<16>::zero();
-=======
     let mut initial_mask = 0u64;
->>>>>>> wreckit/branchless-state-equation-calculus-eliminate-conditional-logic-in-petrinet-verification
     for (_, p_id, c) in petri_net.initial_marking.iter() {
         if *c > 0 {
             if let Some(&p_idx) = place_to_idx.get(fnv1a_64(p_id.as_bytes())) {
-                let _ = initial_mask.set(p_idx);
+                initial_mask |= 1u64 << p_idx;
             }
         }
     }
 
-    let mut final_mask = crate::utils::dense_kernel::KBitSet::<16>::zero();
+    let mut final_mask = 0u64;
     if let Some(fm) = petri_net.final_markings.first() {
         for (_, p_id, c) in fm.iter() {
             if *c > 0 {
                 if let Some(&p_idx) = place_to_idx.get(fnv1a_64(p_id.as_bytes())) {
-                    let _ = final_mask.set(p_idx);
+                    final_mask |= 1u64 << p_idx;
                 }
             }
         }
     }
-    let final_count = final_mask.pop_count();
+    let final_count = final_mask.count_ones();
 
     log.traces
         .iter()
         .map(|trace| {
-            let mut marking = initial_mask;
+            let mut marking: u64 = initial_mask;
             let mut missing_tokens = 0;
             let mut consumed_tokens = 0;
-            let mut produced_tokens = initial_mask.pop_count();
+            let mut produced_tokens = initial_mask.count_ones();
 
             for event in &trace.events {
                 let mut t_idx = dummy_t_idx;
@@ -498,8 +360,6 @@ pub fn token_replay(log: &EventLog, petri_net: &PetriNet) -> Vec<ConformanceResu
                     }
                 }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
                 unsafe {
                     let tm = trans_masks.get_unchecked(t_idx);
                     let missing = tm.in_mask & !marking;
@@ -508,32 +368,13 @@ pub fn token_replay(log: &EventLog, petri_net: &PetriNet) -> Vec<ConformanceResu
                     consumed_tokens += tm.in_count;
                     produced_tokens += tm.out_count;
                 }
-=======
-                let in_mask = input_masks[t_idx];
-                missing_tokens += marking.missing_count(in_mask);
-                marking = marking.bitwise_and(in_mask.bitwise_not()).bitwise_or(output_masks[t_idx]);
-                consumed_tokens += input_counts[t_idx];
-                produced_tokens += output_counts[t_idx];
->>>>>>> wreckit/formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o
-=======
-                if t_idx == dummy_t_idx {
-                    continue;
-                }
-
-                let in_mask = w.input_masks[t_idx].words[0];
-                let out_mask = w.output_masks[t_idx].words[0];
-
-                missing_tokens += (in_mask & !marking).count_ones();
-                marking = (marking & !in_mask) | out_mask;
-                consumed_tokens += in_mask.count_ones();
-                produced_tokens += out_mask.count_ones();
->>>>>>> wreckit/branchless-state-equation-calculus-eliminate-conditional-logic-in-petrinet-verification
             }
 
-            missing_tokens += marking.missing_count(final_mask);
+            let missing_final = final_mask & !marking;
+            missing_tokens += missing_final.count_ones();
             consumed_tokens += final_count;
-            marking = marking.bitwise_and(final_mask.bitwise_not());
-            let remaining_tokens = marking.pop_count();
+            marking &= !final_mask;
+            let remaining_tokens = marking.count_ones();
 
             let total_tokens_needed = consumed_tokens + missing_tokens;
             let fitness = if total_tokens_needed == 0 {

@@ -1,10 +1,10 @@
-use dteam::reinforcement::{Agent, QLearning, StaticQValues};
+use dteam::ref_conformance::ref_token_replay::apply_token_based_replay_bcinr;
+use dteam::ref_models::ref_event_log::EventLogActivityProjection;
+use dteam::ref_models::ref_petri_net::{ArcType, PetriNet};
+use dteam::reinforcement::{Agent, SARSAAgent};
 use dteam::{RlAction, RlState};
-<<<<<<< HEAD
 use dteam::utils::dense_kernel::KBitSet;
 use std::collections::HashMap;
-=======
->>>>>>> wreckit/k-tier-scalability-optimize-bitset-alignment-for-k-1024-and-beyond
 
 #[global_allocator]
 static ALLOC: dhat::Alloc = dhat::Alloc;
@@ -12,26 +12,12 @@ static ALLOC: dhat::Alloc = dhat::Alloc;
 fn main() {
     let _profiler = dhat::Profiler::new_heap();
 
-    println!("Starting Zero-Allocation RL Benchmark with StaticQValues and Reserved Capacity...");
+    println!("Starting Zero-Allocation Benchmark...");
 
-<<<<<<< HEAD
     // 1. RL Hot Path
-<<<<<<< HEAD
     let mut agent = SARSAAgent::<RlState<4>, RlAction>::new();
     let state = RlState::<4> {
-=======
-    let mut agent = SARSAAgent::<RlState, RlAction>::new();
-    let state = RlState {
->>>>>>> wreckit/wf-net-soundness-judge-implement-dr-wil-s-soundness-proofs-as-branchless-bitmask-checks
         health_level: 1,
-=======
-    // 1. RL Hot Path with StaticQValues (Zero-Heap)
-    // We pre-allocate the PackedKeyTable with enough capacity to avoid re-allocations of the entry vector.
-    let agent = QLearning::<RlState<1>, RlAction, StaticQValues<3>>::with_capacity(1000);
-    
-    let state_template = RlState::<1> {
-        health_level: 0,
->>>>>>> wreckit/k-tier-scalability-optimize-bitset-alignment-for-k-1024-and-beyond
         event_rate_q: 0,
         activity_count_q: 0,
         spc_alert_level: 0,
@@ -39,22 +25,43 @@ fn main() {
         rework_ratio_q: 0,
         circuit_state: 0,
         cycle_phase: 0,
-<<<<<<< HEAD
         marking_mask: KBitSet::zero(),
-=======
-        marking_mask: dteam::utils::dense_kernel::KBitSet::zero(),
->>>>>>> wreckit/k-tier-scalability-optimize-bitset-alignment-for-k-1024-and-beyond
         activities_hash: 1,
         ontology_mask: KBitSet::zero(),
         universe: None,
     };
 
-    println!("Executing 1,000 RL updates with 1,000 DIFFERENT states...");
-    for i in 0..1000 {
-        let mut state = state_template;
-        state.activities_hash = i as u64; // Different state each time
+    println!("Executing 1,000,000 RL updates...");
+    for _ in 0..1_000_000 {
         let action = agent.select_action(state);
         agent.update(state, action, 1.0, state, false);
+    }
+
+    // 2. BCINR Replay Hot Path
+    let mut net = PetriNet::new();
+    let p1 = net.add_place(None);
+    let t1 = net.add_transition(Some("A".into()), None);
+    net.add_arc(ArcType::PlaceTransition(p1.0, t1.0), Some(1));
+
+    let mut init_marking = HashMap::new();
+    init_marking.insert(p1, 1);
+    net.initial_marking = Some(init_marking);
+
+    let mut final_marking = HashMap::new();
+    final_marking.insert(p1, 0);
+    net.final_markings = Some(vec![final_marking]);
+
+    let mut act_to_index = HashMap::new();
+    act_to_index.insert("A".into(), 0);
+    let projection = EventLogActivityProjection {
+        activities: vec!["A".into()],
+        act_to_index,
+        traces: vec![(vec![0], 1000)],
+    };
+
+    println!("Executing 1,000 BCINR Replays...");
+    for _ in 0..1000 {
+        let _ = apply_token_based_replay_bcinr(&net, &projection);
     }
 
     println!("Benchmark Complete. DHAT will now report allocations.");

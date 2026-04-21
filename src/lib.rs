@@ -3,24 +3,10 @@ pub mod io;
 pub mod jtbd_counterfactual_tests;
 pub mod jtbd_tests;
 pub mod models;
-pub mod proptest_kernel_verification;
 pub mod reinforcement;
 pub mod reinforcement_tests;
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 pub mod proptest_kernel_verification;
-<<<<<<< HEAD
-=======
->>>>>>> wreckit/1-formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o-and-prevent-out-of-ontology-state-reachability
 pub mod ontology_proptests;
-=======
->>>>>>> wreckit/cryptographic-execution-provenance-enhance-executionmanifest-with-full-h-l-π-h-n-hashing
-=======
->>>>>>> wreckit/mdl-refinement-upgrade-structural-scoring-in-src-models-petri-net-rs-to-follow-φ-n-exactly
-=======
-pub mod proptest_zero_allocation;
->>>>>>> wreckit/zero-heap-packedkeytable-eliminate-all-latent-allocations-in-pkt-hot-paths
 pub mod utils;
 pub use agentic::ralph::patterns::universe64::Universe64;
 
@@ -29,13 +15,8 @@ pub use conformance::*;
 pub use models::*;
 
 // Zero-heap, stack-allocated RL state for nanosecond-scale updates.
-<<<<<<< HEAD
 #[derive(Clone, Copy, Eq, Hash, PartialEq, Debug)]
 pub struct RlState<const WORDS: usize> {
-=======
-#[derive(Clone, Copy, Eq, Hash, PartialEq, Debug, Default)]
-pub struct RlState {
->>>>>>> wreckit/zero-heap-packedkeytable-eliminate-all-latent-allocations-in-pkt-hot-paths
     pub health_level: i8,
     pub event_rate_q: i8,
     pub activity_count_q: i8,
@@ -44,20 +25,10 @@ pub struct RlState {
     pub rework_ratio_q: i8,
     pub circuit_state: i8,
     pub cycle_phase: i8,
-<<<<<<< HEAD
-<<<<<<< HEAD
     pub marking_mask: utils::dense_kernel::KBitSet<WORDS>,
     pub activities_hash: u64,
     pub ontology_mask: crate::utils::dense_kernel::KBitSet<16>,
     pub universe: Option<Universe64>,
-=======
-    pub marking_mask: u64,    // BCINR bitset mask for Petri net marking
-=======
-    pub marking_mask: crate::utils::dense_kernel::KBitSet<16>, // BCINR bitset mask for Petri net marking (K1024 support)
->>>>>>> wreckit/formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o
-    pub activities_hash: u64, // Rolling FNV-1a hash of recent activities
-    pub ontology_mask: crate::utils::dense_kernel::KBitSet<16>, // AC 4.2
->>>>>>> wreckit/1-formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o-and-prevent-out-of-ontology-state-reachability
 }
 
 #[derive(Clone, Copy, Eq, Hash, PartialEq, Debug)]
@@ -69,8 +40,6 @@ pub enum RlAction {
 
 impl reinforcement::WorkflowAction for RlAction {
     const ACTION_COUNT: usize = 3;
-    type Values = [f32; 3];
-
     fn to_index(&self) -> usize {
         match self {
             RlAction::Idle => 0,
@@ -88,38 +57,7 @@ impl reinforcement::WorkflowAction for RlAction {
     }
 }
 
-<<<<<<< HEAD
 // Minimal RlState impls for reinforcement trait
-<<<<<<< HEAD
-=======
-impl<const WORDS: usize> RlState<WORDS> {
-    /// 100% Branchless state transition
-    #[inline]
-    pub fn step(&self, action: RlAction) -> Self {
-        use crate::reinforcement::WorkflowAction;
-        let mut next = *self;
-        let a_idx = action.to_index() as u64;
-
-        // Compute all possible next health levels
-        let h0 = self.health_level as i64;
-        let h1 = h0 + 1;
-        let h2 = if h0 > 0 { h0 - 1 } else { 0 }; // We can make this even more branchless if needed
-
-        // Use branchless selection (simulating cmov/bitwise)
-        let cond0 = (a_idx == 0) as u64;
-        let cond1 = (a_idx == 1) as u64;
-        let cond2 = (a_idx == 2) as u64;
-
-        let selected_h = crate::utils::bitset::select_u64(cond0, h0 as u64, 0)
-            | crate::utils::bitset::select_u64(cond1, h1 as u64, 0)
-            | crate::utils::bitset::select_u64(cond2, h2 as u64, 0);
-
-        next.health_level = selected_h as i8;
-        next
-    }
-}
-
->>>>>>> wreckit/k-tier-scalability-optimize-bitset-alignment-for-k-1024-and-beyond
 impl<const WORDS: usize> reinforcement::WorkflowState for RlState<WORDS> {
     fn features(&self) -> [f32; 16] {
         let mut f = [0.0; 16];
@@ -135,37 +73,9 @@ impl<const WORDS: usize> reinforcement::WorkflowState for RlState<WORDS> {
             }
         }
         f
-=======
-impl reinforcement::WorkflowState for RlState {
-<<<<<<< HEAD
-<<<<<<< HEAD
-    fn features(&self) -> Vec<f32> {
-        // Optimized feature vector: only allocate if necessary for function approx.
-        // For Q-Table, this is rarely called in the hot path.
-        vec![self.health_level as f32, self.marking_mask.pop_count() as f32]
->>>>>>> wreckit/formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o
-=======
-    const FEATURE_DIM: usize = 3;
-    fn write_features(&self, out: &mut [f32]) {
-        if out.len() >= 3 {
-            out[0] = 1.0; // Bias
-            out[1] = self.health_level as f32;
-            out[2] = self.marking_mask as f32;
-        }
->>>>>>> wreckit/linear-reinforcement-learning-implement-linucb-with-zero-heap-state-matrices
     }
-=======
->>>>>>> wreckit/zero-heap-packedkeytable-eliminate-all-latent-allocations-in-pkt-hot-paths
     fn is_terminal(&self) -> bool {
         self.health_level < 0 || self.health_level >= 5
-    }
-    fn is_admissible<A: reinforcement::WorkflowAction>(&self, action: A) -> bool {
-        match action.to_index() {
-            0 => true, // Idle is always admissible
-            1 => self.health_level < 5, // Optimize (was < 4, blocking goal reach)
-            2 => self.health_level > 0, // Rework
-            _ => true,
-        }
     }
 }
 
@@ -231,8 +141,6 @@ pub mod dteam {
             K256,
             K512,
             K1024,
-            K2048,
-            K4096,
         }
 
         impl KTier {
@@ -243,8 +151,6 @@ pub mod dteam {
                     KTier::K256 => 4,
                     KTier::K512 => 8,
                     KTier::K1024 => 16,
-                    KTier::K2048 => 32,
-                    KTier::K4096 => 64,
                 }
             }
             pub fn capacity(&self) -> usize {
@@ -257,107 +163,34 @@ pub mod dteam {
     /// This module contains the logic for zero-branch transition firing and Bellman updates.
     pub mod kernel {
         pub mod branchless {
-<<<<<<< HEAD
-<<<<<<< HEAD
             use crate::models::petri_net::FlatIncidenceMatrix;
-            use crate::utils::dense_kernel::KBitSet;
 
-            /// Performs a 100% branchless Petri net transition update using precomputed masks.
-            /// Logic: M' = (M & !input_mask) | output_mask
-            /// This implementation eliminates all data-dependent branching and loops in the hot path.
+            /// Performs a branchless Petri net transition update using the state equation:
+            /// M' = M + Wx, where W is the incidence matrix and x is the firing vector.
+            /// For small nets (<= 64 places), M can be represented as a bitmask,
+            /// and the update can be performed via bitwise logic.
+            /// This implementation computes M' = (M & !input_mask) | output_mask
+            /// for a chosen transition.
             pub fn apply_branchless_update(
                 marking_mask: u64,
                 transition_idx: usize,
                 incidence: &FlatIncidenceMatrix,
             ) -> u64 {
-                // Extract the first word of the masks (for <= 64 places)
-                // For larger K-Tiers, a multi-word version of this kernel is used.
-                let input_mask = incidence.input_masks[transition_idx].words[0];
-                let output_mask = incidence.output_masks[transition_idx].words[0];
+                let mut input_mask = 0u64;
+                let mut output_mask = 0u64;
+
+                for place_idx in 0..incidence.places_count {
+                    let val = incidence.get(place_idx, transition_idx);
+                    if val < 0 {
+                        // Consumes tokens
+                        input_mask |= 1u64 << place_idx;
+                    } else if val > 0 {
+                        // Produces tokens
+                        output_mask |= 1u64 << place_idx;
+                    }
+                }
 
                 (marking_mask & !input_mask) | output_mask
-=======
-            use crate::utils::bitset::select_u64;
-            use crate::RlState;
-
-            /// Fires a transition branchlessly in the RL state.
-            /// This is the μ-kernel's hot-path execution primitive.
-            pub fn apply_branchless_fire(state: &mut RlState, in_mask: u64, out_mask: u64) -> bool {
-                // Check if enabled (100% branchless)
-                let is_enabled = ((state.marking_mask & in_mask) ^ in_mask) == 0;
-                let cond = is_enabled as u64;
-
-                // fired_marking = (marking & !in) | out
-                let next_marking = (state.marking_mask & !in_mask) | out_mask;
-                
-                // Select either fired or original marking branchlessly
-                state.marking_mask = select_u64(cond, next_marking, state.marking_mask);
-                
-                is_enabled
->>>>>>> wreckit/admissibility-reachability-pruning-implement-branchless-guards-to-prevent-bad-states-in-markings
-=======
-            /// Performs a 100% branchless transition firing using bitwise mask calculus:
-            /// M' = (M & !I) | O
-            /// where M is current marking, I is input mask, O is output mask.
-            #[inline]
-            pub fn fire_transition(marking: u64, input_mask: u64, output_mask: u64) -> u64 {
-                // If the transition is enabled (marking & input_mask == input_mask),
-                // we should fire it. But the "branchless" requirement means we don't
-                // use an 'if'. Instead, we compute the result as if it fired,
-                // and use a mask to select between the old and new marking.
-                
-                // Check if enabled: all bits in input_mask must be set in marking.
-                // (marking & input_mask) == input_mask
-                // Using branchless comparison:
-                let enabled = ((marking & input_mask) == input_mask) as u64;
-                // create a mask of all 1s if enabled, all 0s if not.
-                let select_mask = 0u64.wrapping_sub(enabled);
-                
-                let next_marking = (marking & !input_mask) | output_mask;
-                
-                // result = (next_marking & select_mask) | (marking & !select_mask)
-                (next_marking & select_mask) | (marking & !select_mask)
-            }
-
-            /// Branchless state transition for RlState.
-            /// Demonstrates how to update health without data-dependent branching.
-            pub fn transition_rl_state(state: crate::RlState, action: crate::RlAction) -> crate::RlState {
-                use crate::RlAction;
-                let mut next = state;
-                
-                let _is_idle = (action == RlAction::Idle) as i8;
-                let is_opt = (action == RlAction::Optimize) as i8;
-                let is_rework = (action == RlAction::Rework) as i8;
-                
-                // health_level = health_level + (is_opt * 1) + (is_rework * -1)
-                // Note: we must avoid overflow/underflow if we want it to be perfectly safe,
-                // but the goal here is to demonstrate the branchless technique.
-                next.health_level += is_opt - is_rework;
-                
-                // Clamp health_level between 0 and 5 branchlessly
-                next.health_level = next.health_level.max(0).min(5);
-                
-                // If idle, next.health_level should stay same. 
-                // Since is_idle = 1 means is_opt=0 and is_rework=0, it's already handled.
-                
-                next
->>>>>>> wreckit/deterministic-kernel-μ-verification-create-cross-architecture-test-suite-to-verify-var-τ-0
-            }
-
-            /// Multi-word branchless update for higher K-Tiers.
-            pub fn apply_ktier_update<const W: usize>(
-                marking: KBitSet<W>,
-                transition_idx: usize,
-                incidence: &FlatIncidenceMatrix,
-            ) -> KBitSet<W> {
-                let input = incidence.input_masks[transition_idx];
-                let output = incidence.output_masks[transition_idx];
-
-                let mut next = KBitSet::<W>::zero();
-                for i in 0..W {
-                    next.words[i] = (marking.words[i] & !input.words[i]) | output.words[i];
-                }
-                next
             }
         }
     }
@@ -397,10 +230,7 @@ pub mod dteam {
             beta: f32,
             lambda: f32,
             deterministic: bool,
-<<<<<<< HEAD
             config: Option<crate::config::AutonomicConfig>,
-=======
->>>>>>> wreckit/1-formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o-and-prevent-out-of-ontology-state-reachability
             ontology: Option<crate::models::Ontology>,
             prune_on_violation: bool,
         }
@@ -412,10 +242,7 @@ pub mod dteam {
                     beta: 0.5,
                     lambda: 0.01,
                     deterministic: true,
-<<<<<<< HEAD
                     config: None,
-=======
->>>>>>> wreckit/1-formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o-and-prevent-out-of-ontology-state-reachability
                     ontology: None,
                     prune_on_violation: false,
                 }
@@ -462,10 +289,7 @@ pub mod dteam {
                     beta: self.beta,
                     lambda: self.lambda,
                     deterministic: self.deterministic,
-<<<<<<< HEAD
                     config,
-=======
->>>>>>> wreckit/1-formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o-and-prevent-out-of-ontology-state-reachability
                     ontology: self.ontology,
                     prune_on_violation: self.prune_on_violation,
                 }
@@ -483,10 +307,7 @@ pub mod dteam {
             pub beta: f32,
             pub lambda: f32,
             pub deterministic: bool,
-<<<<<<< HEAD
             pub config: crate::config::AutonomicConfig,
-=======
->>>>>>> wreckit/1-formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o-and-prevent-out-of-ontology-state-reachability
             pub ontology: Option<crate::models::Ontology>,
             pub prune_on_violation: bool,
         }
@@ -539,71 +360,64 @@ pub mod dteam {
             }
 
             fn compare(&self, a: &ExecutionManifest, b: &ExecutionManifest) -> String {
-                let input = if a.h_l == b.h_l {
+                let input = if a.input_log_hash == b.input_log_hash {
                     "identical"
                 } else {
                     "different"
                 };
-                let policy_trace = if a.pi == b.pi {
+                let policy_trace = if a.action_sequence == b.action_sequence {
                     "identical".to_string()
                 } else {
-                    let div =
-                        a.pi.iter()
-                            .zip(b.pi.iter())
-                            .position(|(x, y)| x != y)
-                            .unwrap_or(std::cmp::min(a.pi.len(), b.pi.len()));
+                    let div = a
+                        .action_sequence
+                        .iter()
+                        .zip(b.action_sequence.iter())
+                        .position(|(x, y)| x != y)
+                        .unwrap_or(std::cmp::min(
+                            a.action_sequence.len(),
+                            b.action_sequence.len(),
+                        ));
                     format!("different at step {}", div)
                 };
-                let model_hash = if a.h_n == b.h_n {
+                let model_hash = if a.model_canonical_hash == b.model_canonical_hash {
                     "identical"
                 } else {
                     "different"
                 };
-                let integrity = if a.integrity_hash == b.integrity_hash {
-                    "matched"
-                } else {
-                    "divergent"
-                };
-                let verdict = if a.h_n == b.h_n && a.integrity_hash == b.integrity_hash {
+                let verdict = if a.model_canonical_hash == b.model_canonical_hash {
                     "stable"
                 } else {
                     "divergent"
+                };
+                let equivalence = if a.model_canonical_hash == b.model_canonical_hash {
+                    "bisimulation-equivalent"
+                } else {
+                    "non-equivalent"
                 };
 
                 format!(
                     "input: {}\n\
                          policy trace: {}\n\
                          model hash: {}\n\
-                         integrity: {}\n\
+                         artifact equivalence: {}\n\
                          verdict: {}",
-                    input, policy_trace, model_hash, integrity, verdict
+                    input, policy_trace, model_hash, equivalence, verdict
                 )
             }
 
             fn reproduce(&self, manifest: &ExecutionManifest, log: &EventLog) -> String {
-                let h_l = log.canonical_hash();
-                let input_match = h_l == manifest.h_l;
+                let log_hash = log.canonical_hash();
+                let input_match = log_hash == manifest.input_log_hash;
 
                 let result = self.run(log);
                 if let EngineResult::Success(_, new_manifest) = result {
-                    let trace_match = new_manifest.pi == manifest.pi;
-                    let model_match = new_manifest.h_n == manifest.h_n;
+                    let trace_match = new_manifest.action_sequence == manifest.action_sequence;
+                    let model_match =
+                        new_manifest.model_canonical_hash == manifest.model_canonical_hash;
                     let mdl_match =
                         (new_manifest.mdl_score - manifest.mdl_score).abs() < f64::EPSILON;
-                    let integrity_match = new_manifest.integrity_hash == manifest.integrity_hash;
 
-<<<<<<< HEAD
-                    let verdict = if input_match
-                        && trace_match
-                        && model_match
-                        && mdl_match
-                        && integrity_match
-                    {
-=======
-                    let ontology_match = new_manifest.ontology_hash == manifest.ontology_hash;
-
-                    let verdict = if input_match && trace_match && model_match && mdl_match && ontology_match {
->>>>>>> wreckit/ontology-mapping-automated-activity-to-index-mapping-with-fnv-1a-collision-guards
+                    let verdict = if input_match && trace_match && model_match && mdl_match {
                         "VERIFIED"
                     } else {
                         "FAILED"
@@ -613,25 +427,11 @@ pub mod dteam {
                              policy_trace: {}\n\
                              model_hash: {}\n\
                              mdl_score: {}\n\
-<<<<<<< HEAD
-                             integrity: {}\n\
-=======
-                             ontology_hash: {}\n\
->>>>>>> wreckit/ontology-mapping-automated-activity-to-index-mapping-with-fnv-1a-collision-guards
                              verdict: {}",
                         if input_match { "matched" } else { "divergent" },
                         if trace_match { "replayed" } else { "divergent" },
                         if model_match { "matched" } else { "divergent" },
                         if mdl_match { "matched" } else { "divergent" },
-<<<<<<< HEAD
-                        if integrity_match {
-                            "verified"
-                        } else {
-                            "failed"
-                        },
-=======
-                        if ontology_match { "matched" } else { "divergent" },
->>>>>>> wreckit/ontology-mapping-automated-activity-to-index-mapping-with-fnv-1a-collision-guards
                         verdict
                     )
                 } else {
@@ -642,20 +442,10 @@ pub mod dteam {
 
         #[derive(Debug, Clone, Serialize, Deserialize)]
         pub struct ExecutionManifest {
-            #[serde(rename = "H(L)")]
-            pub h_l: u64,
-            #[serde(rename = "pi")]
-            pub pi: Vec<u8>,
-            #[serde(rename = "H(N)")]
-            pub h_n: u64,
-            pub integrity_hash: u64,
+            pub input_log_hash: u64,
+            pub action_sequence: Vec<u8>,
+            pub model_canonical_hash: u64,
             pub mdl_score: f64,
-<<<<<<< HEAD
-            pub soundness_score: f32,
-            pub is_sound: bool,
-=======
-            pub ontology_hash: u64, // AC 5: Provenance
->>>>>>> wreckit/ontology-mapping-automated-activity-to-index-mapping-with-fnv-1a-collision-guards
             pub k_tier: String,
             pub latency_ns: u64,
             pub ontology_hash: Option<u64>,
@@ -699,18 +489,6 @@ pub mod dteam {
                                     if let crate::models::AttributeValue::String(s) = &a.value { Some(s.as_str()) } else { None }
                                 }).unwrap_or("No Activity");
 
-<<<<<<< HEAD
-=======
-                // Boundary Enforcement Phase (AC 1.2)
-                if let Some(ontology) = &self.ontology {
-                    if !self.prune_on_violation {
-                        for trace in &log.traces {
-                            for event in &trace.events {
-                                let activity = event.attributes.iter().find(|a| a.key == "concept:name").and_then(|a| {
-                                    if let crate::models::AttributeValue::String(s) = &a.value { Some(s.as_str()) } else { None }
-                                }).unwrap_or("No Activity");
-
->>>>>>> wreckit/1-formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o-and-prevent-out-of-ontology-state-reachability
                                 if !ontology.contains(activity) {
                                     return EngineResult::BoundaryViolation { activity: activity.to_string() };
                                 }
@@ -719,7 +497,6 @@ pub mod dteam {
                     }
                 }
 
-<<<<<<< HEAD
                 // Use reward weights from cached config
                 let beta = *self.config.rl.reward_weights.get("fitness").unwrap_or(&0.5);
                 let lambda = *self.config.rl.reward_weights.get("soundness").unwrap_or(&0.01);
@@ -727,30 +504,11 @@ pub mod dteam {
                 // Projection and Training
                 let projected_log = crate::conformance::ProjectedLog::generate_with_ontology(log, self.ontology.as_ref());
                 let violation_count = projected_log.violation_count;
-=======
-                // Use reward weights from config
-                let beta = *config.rl.reward_weights.get("fitness").unwrap_or(&0.5);
-                let lambda = *config.rl.reward_weights.get("soundness").unwrap_or(&0.01);
->>>>>>> wreckit/1-formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o-and-prevent-out-of-ontology-state-reachability
 
-                // Projection and Training
-                let projected_log = crate::conformance::ProjectedLog::generate_with_ontology(log, self.ontology.as_ref());
-                let violation_count = projected_log.violation_count;
-
-<<<<<<< HEAD
                 let (net, trajectory) =
-<<<<<<< HEAD
                     crate::automation::train_with_provenance_projected(&projected_log, &self.config, beta, lambda, self.ontology.as_ref());
-=======
-                    crate::automation::train_with_provenance_projected(&projected_log, &config, beta, lambda, self.ontology.as_ref());
->>>>>>> wreckit/1-formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o-and-prevent-out-of-ontology-state-reachability
-=======
-                let (net, trajectory, ontology_hash) =
-                    crate::automation::train_with_provenance(log, &config, beta, lambda);
->>>>>>> wreckit/ontology-mapping-automated-activity-to-index-mapping-with-fnv-1a-collision-guards
                 let execution_time_ns = start_time.elapsed().as_nanos() as u64;
 
-<<<<<<< HEAD
                 // Closure Verification (AC 5.1, AC 2.1)
                 let mut closure_verified = true;
                 if let Some(ontology) = &self.ontology {
@@ -766,37 +524,7 @@ pub mod dteam {
                     input_log_hash: log.canonical_hash(),
                     action_sequence: trajectory,
                     model_canonical_hash: net.canonical_hash(),
-<<<<<<< HEAD
                     mdl_score: net.mdl_score_with_ontology(self.ontology.as_ref().map(|o| o.index.len())),
-=======
-                    mdl_score: net.mdl_score(),
-<<<<<<< HEAD
-                    soundness_score: net.structural_unsoundness_score(),
-                    is_sound: net.is_sound(),
->>>>>>> wreckit/wf-net-soundness-judge-implement-dr-wil-s-soundness-proofs-as-branchless-bitmask-checks
-=======
-                let h_l = log.canonical_hash();
-                let h_n = net.canonical_hash();
-                let mdl = net.mdl_score();
-
-                // Compute integrity hash: fnv1a_64(H(L) | pi | H(N) | MDL)
-                let mut hasher_bytes = Vec::new();
-                hasher_bytes.extend_from_slice(&h_l.to_le_bytes());
-                hasher_bytes.extend_from_slice(&trajectory);
-                hasher_bytes.extend_from_slice(&h_n.to_le_bytes());
-                hasher_bytes.extend_from_slice(&mdl.to_bits().to_le_bytes());
-                let integrity_hash = crate::utils::dense_kernel::fnv1a_64(&hasher_bytes);
-
-                let manifest = ExecutionManifest {
-                    h_l,
-                    pi: trajectory,
-                    h_n,
-                    integrity_hash,
-                    mdl_score: mdl,
->>>>>>> wreckit/cryptographic-execution-provenance-enhance-executionmanifest-with-full-h-l-π-h-n-hashing
-=======
-                    ontology_hash,
->>>>>>> wreckit/ontology-mapping-automated-activity-to-index-mapping-with-fnv-1a-collision-guards
                     k_tier: format!("{:?}", self.k_tier),
                     latency_ns: execution_time_ns,
                     ontology_hash: self.ontology.as_ref().map(|o| o.hash()),

@@ -1,20 +1,7 @@
-<<<<<<< HEAD
 use dteam::autonomic::{AutonomicEvent, AutonomicKernel, DefaultKernel};
 use log::{debug, info, warn};
 use std::thread;
 use std::time::{Duration, SystemTime};
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-use dteam::autonomic::{AutonomicEvent, AutonomicFeedback, AutonomicKernel, DefaultKernel};
-use std::thread;
-use std::time::Duration;
-use log::{debug, info, warn};
->>>>>>> wreckit/blue-river-dam-interface-refactor-autonomickernel-to-focus-on-control-surface-synthesis
-=======
->>>>>>> wreckit/cryptographic-execution-provenance-enhance-executionmanifest-with-full-h-l-π-h-n-hashing
-=======
->>>>>>> wreckit/mdl-refinement-upgrade-structural-scoring-in-src-models-petri-net-rs-to-follow-φ-n-exactly
 
 fn main() {
     env_logger::init();
@@ -23,79 +10,69 @@ fn main() {
     debug!("Initial System State: {}\n", kernel.infer());
 
     let simulated_events = vec![
-        (0x11, 0xAA),
-        (0x22, 0xBB),
-        (0x33, 0xCC),
-        (0x44, 0xDD),
-        (0x55, 0xEE),
+        ("sensor_alpha", "Trace packet received (ID: 1024)"),
+        ("compliance_monitor", "Minor structural deviation detected"),
+        (
+            "adversary_aalst",
+            "Direct structural repair triggered: Unsound Petri Net detected!",
+        ),
+        (
+            "throughput_sensor",
+            "Boutleneck detected in 'Approve' phase",
+        ),
+        ("sensor_beta", "High-frequency activity burst"),
     ];
 
-    for (i, (source_hash, payload_hash)) in simulated_events.into_iter().enumerate() {
+    for (source, payload) in simulated_events {
         let event = AutonomicEvent {
-            source_hash,
-            activity_idx: (i % 4) as u8,
-            payload_hash,
-            timestamp_ns: 123456789,
+            source: source.to_string(),
+            payload: payload.to_string(),
+            timestamp: SystemTime::now(),
         };
 
         info!("📥 Processing event: {}", event);
 
         let state = kernel.infer();
-        let mask = kernel.synthesize(&state);
+        let actions = kernel.propose(&state);
 
-        let mut executed_count = 0;
-        for i in 0..64 {
-            if (mask >> i) & 1 == 1 {
-                let accepted = kernel.accept(i, &state);
-                let status = if accepted {
-                    "✅ ACCEPTED"
-                } else {
-                    "❌ REJECTED"
-                };
-                info!("  Action #{} -> {}", i, status);
+        let mut results = Vec::new();
+        for action in actions {
+            let accepted = kernel.accept(&action, &state);
+            let status = if accepted {
+                "✅ ACCEPTED"
+            } else {
+                "❌ REJECTED"
+            };
+            info!("  Action: {} -> {}", action.parameters, status);
 
-                if accepted {
-                    let res = kernel.execute(i);
-                    info!("  MANIFEST HASH: {:X}", kernel.manifest(&res));
-                    executed_count += 1;
-                }
+            if accepted {
+                results.push(kernel.execute(action));
             }
         }
 
-<<<<<<< HEAD
         if results.is_empty() {
             warn!(
                 "  ℹ️  No actions were executed for event from {}.",
                 event.source
             );
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-        if executed_count == 0 {
-            warn!("  ℹ️  No actions were executed for event.");
->>>>>>> wreckit/blue-river-dam-interface-refactor-autonomickernel-to-focus-on-control-surface-synthesis
-=======
->>>>>>> wreckit/cryptographic-execution-provenance-enhance-executionmanifest-with-full-h-l-π-h-n-hashing
-=======
->>>>>>> wreckit/mdl-refinement-upgrade-structural-scoring-in-src-models-petri-net-rs-to-follow-φ-n-exactly
         } else {
+            for res in &results {
+                info!("  {}", kernel.manifest(res));
+            }
+
             // Adapt with a small penalty to simulate operational decay
             debug!("Applying simulated operational decay penalty.");
-<<<<<<< HEAD
-            kernel.adapt(&AutonomicFeedback {
-=======
             kernel.adapt(dteam::autonomic::AutonomicFeedback {
-                action_id: 1,
->>>>>>> wreckit/linear-reinforcement-learning-implement-linucb-with-zero-heap-state-matrices
                 reward: -0.5,
                 human_override: false,
+                side_effects: vec![],
             });
         }
 
         debug!("📊 Current State: {}\n", kernel.infer());
 
         // Simulate a small processing delay
-        thread::sleep(Duration::from_millis(100));
+        thread::sleep(Duration::from_millis(500));
     }
 
     info!("🏁 Autonomic Runner sequence complete.");

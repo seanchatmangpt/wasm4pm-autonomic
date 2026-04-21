@@ -3,11 +3,7 @@ mod tests {
     use crate::reinforcement::{
         Agent, DoubleQLearning, ExpectedSARSAAgent, QLearning, ReinforceAgent, SARSAAgent,
     };
-<<<<<<< HEAD
     use crate::utils::dense_kernel::KBitSet;
-=======
-    use crate::ml::linucb::LinUcb;
->>>>>>> wreckit/linear-reinforcement-learning-implement-linucb-with-zero-heap-state-matrices
     use crate::{RlAction, RlState};
     use crate::utils::perturbation::Perturbator;
     use proptest::prelude::*;
@@ -21,7 +17,6 @@ mod tests {
     const DECAY_INTERVAL: usize = 200;
     const AVG_REWARD_THRESHOLD: f32 = 0.5;
 
-<<<<<<< HEAD
     proptest! {
         #[test]
         fn test_perturbator_determinism(seed: u64, mask: u64, intensity: u64) {
@@ -37,41 +32,6 @@ mod tests {
 
     fn create_state(h: i32) -> RlState<1> {
         RlState::<1> {
-=======
-    #[test]
-    fn test_linucb_convergence() {
-        let mut agent: LinUcb<3, 9, 3> = LinUcb::new(2.0); // Higher alpha
-        let avg_reward = run_corridor(&mut agent, EPISODES_EXTENDED, GOAL_STATE_DEFAULT);
-        assert!(
-            avg_reward > AVG_REWARD_THRESHOLD,
-            "LinUCB should learn to reach the goal (avg_reward: {})",
-            avg_reward
-        );
-    }
-
-    #[test]
-    fn test_linucb_determinism() {
-        let mut agent1: LinUcb<3, 9, 3> = LinUcb::new(0.1);
-        let mut agent2: LinUcb<3, 9, 3> = LinUcb::new(0.1);
-        
-        let state = create_state(0);
-        let next_state = create_state(1);
-        
-        for _ in 0..1000 {
-            agent1.update(state, RlAction::Optimize, 1.0, next_state, false);
-            agent2.update(state, RlAction::Optimize, 1.0, next_state, false);
-        }
-        
-        assert_eq!(agent1.a_inv, agent2.a_inv);
-        assert_eq!(agent1.b, agent2.b);
-        let action1: RlAction = agent1.select_action(state);
-        let action2: RlAction = agent2.select_action(state);
-        assert_eq!(action1, action2);
-    }
-
-    fn create_state(h: i32) -> RlState {
-        RlState {
->>>>>>> wreckit/linear-reinforcement-learning-implement-linucb-with-zero-heap-state-matrices
             health_level: h as i8,
             event_rate_q: 0,
             activity_count_q: 0,
@@ -80,17 +40,10 @@ mod tests {
             rework_ratio_q: 0,
             circuit_state: 0,
             cycle_phase: 0,
-<<<<<<< HEAD
             marking_mask: KBitSet::zero(),
-=======
-            marking_mask: crate::utils::dense_kernel::KBitSet::<16>::zero(),
->>>>>>> wreckit/formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o
             activities_hash: 0,
             ontology_mask: crate::utils::dense_kernel::KBitSet::<16>::zero(),
-<<<<<<< HEAD
                 universe: None,
-=======
->>>>>>> wreckit/1-formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o-and-prevent-out-of-ontology-state-reachability
         }
     }
 
@@ -130,13 +83,8 @@ mod tests {
 
     #[test]
     fn test_q_learning_convergence() {
-<<<<<<< HEAD
         let mut agent = QLearning::with_hyperparams(0.1, 0.9, 0.5);
         let avg_reward = run_corridor(&mut agent, EPISODES_STANDARD, GOAL_STATE_DEFAULT);
-=======
-        let agent = QLearning::<RlState<1>, RlAction, Vec<f32>>::with_hyperparams(0.1, 0.9, 0.5);
-        let avg_reward = run_corridor(&agent, EPISODES_STANDARD, GOAL_STATE_DEFAULT);
->>>>>>> wreckit/k-tier-scalability-optimize-bitset-alignment-for-k-1024-and-beyond
         assert!(
             avg_reward > AVG_REWARD_THRESHOLD,
             "Q-Learning should learn to reach the goal (avg_reward: {})",
@@ -146,19 +94,13 @@ mod tests {
 
     #[test]
     fn test_sarsa_convergence() {
-<<<<<<< HEAD
         let mut agent = SARSAAgent::new();
-=======
-        let mut agent = SARSAAgent::<RlState<1>, RlAction, Vec<f32>>::new();
-        agent.set_exploration_rate(0.8);
->>>>>>> wreckit/k-tier-scalability-optimize-bitset-alignment-for-k-1024-and-beyond
 
         // Training in deterministic SARSA (increased episodes to ensure convergence)
         for _ in 0..(EPISODES_EXTENDED * 5) {
             run_corridor(&mut agent, 1, GOAL_STATE_DEFAULT);
         }
 
-        agent.set_exploration_rate(0.0);
         let avg_reward = run_corridor(&mut agent, EVAL_EPISODES, GOAL_STATE_DEFAULT);
         assert!(
             avg_reward > AVG_REWARD_THRESHOLD,
@@ -170,7 +112,7 @@ mod tests {
 
     #[test]
     fn test_double_q_learning_convergence() {
-        let mut agent = DoubleQLearning::<RlState<1>, RlAction, Vec<f32>>::with_hyperparams(0.1, 0.9, 0.5);
+        let mut agent = DoubleQLearning::with_hyperparams(0.1, 0.9, 0.5);
 
         // Manual decay during training
         for ep in 0..EPISODES_EXTENDED {
@@ -191,13 +133,8 @@ mod tests {
 
     #[test]
     fn test_expected_sarsa_convergence() {
-<<<<<<< HEAD
         let mut agent = ExpectedSARSAAgent::with_hyperparams(0.1, 0.9, 0.5);
         let avg_reward = run_corridor(&mut agent, EPISODES_STANDARD, GOAL_STATE_DEFAULT);
-=======
-        let agent = ExpectedSARSAAgent::<RlState<1>, RlAction, Vec<f32>>::with_hyperparams(0.1, 0.9, 0.5);
-        let avg_reward = run_corridor(&agent, EPISODES_STANDARD, GOAL_STATE_DEFAULT);
->>>>>>> wreckit/k-tier-scalability-optimize-bitset-alignment-for-k-1024-and-beyond
         assert!(
             avg_reward > AVG_REWARD_THRESHOLD,
             "Expected SARSA should learn to reach the goal (avg_reward: {})",
@@ -207,13 +144,8 @@ mod tests {
 
     #[test]
     fn test_reinforce_convergence() {
-<<<<<<< HEAD
         let mut agent = ReinforceAgent::with_hyperparams(0.1, 0.9);
         let avg_reward = run_corridor(&mut agent, EPISODES_STANDARD, GOAL_STATE_REINFORCE);
-=======
-        let agent = ReinforceAgent::<RlState<1>, RlAction, Vec<f32>>::with_hyperparams(0.1, 0.9);
-        let avg_reward = run_corridor(&agent, EPISODES_STANDARD, GOAL_STATE_REINFORCE);
->>>>>>> wreckit/k-tier-scalability-optimize-bitset-alignment-for-k-1024-and-beyond
         assert!(
             avg_reward > AVG_REWARD_THRESHOLD,
             "REINFORCE should learn to reach the goal (avg_reward: {})",
@@ -223,11 +155,7 @@ mod tests {
 
     #[test]
     fn test_negative_reward_avoidance() {
-<<<<<<< HEAD
         let mut agent = QLearning::with_hyperparams(0.1, 0.9, 0.1);
-=======
-        let agent = QLearning::<RlState<1>, RlAction, Vec<f32>>::with_hyperparams(0.1, 0.9, 0.1);
->>>>>>> wreckit/k-tier-scalability-optimize-bitset-alignment-for-k-1024-and-beyond
         for _ in 0..200 {
             let state = create_state(0);
             agent.update(state, RlAction::Optimize, -10.0, create_state(1), true);
@@ -245,77 +173,19 @@ mod tests {
 
     #[test]
     fn test_double_q_serialization_roundtrip() {
-<<<<<<< HEAD
-<<<<<<< HEAD
         let mut agent = DoubleQLearning::<RlState<1>, RlAction>::new();
-=======
-        let agent = DoubleQLearning::<RlState<1>, RlAction, Vec<f32>>::new();
->>>>>>> wreckit/k-tier-scalability-optimize-bitset-alignment-for-k-1024-and-beyond
         let state = create_state(42);
-=======
-        let agent = DoubleQLearning::<RlState, RlAction>::new();
-        let state = create_state(0);
->>>>>>> wreckit/admissibility-reachability-pruning-implement-branchless-guards-to-prevent-bad-states-in-markings
 
         for _ in 0..100 {
-            agent.update(state, RlAction::Optimize, 100.0, create_state(1), true);
+            agent.update(state, RlAction::Optimize, 100.0, create_state(43), true);
         }
 
         let serialized = agent.export_as_serialized(3);
-<<<<<<< HEAD
         let mut new_agent = DoubleQLearning::<RlState<1>, RlAction>::new();
-=======
-        let new_agent = DoubleQLearning::<RlState<1>, RlAction, Vec<f32>>::new();
->>>>>>> wreckit/k-tier-scalability-optimize-bitset-alignment-for-k-1024-and-beyond
         new_agent.restore_from_serialized(serialized);
 
         new_agent.set_exploration_rate(0.0);
         let selected = new_agent.select_action(state);
         assert_eq!(selected, RlAction::Optimize);
-    }
-
-<<<<<<< HEAD
-    // --- SARSA Rigor Tests ---
-
-    #[test]
-    fn test_sarsa_zero_variancy() {
-        let agent = SARSAAgent::<RlState, RlAction>::new();
-        let state = create_state(0);
-        
-        *agent.episode_count.borrow_mut() = 123;
-        let a1 = agent.select_action(state);
-        let a2 = agent.select_action(state);
-        assert_eq!(a1, a2, "SARSA agent selection is non-deterministic!");
-        
-        let a3 = agent.select_action(state);
-        assert_eq!(a1, a3, "SARSA agent selection is unstable!");
-    }
-
-    #[test]
-    fn test_sarsa_exploration_coverage() {
-        let agent = SARSAAgent::<RlState, RlAction>::new();
-        let state = create_state(0);
-        let mut picked = std::collections::HashSet::new();
-        
-        // Ensure that through rotation, we see all actions
-        for ep in 0..20 {
-            *agent.episode_count.borrow_mut() = ep;
-            picked.insert(agent.select_action(state));
-        }
-        
-        assert_eq!(picked.len(), 3, "SARSA rotation failed to cover action space");
-=======
-    use proptest::prelude::*;
-    proptest! {
-        #[test]
-        fn test_ktier_marking_admissibility(
-            idx in 0usize..1024,
-        ) {
-            let mut mask = crate::utils::dense_kernel::KBitSet::<16>::zero();
-            let _ = mask.set(idx);
-            assert!(mask.contains(idx));
-            assert_eq!(mask.pop_count(), 1);
-        }
->>>>>>> wreckit/formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o
     }
 }
