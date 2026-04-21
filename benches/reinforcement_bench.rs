@@ -3,6 +3,8 @@ use dteam::reinforcement::{Agent, DoubleQLearning, QLearning, SARSAAgent};
 use dteam::{RlAction, RlState};
 
 fn create_mock_state(h: i8) -> RlState {
+    let mut mask = dteam::utils::dense_kernel::K1024::zero();
+    let _ = mask.set(0);
     RlState {
         health_level: h,
         event_rate_q: 0,
@@ -12,7 +14,7 @@ fn create_mock_state(h: i8) -> RlState {
         rework_ratio_q: 0,
         circuit_state: 0,
         cycle_phase: 0,
-        marking_mask: 0xDEADBEEF,
+        marking_mask: mask,
         activities_hash: 0xCAFEBABE,
     }
 }

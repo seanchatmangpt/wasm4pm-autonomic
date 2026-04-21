@@ -24,7 +24,7 @@ mod tests {
             rework_ratio_q: 0,
             circuit_state: 0,
             cycle_phase: 0,
-            marking_mask: 0,
+            marking_mask: crate::utils::dense_kernel::KBitSet::<16>::zero(),
             activities_hash: 0,
         }
     }
@@ -174,5 +174,18 @@ mod tests {
         new_agent_greedy.set_exploration_rate(0.0);
         let selected = new_agent_greedy.select_action(state);
         assert_eq!(selected, RlAction::Optimize);
+    }
+
+    use proptest::prelude::*;
+    proptest! {
+        #[test]
+        fn test_ktier_marking_admissibility(
+            idx in 0usize..1024,
+        ) {
+            let mut mask = crate::utils::dense_kernel::KBitSet::<16>::zero();
+            let _ = mask.set(idx);
+            assert!(mask.contains(idx));
+            assert_eq!(mask.pop_count(), 1);
+        }
     }
 }

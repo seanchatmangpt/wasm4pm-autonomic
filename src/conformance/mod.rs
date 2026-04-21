@@ -79,7 +79,7 @@ impl From<&EventLog> for ProjectedLog {
 
 pub fn token_replay_projected(log: &ProjectedLog, petri_net: &PetriNet) -> f64 {
     let num_places = petri_net.places.len();
-    if num_places > 64 {
+    if num_places > 1024 {
         return 0.0;
     }
 
@@ -91,8 +91,8 @@ pub fn token_replay_projected(log: &ProjectedLog, petri_net: &PetriNet) -> f64 {
     let num_transitions = petri_net.transitions.len();
     let dummy_t_idx = num_transitions;
 
-    let mut input_masks = vec![0u64; num_transitions + 1];
-    let mut output_masks = vec![0u64; num_transitions + 1];
+    let mut input_masks = vec![crate::utils::dense_kernel::KBitSet::<16>::zero(); num_transitions + 1];
+    let mut output_masks = vec![crate::utils::dense_kernel::KBitSet::<16>::zero(); num_transitions + 1];
 
     for arc in &petri_net.arcs {
         let mut is_input = false;
@@ -108,9 +108,9 @@ pub fn token_replay_projected(log: &ProjectedLog, petri_net: &PetriNet) -> f64 {
             let p_id = if is_input { &arc.from } else { &arc.to };
             if let Some(&p_idx) = place_to_idx.get(fnv1a_64(p_id.as_bytes())) {
                 if is_input {
-                    input_masks[t_idx] |= 1u64 << p_idx;
+                    let _ = input_masks[t_idx].set(p_idx);
                 } else {
-                    output_masks[t_idx] |= 1u64 << p_idx;
+                    let _ = output_masks[t_idx].set(p_idx);
                 }
             }
         }
@@ -119,30 +119,30 @@ pub fn token_replay_projected(log: &ProjectedLog, petri_net: &PetriNet) -> f64 {
     let mut input_counts = vec![0u32; num_transitions + 1];
     let mut output_counts = vec![0u32; num_transitions + 1];
     for i in 0..num_transitions {
-        input_counts[i] = input_masks[i].count_ones();
-        output_counts[i] = output_masks[i].count_ones();
+        input_counts[i] = input_masks[i].pop_count();
+        output_counts[i] = output_masks[i].pop_count();
     }
 
-    let mut initial_mask = 0u64;
+    let mut initial_mask = crate::utils::dense_kernel::KBitSet::<16>::zero();
     for (_, p_id, c) in petri_net.initial_marking.iter() {
         if *c > 0 {
             if let Some(&p_idx) = place_to_idx.get(fnv1a_64(p_id.as_bytes())) {
-                initial_mask |= 1u64 << p_idx;
+                let _ = initial_mask.set(p_idx);
             }
         }
     }
 
-    let mut final_mask = 0u64;
+    let mut final_mask = crate::utils::dense_kernel::KBitSet::<16>::zero();
     if let Some(fm) = petri_net.final_markings.first() {
         for (_, p_id, c) in fm.iter() {
             if *c > 0 {
                 if let Some(&p_idx) = place_to_idx.get(fnv1a_64(p_id.as_bytes())) {
-                    final_mask |= 1u64 << p_idx;
+                    let _ = final_mask.set(p_idx);
                 }
             }
         }
     }
-    let final_count = final_mask.count_ones();
+    let final_count = final_mask.pop_count();
 
     let mut act_to_t_idx = vec![dummy_t_idx; log.activities.len()];
     for (i, act) in log.activities.iter().enumerate() {
@@ -155,24 +155,24 @@ pub fn token_replay_projected(log: &ProjectedLog, petri_net: &PetriNet) -> f64 {
     let mut total_freq = 0;
 
     for (trace, freq) in &log.traces {
-        let mut marking: u64 = initial_mask;
+        let mut marking = initial_mask;
         let mut missing_tokens = 0;
         let mut consumed_tokens = 0;
-        let mut produced_tokens = initial_mask.count_ones();
+        let mut produced_tokens = initial_mask.pop_count();
 
         for &act_idx in trace {
             let t_idx = act_to_t_idx[act_idx];
             let in_mask = input_masks[t_idx];
-            missing_tokens += (in_mask & !marking).count_ones();
-            marking = (marking & !in_mask) | output_masks[t_idx];
+            missing_tokens += marking.missing_count(in_mask);
+            marking = marking.bitwise_and(in_mask.bitwise_not()).bitwise_or(output_masks[t_idx]);
             consumed_tokens += input_counts[t_idx];
             produced_tokens += output_counts[t_idx];
         }
 
-        missing_tokens += (final_mask & !marking).count_ones();
+        missing_tokens += marking.missing_count(final_mask);
         consumed_tokens += final_count;
-        marking &= !final_mask;
-        let remaining_tokens = marking.count_ones();
+        marking = marking.bitwise_and(final_mask.bitwise_not());
+        let remaining_tokens = marking.pop_count();
 
         let total_tokens_needed = consumed_tokens + missing_tokens;
         let fitness = if total_tokens_needed == 0 {
@@ -195,7 +195,7 @@ pub fn token_replay_projected(log: &ProjectedLog, petri_net: &PetriNet) -> f64 {
 
 pub fn token_replay(log: &EventLog, petri_net: &PetriNet) -> Vec<ConformanceResult> {
     let num_places = petri_net.places.len();
-    if num_places > 64 {
+    if num_places > 1024 {
         return log
             .traces
             .iter()
@@ -216,8 +216,8 @@ pub fn token_replay(log: &EventLog, petri_net: &PetriNet) -> Vec<ConformanceResu
     let num_transitions = petri_net.transitions.len();
     let dummy_t_idx = num_transitions;
 
-    let mut input_masks = vec![0u64; num_transitions + 1];
-    let mut output_masks = vec![0u64; num_transitions + 1];
+    let mut input_masks = vec![crate::utils::dense_kernel::KBitSet::<16>::zero(); num_transitions + 1];
+    let mut output_masks = vec![crate::utils::dense_kernel::KBitSet::<16>::zero(); num_transitions + 1];
 
     for arc in &petri_net.arcs {
         let mut is_input = false;
@@ -234,9 +234,9 @@ pub fn token_replay(log: &EventLog, petri_net: &PetriNet) -> Vec<ConformanceResu
             let p_id = if is_input { &arc.from } else { &arc.to };
             if let Some(&p_idx) = place_to_idx.get(fnv1a_64(p_id.as_bytes())) {
                 if is_input {
-                    input_masks[t_idx] |= 1u64 << p_idx;
+                    let _ = input_masks[t_idx].set(p_idx);
                 } else {
-                    output_masks[t_idx] |= 1u64 << p_idx;
+                    let _ = output_masks[t_idx].set(p_idx);
                 }
             }
         }
@@ -245,38 +245,38 @@ pub fn token_replay(log: &EventLog, petri_net: &PetriNet) -> Vec<ConformanceResu
     let mut input_counts = vec![0u32; num_transitions + 1];
     let mut output_counts = vec![0u32; num_transitions + 1];
     for i in 0..num_transitions {
-        input_counts[i] = input_masks[i].count_ones();
-        output_counts[i] = output_masks[i].count_ones();
+        input_counts[i] = input_masks[i].pop_count();
+        output_counts[i] = output_masks[i].pop_count();
     }
 
-    let mut initial_mask = 0u64;
+    let mut initial_mask = crate::utils::dense_kernel::KBitSet::<16>::zero();
     for (_, p_id, c) in petri_net.initial_marking.iter() {
         if *c > 0 {
             if let Some(&p_idx) = place_to_idx.get(fnv1a_64(p_id.as_bytes())) {
-                initial_mask |= 1u64 << p_idx;
+                let _ = initial_mask.set(p_idx);
             }
         }
     }
 
-    let mut final_mask = 0u64;
+    let mut final_mask = crate::utils::dense_kernel::KBitSet::<16>::zero();
     if let Some(fm) = petri_net.final_markings.first() {
         for (_, p_id, c) in fm.iter() {
             if *c > 0 {
                 if let Some(&p_idx) = place_to_idx.get(fnv1a_64(p_id.as_bytes())) {
-                    final_mask |= 1u64 << p_idx;
+                    let _ = final_mask.set(p_idx);
                 }
             }
         }
     }
-    let final_count = final_mask.count_ones();
+    let final_count = final_mask.pop_count();
 
     log.traces
         .iter()
         .map(|trace| {
-            let mut marking: u64 = initial_mask;
+            let mut marking = initial_mask;
             let mut missing_tokens = 0;
             let mut consumed_tokens = 0;
-            let mut produced_tokens = initial_mask.count_ones();
+            let mut produced_tokens = initial_mask.pop_count();
 
             for event in &trace.events {
                 let mut t_idx = dummy_t_idx;
@@ -289,18 +289,16 @@ pub fn token_replay(log: &EventLog, petri_net: &PetriNet) -> Vec<ConformanceResu
                 }
 
                 let in_mask = input_masks[t_idx];
-                let missing = in_mask & !marking;
-                missing_tokens += missing.count_ones();
-                marking = (marking & !in_mask) | output_masks[t_idx];
+                missing_tokens += marking.missing_count(in_mask);
+                marking = marking.bitwise_and(in_mask.bitwise_not()).bitwise_or(output_masks[t_idx]);
                 consumed_tokens += input_counts[t_idx];
                 produced_tokens += output_counts[t_idx];
             }
 
-            let missing_final = final_mask & !marking;
-            missing_tokens += missing_final.count_ones();
+            missing_tokens += marking.missing_count(final_mask);
             consumed_tokens += final_count;
-            marking &= !final_mask;
-            let remaining_tokens = marking.count_ones();
+            marking = marking.bitwise_and(final_mask.bitwise_not());
+            let remaining_tokens = marking.pop_count();
 
             let total_tokens_needed = consumed_tokens + missing_tokens;
             let fitness = if total_tokens_needed == 0 {

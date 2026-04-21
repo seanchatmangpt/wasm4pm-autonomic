@@ -173,7 +173,7 @@ impl DenseIndex {
 // K-BITSET
 // ============================================================================
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct KBitSet<const WORDS: usize> {
     pub words: [u64; WORDS],
 }
@@ -267,6 +267,15 @@ impl<const WORDS: usize> KBitSet<WORDS> {
     }
 
     #[inline]
+    pub fn pop_count(&self) -> u32 {
+        let mut n = 0u32;
+        for w in &self.words {
+            n += w.count_ones();
+        }
+        n
+    }
+
+    #[inline]
     pub fn is_empty(&self) -> bool {
         for w in &self.words {
             if *w != 0 {
@@ -278,6 +287,10 @@ impl<const WORDS: usize> KBitSet<WORDS> {
 }
 
 pub type K64 = KBitSet<1>;
+pub type K128 = KBitSet<2>;
+pub type K256 = KBitSet<4>;
+pub type K512 = KBitSet<8>;
+pub type K1024 = KBitSet<16>;
 
 // ============================================================================
 // PACKED KEY TABLE

@@ -23,7 +23,7 @@ pub struct RlState {
     pub rework_ratio_q: i8,
     pub circuit_state: i8,
     pub cycle_phase: i8,
-    pub marking_mask: u64,    // BCINR bitset mask for Petri net marking
+    pub marking_mask: crate::utils::dense_kernel::KBitSet<16>, // BCINR bitset mask for Petri net marking (K1024 support)
     pub activities_hash: u64, // Rolling FNV-1a hash of recent activities
 }
 
@@ -58,7 +58,7 @@ impl reinforcement::WorkflowState for RlState {
     fn features(&self) -> Vec<f32> {
         // Optimized feature vector: only allocate if necessary for function approx.
         // For Q-Table, this is rarely called in the hot path.
-        vec![self.health_level as f32, self.marking_mask as f32]
+        vec![self.health_level as f32, self.marking_mask.pop_count() as f32]
     }
     fn is_terminal(&self) -> bool {
         self.health_level < 0 || self.health_level >= 5

@@ -22,7 +22,7 @@ fn create_state(h: i32) -> RlState {
         rework_ratio_q: 0,
         circuit_state: 0,
         cycle_phase: 0,
-        marking_mask: 0,
+        marking_mask: dteam::utils::dense_kernel::K1024::zero(),
         activities_hash: 0,
     }
 }

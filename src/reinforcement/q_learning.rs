@@ -187,7 +187,7 @@ impl QLearning<crate::RlState, crate::RlAction> {
                 rework_ratio_q: r,
                 circuit_state: c,
                 cycle_phase: p,
-                marking_mask: 0,
+                marking_mask: crate::utils::dense_kernel::K1024::zero(),
                 activities_hash: 0,
             };
             q_table.insert(hash_state(&state), state, q_values);
