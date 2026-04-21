@@ -29,12 +29,16 @@ pub struct RlState<const WORDS: usize> {
     pub circuit_state: i8,
     pub cycle_phase: i8,
 <<<<<<< HEAD
+<<<<<<< HEAD
     pub marking_mask: utils::dense_kernel::KBitSet<WORDS>,
     pub activities_hash: u64,
     pub ontology_mask: crate::utils::dense_kernel::KBitSet<16>,
     pub universe: Option<Universe64>,
 =======
     pub marking_mask: u64,    // BCINR bitset mask for Petri net marking
+=======
+    pub marking_mask: crate::utils::dense_kernel::KBitSet<16>, // BCINR bitset mask for Petri net marking (K1024 support)
+>>>>>>> wreckit/formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o
     pub activities_hash: u64, // Rolling FNV-1a hash of recent activities
     pub ontology_mask: crate::utils::dense_kernel::KBitSet<16>, // AC 4.2
 >>>>>>> wreckit/1-formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o-and-prevent-out-of-ontology-state-reachability
@@ -67,6 +71,7 @@ impl reinforcement::WorkflowAction for RlAction {
 }
 
 // Minimal RlState impls for reinforcement trait
+<<<<<<< HEAD
 impl<const WORDS: usize> reinforcement::WorkflowState for RlState<WORDS> {
     fn features(&self) -> [f32; 16] {
         let mut f = [0.0; 16];
@@ -82,6 +87,13 @@ impl<const WORDS: usize> reinforcement::WorkflowState for RlState<WORDS> {
             }
         }
         f
+=======
+impl reinforcement::WorkflowState for RlState {
+    fn features(&self) -> Vec<f32> {
+        // Optimized feature vector: only allocate if necessary for function approx.
+        // For Q-Table, this is rarely called in the hot path.
+        vec![self.health_level as f32, self.marking_mask.pop_count() as f32]
+>>>>>>> wreckit/formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o
     }
     fn is_terminal(&self) -> bool {
         self.health_level < 0 || self.health_level >= 5

@@ -40,7 +40,11 @@ mod tests {
             rework_ratio_q: 0,
             circuit_state: 0,
             cycle_phase: 0,
+<<<<<<< HEAD
             marking_mask: KBitSet::zero(),
+=======
+            marking_mask: crate::utils::dense_kernel::KBitSet::<16>::zero(),
+>>>>>>> wreckit/formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o
             activities_hash: 0,
             ontology_mask: crate::utils::dense_kernel::KBitSet::<16>::zero(),
 <<<<<<< HEAD
@@ -193,6 +197,7 @@ mod tests {
         assert_eq!(selected, RlAction::Optimize);
     }
 
+<<<<<<< HEAD
     // --- SARSA Rigor Tests ---
 
     #[test]
@@ -222,5 +227,18 @@ mod tests {
         }
         
         assert_eq!(picked.len(), 3, "SARSA rotation failed to cover action space");
+=======
+    use proptest::prelude::*;
+    proptest! {
+        #[test]
+        fn test_ktier_marking_admissibility(
+            idx in 0usize..1024,
+        ) {
+            let mut mask = crate::utils::dense_kernel::KBitSet::<16>::zero();
+            let _ = mask.set(idx);
+            assert!(mask.contains(idx));
+            assert_eq!(mask.pop_count(), 1);
+        }
+>>>>>>> wreckit/formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o
     }
 }

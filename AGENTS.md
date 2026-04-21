@@ -135,9 +135,10 @@ Notable public items:
 
 ## 8. Conformance performance path
 
-- **`PetriNet`** places indexed into **`u64`** bitmasks when **`places.len() ≤ 64`** for vectorized mask updates in **`token_replay`** / **`token_replay_projected`**.
-- Larger place counts fall back to **`replay_trace_standard`** with **`PackedKeyTable`** markings (more general, slower).
-- **`RlState.marking_mask`** in `lib.rs` is documented for BCINR-style Petri masks; keep bit width assumptions aligned with **`KTier`** / engine capacity when extending the hot path.
+- **`PetriNet`** places indexed into **`KBitSet<16>`** for vectorized mask updates in **`token_replay`** / **`token_replay_projected`**.
+- Supports up to **1024** places (K1024 tier) with zero-heap, branchless bitset algebra.
+- Larger place counts (if any beyond 1024) fall back to **`replay_trace_standard`** with **`PackedKeyTable`** markings.
+- **`RlState.marking_mask`** in `lib.rs` is now a **`KBitSet<16>`** to maintain nanosecond-scale state updates across all supported tiers.
 
 ## 9. Examples
 
@@ -151,7 +152,8 @@ Notable public items:
 ## 10. Test suites inside the library crate
 
 - **`jtbd_tests` / `jtbd_counterfactual_tests`**: Scenario-driven **`Vision2030Kernel`** runs; assert health bounds, manifest prefixes (`VISION_2030_MANIFEST`), deterministic `hash=` substrings, drift/reward feedback, governance cases.
-- **`reinforcement_tests`**: Convergence and serialization roundtrips for tabular agents.
+- **`reinforcement_tests`**: Convergence and serialization roundtrips for tabular agents. Now includes **`proptest`** for KTier marking admissibility.
+- **`proptest_kernel_verification`**: Property-based tests for μ-kernel determinism, bitset logic, and Engine KTier enforcement.
 - **`io/xes_tests`**, **`conformance/case_centric/adversarial_tests`**, **`automation`**, **`dteam::orchestration`**, **`autonomic::kernel`**, **`skeptic_harness`**: narrower unit tests.
 
 Run everything: **`cargo test --lib`**.

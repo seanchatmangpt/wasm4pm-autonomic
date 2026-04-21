@@ -199,7 +199,11 @@ impl DoubleQLearning<crate::RlState<1>, crate::RlAction> {
                 rework_ratio_q: r,
                 circuit_state: c,
                 cycle_phase: p,
+<<<<<<< HEAD
                 marking_mask: KBitSet::zero(),
+=======
+                marking_mask: crate::utils::dense_kernel::K1024::zero(),
+>>>>>>> wreckit/formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o
                 activities_hash: 0,
                 ontology_mask: crate::utils::dense_kernel::KBitSet::<16>::zero(),
 <<<<<<< HEAD
