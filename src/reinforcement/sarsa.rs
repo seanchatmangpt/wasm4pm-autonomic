@@ -9,9 +9,11 @@ use super::*;
 /// at action-selection time so that the subsequent update can use the actual
 /// on-policy next action.
 pub struct SARSAAgent<S: WorkflowState, A: WorkflowAction> {
-    pub(crate) q_table: RefCell<PackedKeyTable<S, Vec<f32>>>,
+    pub(crate) q_table: RefCell<PackedKeyTable<S, [f32; 4]>>,
     pub(crate) learning_rate: f32,
     pub(crate) discount_factor: f32,
+    pub(crate) exploration_rate: f32,
+    pub(crate) exploration_decay: f32,
     pub(crate) episode_count: RefCell<usize>,
     pub(crate) _phantom: PhantomData<A>,
 }
@@ -23,6 +25,8 @@ impl<S: WorkflowState, A: WorkflowAction> SARSAAgent<S, A> {
             q_table: RefCell::new(PackedKeyTable::default()),
             learning_rate: DEFAULT_LEARNING_RATE,
             discount_factor: DEFAULT_DISCOUNT_FACTOR,
+            exploration_rate: 0.5, // Increased for better initial discovery
+            exploration_decay: DEFAULT_EXPLORATION_DECAY,
             episode_count: RefCell::new(0),
             _phantom: PhantomData,
         }
@@ -34,6 +38,8 @@ impl<S: WorkflowState, A: WorkflowAction> SARSAAgent<S, A> {
             q_table: RefCell::new(PackedKeyTable::default()),
             learning_rate: lr,
             discount_factor: df,
+            exploration_rate: 0.5,
+            exploration_decay: DEFAULT_EXPLORATION_DECAY,
             episode_count: RefCell::new(0),
             _phantom: PhantomData,
         }
@@ -41,18 +47,21 @@ impl<S: WorkflowState, A: WorkflowAction> SARSAAgent<S, A> {
 
     #[allow(dead_code)]
     pub fn select_action(&self, state: S) -> A {
-        // Deterministic rotation of actions for exploration:
-        // Every 3 episodes, we take a different exploratory action,
-        // otherwise we are greedy.
+        if self.exploration_rate <= 0.0 {
+            return self.greedy_action(state);
+        }
+
         let episode = *self.episode_count.borrow();
-        if episode % 3 == 1 {
-            // Exploratory action 1
-            A::from_index(0).unwrap()
-        } else if episode % 3 == 2 {
-            // Exploratory action 2
-            A::from_index(1).unwrap()
+        
+        // Deterministic Kernel Rotation (μ-rotation)
+        // Episode-dependent rotation ensures stable, repeatable exploration trajectories
+        // which is critical for deterministic convergence in process discovery.
+        let mod_val = A::ACTION_COUNT as u64 + 1;
+        let rot = (episode as u64) % mod_val;
+        
+        if rot < A::ACTION_COUNT as u64 {
+            A::from_index(rot as usize).unwrap()
         } else {
-            // Greedy
             self.greedy_action(state)
         }
     }
@@ -60,14 +69,23 @@ impl<S: WorkflowState, A: WorkflowAction> SARSAAgent<S, A> {
     #[allow(dead_code)]
     fn greedy_action(&self, state: S) -> A {
         let q_table = self.q_table.borrow();
-        let q_vals = get_q_values::<S, A>(&*q_table, &state);
-        let idx = q_vals
-            .iter()
-            .enumerate()
-            .max_by(|a, b| a.1.partial_cmp(b.1).unwrap_or(std::cmp::Ordering::Equal))
-            .map(|(idx, _)| idx)
-            .unwrap_or(0);
-        A::from_index(idx).unwrap()
+        let h = hash_state(&state);
+        let q_vals = q_table.get(h).map(|v| v.as_slice()).unwrap_or(&[0.5; 4]);
+        
+        let mut best_idx = 0;
+        let mut max_val = q_vals[0];
+        
+        for i in 1..A::ACTION_COUNT {
+            if q_vals[i] > max_val {
+                max_val = q_vals[i];
+                best_idx = i;
+            }
+        }
+        A::from_index(best_idx).unwrap()
+    }
+
+    pub fn set_exploration_rate(&mut self, rate: f32) {
+        self.exploration_rate = rate.clamp(0.0, 1.0);
     }
 
     #[allow(dead_code)]
@@ -81,19 +99,25 @@ impl<S: WorkflowState, A: WorkflowAction> SARSAAgent<S, A> {
         done: bool,
     ) {
         let mut q_table = self.q_table.borrow_mut();
-        ensure_state::<S, A>(&mut *q_table, state);
+        let h = hash_state(&state);
+        
+        if q_table.get(h).is_none() {
+            // Optimistic initialization for deterministic exploration
+            q_table.insert(h, state, [0.5; 4]);
+        }
 
+        let next_h = hash_state(&next_state);
         let next_q = if done {
             0.0
         } else {
-            get_q_values::<S, A>(&*q_table, &next_state)[next_action.to_index()]
+            q_table.get(next_h).map(|v| v[next_action.to_index()]).unwrap_or(0.5)
         };
 
         let action_idx = action.to_index();
-        let h = hash_state(&state);
-        let current_q = q_table.get(h).unwrap()[action_idx];
+        let current_vals = q_table.get_mut(h).unwrap();
+        let current_q = current_vals[action_idx];
         let target = reward + self.discount_factor * next_q;
-        q_table.get_mut(h).unwrap()[action_idx] += self.learning_rate * (target - current_q);
+        current_vals[action_idx] += self.learning_rate * (target - current_q);
     }
 }
 
@@ -126,7 +150,7 @@ impl SARSAAgent<crate::RlState, crate::RlAction> {
                 state.circuit_state,
                 state.cycle_phase,
             );
-            state_values.insert(key, q_values.clone());
+            state_values.insert(key, q_values[..crate::RlAction::ACTION_COUNT].to_vec());
         }
 
         SerializedAgentQTable {
@@ -159,7 +183,11 @@ impl SARSAAgent<crate::RlState, crate::RlAction> {
                 marking_mask: 0,
                 activities_hash: 0,
             };
-            q_table.insert(hash_state(&state), state, q_values);
+            let mut vals = [0.0; 4];
+            for (i, &v) in q_values.iter().enumerate().take(4) {
+                vals[i] = v;
+            }
+            q_table.insert(hash_state(&state), state, vals);
         }
     }
 }
@@ -170,7 +198,7 @@ impl<S: WorkflowState, A: WorkflowAction> Agent<S, A> for SARSAAgent<S, A> {
     }
 
     fn update(&mut self, state: S, action: A, reward: f32, next_state: S, done: bool) {
-        let next_action = self.greedy_action(next_state);
+        let next_action = self.select_action(next_state); // On-policy
         self.update_with_next_action(state, action, reward, next_state, next_action, done);
     }
 
@@ -185,8 +213,10 @@ impl<S: WorkflowState, A: WorkflowAction> AgentMeta for SARSAAgent<S, A> {
     }
 
     fn exploration_rate(&self) -> f32 {
-        0.0
+        self.exploration_rate
     }
 
-    fn decay_exploration(&mut self) {}
+    fn decay_exploration(&mut self) {
+        self.exploration_rate = decay_probability(self.exploration_rate, self.exploration_decay);
+    }
 }

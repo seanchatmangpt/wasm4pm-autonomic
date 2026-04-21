@@ -83,6 +83,7 @@ mod tests {
             run_corridor(&mut agent, 1, GOAL_STATE_DEFAULT);
         }
 
+        agent.set_exploration_rate(0.0);
         let avg_reward = run_corridor(&mut agent, EVAL_EPISODES, GOAL_STATE_DEFAULT);
         assert!(
             avg_reward > AVG_REWARD_THRESHOLD,
@@ -169,5 +170,36 @@ mod tests {
         new_agent.set_exploration_rate(0.0);
         let selected = new_agent.select_action(state);
         assert_eq!(selected, RlAction::Optimize);
+    }
+
+    // --- SARSA Rigor Tests ---
+
+    #[test]
+    fn test_sarsa_zero_variancy() {
+        let agent = SARSAAgent::<RlState, RlAction>::new();
+        let state = create_state(0);
+        
+        *agent.episode_count.borrow_mut() = 123;
+        let a1 = agent.select_action(state);
+        let a2 = agent.select_action(state);
+        assert_eq!(a1, a2, "SARSA agent selection is non-deterministic!");
+        
+        let a3 = agent.select_action(state);
+        assert_eq!(a1, a3, "SARSA agent selection is unstable!");
+    }
+
+    #[test]
+    fn test_sarsa_exploration_coverage() {
+        let agent = SARSAAgent::<RlState, RlAction>::new();
+        let state = create_state(0);
+        let mut picked = std::collections::HashSet::new();
+        
+        // Ensure that through rotation, we see all actions
+        for ep in 0..20 {
+            *agent.episode_count.borrow_mut() = ep;
+            picked.insert(agent.select_action(state));
+        }
+        
+        assert_eq!(picked.len(), 3, "SARSA rotation failed to cover action space");
     }
 }
