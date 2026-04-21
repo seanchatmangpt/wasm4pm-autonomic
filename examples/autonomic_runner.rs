@@ -1,7 +1,14 @@
+<<<<<<< HEAD
 use dteam::autonomic::{AutonomicEvent, AutonomicKernel, DefaultKernel};
 use log::{debug, info, warn};
 use std::thread;
 use std::time::{Duration, SystemTime};
+=======
+use dteam::autonomic::{AutonomicEvent, AutonomicFeedback, AutonomicKernel, DefaultKernel};
+use std::thread;
+use std::time::Duration;
+use log::{debug, info, warn};
+>>>>>>> wreckit/blue-river-dam-interface-refactor-autonomickernel-to-focus-on-control-surface-synthesis
 
 fn main() {
     env_logger::init();
@@ -10,69 +17,68 @@ fn main() {
     debug!("Initial System State: {}\n", kernel.infer());
 
     let simulated_events = vec![
-        ("sensor_alpha", "Trace packet received (ID: 1024)"),
-        ("compliance_monitor", "Minor structural deviation detected"),
-        (
-            "adversary_aalst",
-            "Direct structural repair triggered: Unsound Petri Net detected!",
-        ),
-        (
-            "throughput_sensor",
-            "Boutleneck detected in 'Approve' phase",
-        ),
-        ("sensor_beta", "High-frequency activity burst"),
+        (0x11, 0xAA),
+        (0x22, 0xBB),
+        (0x33, 0xCC),
+        (0x44, 0xDD),
+        (0x55, 0xEE),
     ];
 
-    for (source, payload) in simulated_events {
+    for (i, (source_hash, payload_hash)) in simulated_events.into_iter().enumerate() {
         let event = AutonomicEvent {
-            source: source.to_string(),
-            payload: payload.to_string(),
-            timestamp: SystemTime::now(),
+            source_hash,
+            activity_idx: (i % 4) as u8,
+            payload_hash,
+            timestamp_ns: 123456789,
         };
 
         info!("📥 Processing event: {}", event);
 
         let state = kernel.infer();
-        let actions = kernel.propose(&state);
+        let mask = kernel.synthesize(&state);
 
-        let mut results = Vec::new();
-        for action in actions {
-            let accepted = kernel.accept(&action, &state);
-            let status = if accepted {
-                "✅ ACCEPTED"
-            } else {
-                "❌ REJECTED"
-            };
-            info!("  Action: {} -> {}", action.parameters, status);
+        let mut executed_count = 0;
+        for i in 0..64 {
+            if (mask >> i) & 1 == 1 {
+                let accepted = kernel.accept(i, &state);
+                let status = if accepted {
+                    "✅ ACCEPTED"
+                } else {
+                    "❌ REJECTED"
+                };
+                info!("  Action #{} -> {}", i, status);
 
-            if accepted {
-                results.push(kernel.execute(action));
+                if accepted {
+                    let res = kernel.execute(i);
+                    info!("  MANIFEST HASH: {:X}", kernel.manifest(&res));
+                    executed_count += 1;
+                }
             }
         }
 
+<<<<<<< HEAD
         if results.is_empty() {
             warn!(
                 "  ℹ️  No actions were executed for event from {}.",
                 event.source
             );
+=======
+        if executed_count == 0 {
+            warn!("  ℹ️  No actions were executed for event.");
+>>>>>>> wreckit/blue-river-dam-interface-refactor-autonomickernel-to-focus-on-control-surface-synthesis
         } else {
-            for res in &results {
-                info!("  {}", kernel.manifest(res));
-            }
-
             // Adapt with a small penalty to simulate operational decay
             debug!("Applying simulated operational decay penalty.");
-            kernel.adapt(dteam::autonomic::AutonomicFeedback {
+            kernel.adapt(&AutonomicFeedback {
                 reward: -0.5,
                 human_override: false,
-                side_effects: vec![],
             });
         }
 
         debug!("📊 Current State: {}\n", kernel.infer());
 
         // Simulate a small processing delay
-        thread::sleep(Duration::from_millis(500));
+        thread::sleep(Duration::from_millis(100));
     }
 
     info!("🏁 Autonomic Runner sequence complete.");
