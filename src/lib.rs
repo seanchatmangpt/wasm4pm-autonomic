@@ -380,6 +380,8 @@ pub mod dteam {
             pub action_sequence: Vec<u8>,
             pub model_canonical_hash: u64,
             pub mdl_score: f64,
+            pub soundness_score: f32,
+            pub is_sound: bool,
             pub k_tier: String,
             pub latency_ns: u64,
         }
@@ -422,6 +424,8 @@ pub mod dteam {
                     action_sequence: trajectory,
                     model_canonical_hash: net.canonical_hash(),
                     mdl_score: net.mdl_score(),
+                    soundness_score: net.structural_unsoundness_score(),
+                    is_sound: net.is_sound(),
                     k_tier: format!("{:?}", self.k_tier),
                     latency_ns: execution_time_ns,
                 };
