@@ -1,7 +1,7 @@
 use dteam::autonomic::{AutonomicEvent, AutonomicKernel, DefaultKernel};
+use log::{debug, info, warn};
 use std::thread;
 use std::time::{Duration, SystemTime};
-use log::{debug, info, warn};
 
 fn main() {
     env_logger::init();
@@ -51,7 +51,10 @@ fn main() {
         }
 
         if results.is_empty() {
-            warn!("  ℹ️  No actions were executed for event from {}.", event.source);
+            warn!(
+                "  ℹ️  No actions were executed for event from {}.",
+                event.source
+            );
         } else {
             for res in &results {
                 info!("  {}", kernel.manifest(res));

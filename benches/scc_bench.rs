@@ -7,10 +7,10 @@ fn generate_random_graph<const WORDS: usize>(density: f64) -> Vec<KBitSet<WORDS>
     let mut rng = Rng::with_seed(42);
     let max_nodes = WORDS * 64;
     let mut adj = vec![KBitSet::<WORDS>::zero(); max_nodes];
-    for i in 0..max_nodes {
+    for row in adj.iter_mut().take(max_nodes) {
         for j in 0..max_nodes {
             if rng.f64() < density {
-                let _ = adj[i].set(j);
+                let _ = row.set(j);
             }
         }
     }
@@ -83,7 +83,7 @@ fn bench_scc_k1024(c: &mut Criterion) {
 
 fn bench_scc_density_impact(c: &mut Criterion) {
     let mut group = c.benchmark_group("SCC Branchless Density Impact (K64)");
-    
+
     for density in [0.1, 0.5, 0.9] {
         let adj = generate_random_graph::<1>(density);
         group.bench_with_input(format!("density_{}", density), &adj, |b, adj| {
@@ -94,5 +94,12 @@ fn bench_scc_density_impact(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(benches, bench_scc_k64, bench_scc_k256, bench_scc_k512, bench_scc_k1024, bench_scc_density_impact);
+criterion_group!(
+    benches,
+    bench_scc_k64,
+    bench_scc_k256,
+    bench_scc_k512,
+    bench_scc_k1024,
+    bench_scc_density_impact
+);
 criterion_main!(benches);

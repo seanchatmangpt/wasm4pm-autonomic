@@ -25,11 +25,11 @@ mod proptests {
                 activities_hash: 0,
             };
             let action = RlAction::from_index(a).unwrap();
-            
+
             // Execute twice to check variancy τ
             let result1 = transition(state, action);
             let result2 = transition(state, action);
-            
+
             assert_eq!(result1, result2, "Kernel μ failed: transition not deterministic");
         }
     }

@@ -58,7 +58,9 @@ pub fn train_with_provenance_projected(
         let avg_f = token_replay_projected(train_log, &model);
 
         let _unsoundness_u = model.structural_unsoundness_score();
-        let _complexity_c = (model.transitions.len() + model.arcs.len()) as f32;
+        let mdl_score = model.mdl_score() as f32;
+        let _structural_penalty = mdl_score * config.autonomic.policy.mdl_penalty;
+
         let is_sound = model.is_structural_workflow_net();
         let verifies_calculus = model.verifies_state_equation_calculus();
 

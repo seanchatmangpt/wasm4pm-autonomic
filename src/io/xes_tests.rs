@@ -85,6 +85,8 @@ mod tests {
         assert!(result.is_err());
         use crate::io::xes::XesError;
         let err = result.unwrap_err();
-        assert!(matches!(err, XesError::MissingAttribute { ref attribute, .. } if attribute == "value"));
+        assert!(
+            matches!(err, XesError::MissingAttribute { ref attribute, .. } if attribute == "value")
+        );
     }
 }

@@ -131,11 +131,11 @@ impl AutonomicKernel for DefaultKernel {
     fn execute(&mut self, _action: AutonomicAction) -> AutonomicResult {
         // Implementation of branchless reachability guards
         // M' = (M & !I) | O: Enforces that unsafe states (I) are never reached.
-        
+
         // In a real-world scenario, 'I' would be derived from structural workflow analysis.
         // For this baseline, we verify structural Soundness before execution.
         let is_admissible = true; // Placeholder for structural net check
-        
+
         // Use select_u64 for branchless selection
         let success = crate::utils::bitset::select_u64(is_admissible as u64, 1, 0) == 1;
 
@@ -172,8 +172,8 @@ impl AutonomicKernel for DefaultKernel {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::time::SystemTime;
     use proptest::prelude::*;
+    use std::time::SystemTime;
 
     #[test]
     fn test_autonomic_lifecycle() {
@@ -220,10 +220,10 @@ mod tests {
         fn test_admissibility_guard_always_admissible_if_structurally_sound(is_admissible in any::<bool>()) {
             let mut _kernel = DefaultKernel::new();
             let _action = AutonomicAction::new(1, ActionType::Recommend, ActionRisk::Low, "Test");
-            
+
             // This is a simplified test simulating the branchless selection logic
             let success = crate::utils::bitset::select_u64(is_admissible as u64, 1, 0) == 1;
-            
+
             assert_eq!(success, is_admissible);
         }
     }

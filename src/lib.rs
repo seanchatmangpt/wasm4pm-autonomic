@@ -3,9 +3,9 @@ pub mod io;
 pub mod jtbd_counterfactual_tests;
 pub mod jtbd_tests;
 pub mod models;
+pub mod proptest_kernel_verification;
 pub mod reinforcement;
 pub mod reinforcement_tests;
-pub mod proptest_kernel_verification;
 pub mod utils;
 
 // Re-export models for easier access
