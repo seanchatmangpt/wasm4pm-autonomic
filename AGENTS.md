@@ -124,6 +124,13 @@ Notable public items:
 
 - **`skeptic_harness.rs`**: Enumerates adversarial “attacks” and claim registry; includes tests tying narrative to code.
 - **`skeptic_contract.rs`**: Non-implementation **contract** document: constants like **`CHECK_RESET_AXIOM`** encode obligations for trace-isolated evaluation (overfitting, value–structure gap, etc.).
+- **`proptest_kernel_verification.rs`**: Cross-architecture `proptest` suite verifying μ-kernel properties:
+    - **Determinism**: `Var(τ) = 0` for all transitions.
+    - **Branchless Logic**: Data-independent firing via bitwise mask calculus.
+    - **MDL Minimality**: Structural complexity enforcement.
+    - **KTier Alignment**: Capacity and word-alignment verification across varied tiers.
+    - **Zero-Heap Verification**: Stack-allocated hot-path transitions.
+    - **Provenance**: Compliance check for `ExecutionManifest` emission.
 - **`ref_models/`**, **`ref_conformance/`**: reference Petri net, event log, token replay for parity checks.
 
 ### Benchmarks entry — `src/benchmark.rs`
