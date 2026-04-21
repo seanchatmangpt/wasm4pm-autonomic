@@ -82,7 +82,10 @@ pub fn train_with_provenance_projected(
             circuit_state: 0,
             cycle_phase: 0,
             ontology_mask,
+<<<<<<< HEAD
             universe: None,
+=======
+>>>>>>> wreckit/1-formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o-and-prevent-out-of-ontology-state-reachability
         };
 
         let action = agent.select_action(state);

@@ -199,7 +199,10 @@ impl QLearning<crate::RlState<1>, crate::RlAction> {
                 marking_mask: KBitSet::zero(),
                 activities_hash: 0,
                 ontology_mask: crate::utils::dense_kernel::KBitSet::<16>::zero(),
+<<<<<<< HEAD
                 universe: None,
+=======
+>>>>>>> wreckit/1-formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o-and-prevent-out-of-ontology-state-reachability
             };
             let mut q_arr = [0.0; ACTION_MAX_LIMIT];
             let len = q_values.len().min(ACTION_MAX_LIMIT);

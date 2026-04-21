@@ -5,7 +5,10 @@ pub mod jtbd_tests;
 pub mod models;
 pub mod reinforcement;
 pub mod reinforcement_tests;
+<<<<<<< HEAD
 pub mod proptest_kernel_verification;
+=======
+>>>>>>> wreckit/1-formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o-and-prevent-out-of-ontology-state-reachability
 pub mod ontology_proptests;
 pub mod utils;
 pub use agentic::ralph::patterns::universe64::Universe64;
@@ -25,10 +28,16 @@ pub struct RlState<const WORDS: usize> {
     pub rework_ratio_q: i8,
     pub circuit_state: i8,
     pub cycle_phase: i8,
+<<<<<<< HEAD
     pub marking_mask: utils::dense_kernel::KBitSet<WORDS>,
     pub activities_hash: u64,
     pub ontology_mask: crate::utils::dense_kernel::KBitSet<16>,
     pub universe: Option<Universe64>,
+=======
+    pub marking_mask: u64,    // BCINR bitset mask for Petri net marking
+    pub activities_hash: u64, // Rolling FNV-1a hash of recent activities
+    pub ontology_mask: crate::utils::dense_kernel::KBitSet<16>, // AC 4.2
+>>>>>>> wreckit/1-formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o-and-prevent-out-of-ontology-state-reachability
 }
 
 #[derive(Clone, Copy, Eq, Hash, PartialEq, Debug)]
@@ -230,7 +239,10 @@ pub mod dteam {
             beta: f32,
             lambda: f32,
             deterministic: bool,
+<<<<<<< HEAD
             config: Option<crate::config::AutonomicConfig>,
+=======
+>>>>>>> wreckit/1-formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o-and-prevent-out-of-ontology-state-reachability
             ontology: Option<crate::models::Ontology>,
             prune_on_violation: bool,
         }
@@ -242,7 +254,10 @@ pub mod dteam {
                     beta: 0.5,
                     lambda: 0.01,
                     deterministic: true,
+<<<<<<< HEAD
                     config: None,
+=======
+>>>>>>> wreckit/1-formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o-and-prevent-out-of-ontology-state-reachability
                     ontology: None,
                     prune_on_violation: false,
                 }
@@ -289,7 +304,10 @@ pub mod dteam {
                     beta: self.beta,
                     lambda: self.lambda,
                     deterministic: self.deterministic,
+<<<<<<< HEAD
                     config,
+=======
+>>>>>>> wreckit/1-formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o-and-prevent-out-of-ontology-state-reachability
                     ontology: self.ontology,
                     prune_on_violation: self.prune_on_violation,
                 }
@@ -307,7 +325,10 @@ pub mod dteam {
             pub beta: f32,
             pub lambda: f32,
             pub deterministic: bool,
+<<<<<<< HEAD
             pub config: crate::config::AutonomicConfig,
+=======
+>>>>>>> wreckit/1-formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o-and-prevent-out-of-ontology-state-reachability
             pub ontology: Option<crate::models::Ontology>,
             pub prune_on_violation: bool,
         }
@@ -489,6 +510,18 @@ pub mod dteam {
                                     if let crate::models::AttributeValue::String(s) = &a.value { Some(s.as_str()) } else { None }
                                 }).unwrap_or("No Activity");
 
+<<<<<<< HEAD
+=======
+                // Boundary Enforcement Phase (AC 1.2)
+                if let Some(ontology) = &self.ontology {
+                    if !self.prune_on_violation {
+                        for trace in &log.traces {
+                            for event in &trace.events {
+                                let activity = event.attributes.iter().find(|a| a.key == "concept:name").and_then(|a| {
+                                    if let crate::models::AttributeValue::String(s) = &a.value { Some(s.as_str()) } else { None }
+                                }).unwrap_or("No Activity");
+
+>>>>>>> wreckit/1-formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o-and-prevent-out-of-ontology-state-reachability
                                 if !ontology.contains(activity) {
                                     return EngineResult::BoundaryViolation { activity: activity.to_string() };
                                 }
@@ -497,6 +530,7 @@ pub mod dteam {
                     }
                 }
 
+<<<<<<< HEAD
                 // Use reward weights from cached config
                 let beta = *self.config.rl.reward_weights.get("fitness").unwrap_or(&0.5);
                 let lambda = *self.config.rl.reward_weights.get("soundness").unwrap_or(&0.01);
@@ -504,9 +538,22 @@ pub mod dteam {
                 // Projection and Training
                 let projected_log = crate::conformance::ProjectedLog::generate_with_ontology(log, self.ontology.as_ref());
                 let violation_count = projected_log.violation_count;
+=======
+                // Use reward weights from config
+                let beta = *config.rl.reward_weights.get("fitness").unwrap_or(&0.5);
+                let lambda = *config.rl.reward_weights.get("soundness").unwrap_or(&0.01);
+>>>>>>> wreckit/1-formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o-and-prevent-out-of-ontology-state-reachability
+
+                // Projection and Training
+                let projected_log = crate::conformance::ProjectedLog::generate_with_ontology(log, self.ontology.as_ref());
+                let violation_count = projected_log.violation_count;
 
                 let (net, trajectory) =
+<<<<<<< HEAD
                     crate::automation::train_with_provenance_projected(&projected_log, &self.config, beta, lambda, self.ontology.as_ref());
+=======
+                    crate::automation::train_with_provenance_projected(&projected_log, &config, beta, lambda, self.ontology.as_ref());
+>>>>>>> wreckit/1-formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o-and-prevent-out-of-ontology-state-reachability
                 let execution_time_ns = start_time.elapsed().as_nanos() as u64;
 
                 // Closure Verification (AC 5.1, AC 2.1)

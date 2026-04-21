@@ -33,6 +33,7 @@ impl ProjectedLog {
     }
 
     pub fn generate_with_ontology(log: &EventLog, ontology: Option<&crate::models::Ontology>) -> Self {
+<<<<<<< HEAD
         let mut unique_activities = std::collections::HashSet::new();
         let mut violation_count = 0;
 
@@ -67,6 +68,12 @@ impl ProjectedLog {
 
         let mut traces_map = PackedKeyTable::new();
         let activities = activity_index.symbols().to_vec();
+=======
+        let mut act_to_idx = PackedKeyTable::new();
+        let mut activities = Vec::new();
+        let mut traces_map = PackedKeyTable::new();
+        let mut violation_count = 0;
+>>>>>>> wreckit/1-formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o-and-prevent-out-of-ontology-state-reachability
 
         for trace in &log.traces {
             let mut trace_acts = Vec::with_capacity(trace.events.len());
@@ -86,6 +93,7 @@ impl ProjectedLog {
 
                 if let Some(ont) = ontology {
                     if !ont.contains(activity) {
+<<<<<<< HEAD
                         continue;
                     }
                 }
@@ -93,6 +101,23 @@ impl ProjectedLog {
                 if let Some(idx) = activity_index.dense_id_by_symbol(activity) {
                     trace_acts.push(idx as usize);
                 }
+=======
+                        violation_count += 1;
+                        continue; // Prune out-of-ontology events (AC 1.2 option b)
+                    }
+                }
+
+                let h = fnv1a_64(activity.as_bytes());
+                let index = if let Some(&idx) = act_to_idx.get(h) {
+                    idx
+                } else {
+                    let idx = activities.len();
+                    activities.push(activity.to_string());
+                    act_to_idx.insert(h, activity.to_string(), idx);
+                    idx
+                };
+                trace_acts.push(index);
+>>>>>>> wreckit/1-formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o-and-prevent-out-of-ontology-state-reachability
             }
 
             if trace_acts.is_empty() { continue; }
