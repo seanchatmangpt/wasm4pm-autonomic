@@ -171,6 +171,7 @@ impl ExpectedSARSAAgent<crate::RlState<1>, crate::RlAction> {
                 marking_mask: KBitSet::zero(),
                 activities_hash: 0,
                 ontology_mask: crate::utils::dense_kernel::KBitSet::<16>::zero(),
+                universe: None,
             };
             let mut q_array = [0.0; ACTION_MAX_LIMIT];
             q_array.copy_from_slice(&q_values);

@@ -136,6 +136,20 @@ async fn main() -> anyhow::Result<()> {
         }
     }
 
+    let mut offset = 0;
+    if let Some(pos) = args.iter().position(|a| a == "--offset") {
+        if let Some(val) = args.get(pos + 1) {
+            offset = val.parse::<usize>().unwrap_or(0);
+        }
+    }
+
+    let mut limit = None;
+    if let Some(pos) = args.iter().position(|a| a == "--limit") {
+        if let Some(val) = args.get(pos + 1) {
+            limit = val.parse::<usize>().ok();
+        }
+    }
+
     if is_test {
         if cfg!(debug_assertions) {
             info!("!! TEST MODE ENABLED: Skipping LLM calls and using mock responses.");
@@ -158,6 +172,8 @@ async fn main() -> anyhow::Result<()> {
         .filter(|l| !l.trim().is_empty())
         .enumerate()
         .map(|(i, s)| (format!("{:03}", i + 1), s.to_string()))
+        .skip(offset)
+        .take(limit.unwrap_or(usize::MAX))
         .collect();
 
     let workspace_manager = GitWorktreeManager::default();

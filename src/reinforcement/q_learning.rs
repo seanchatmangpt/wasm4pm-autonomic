@@ -199,6 +199,7 @@ impl QLearning<crate::RlState<1>, crate::RlAction> {
                 marking_mask: KBitSet::zero(),
                 activities_hash: 0,
                 ontology_mask: crate::utils::dense_kernel::KBitSet::<16>::zero(),
+                universe: None,
             };
             let mut q_arr = [0.0; ACTION_MAX_LIMIT];
             let len = q_values.len().min(ACTION_MAX_LIMIT);

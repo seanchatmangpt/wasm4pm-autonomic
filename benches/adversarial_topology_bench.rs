@@ -6,12 +6,10 @@ fn main() {
     divan::main();
 }
 
-#[divan::bench]
-fn bench_degenerate_loops() {
+fn bench_degenerate_loops_inner(n: usize) {
     let mut log = EventLog::default();
     let mut trace = Trace::default();
-    // Simulate infinite loop of a single activity
-    for _ in 0..1000 {
+    for _ in 0..n {
         trace.events.push(Event::new("loop_act".to_string()));
     }
     log.add_trace(trace);
@@ -20,14 +18,42 @@ fn bench_degenerate_loops() {
 }
 
 #[divan::bench]
-fn bench_disconnected_components() {
+fn bench_degenerate_loops_min() {
+    bench_degenerate_loops_inner(1);
+}
+
+#[divan::bench]
+fn bench_degenerate_loops_standard() {
+    bench_degenerate_loops_inner(1000);
+}
+
+#[divan::bench]
+fn bench_degenerate_loops_max() {
+    bench_degenerate_loops_inner(10000);
+}
+
+fn bench_disconnected_components_inner(n: usize) {
     let mut log = EventLog::default();
-    // Many independent traces
-    for i in 0..100 {
+    for i in 0..n {
         let mut trace = Trace::default();
         trace.events.push(Event::new(format!("act_{}", i)));
         log.add_trace(trace);
     }
     let engine = Engine::builder().build();
     black_box(engine.run(black_box(&log)));
+}
+
+#[divan::bench]
+fn bench_disconnected_components_min() {
+    bench_disconnected_components_inner(1);
+}
+
+#[divan::bench]
+fn bench_disconnected_components_standard() {
+    bench_disconnected_components_inner(100);
+}
+
+#[divan::bench]
+fn bench_disconnected_components_max() {
+    bench_disconnected_components_inner(1000);
 }

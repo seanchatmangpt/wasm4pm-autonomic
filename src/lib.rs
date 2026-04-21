@@ -8,6 +8,7 @@ pub mod reinforcement_tests;
 pub mod proptest_kernel_verification;
 pub mod ontology_proptests;
 pub mod utils;
+pub use agentic::ralph::patterns::universe64::Universe64;
 
 // Re-export models for easier access
 pub use conformance::*;
@@ -27,6 +28,7 @@ pub struct RlState<const WORDS: usize> {
     pub marking_mask: utils::dense_kernel::KBitSet<WORDS>,
     pub activities_hash: u64,
     pub ontology_mask: crate::utils::dense_kernel::KBitSet<16>,
+    pub universe: Option<Universe64>,
 }
 
 #[derive(Clone, Copy, Eq, Hash, PartialEq, Debug)]
@@ -60,8 +62,15 @@ impl<const WORDS: usize> reinforcement::WorkflowState for RlState<WORDS> {
     fn features(&self) -> [f32; 16] {
         let mut f = [0.0; 16];
         f[0] = self.health_level as f32;
-        for i in 0..WORDS.min(15) {
-            f[i + 1] = self.marking_mask.words[i] as f32;
+        f[1] = self.activities_hash as f32;
+        if let Some(u) = &self.universe {
+            for i in 0..14 {
+                f[i + 2] = u.data[i] as f32;
+            }
+        } else {
+            for i in 0..WORDS.min(14) {
+                f[i + 2] = self.marking_mask.words[i] as f32;
+            }
         }
         f
     }
@@ -444,7 +453,7 @@ pub mod dteam {
             pub closure_verified: bool,
         }
 
-        #[derive(Debug)]
+        #[derive(Debug, Clone)]
         pub enum EngineResult {
             Success(Box<PetriNet>, ExecutionManifest),
             PartitionRequired { required: usize, configured: usize },

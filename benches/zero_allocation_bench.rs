@@ -3,6 +3,7 @@ use dteam::ref_models::ref_event_log::EventLogActivityProjection;
 use dteam::ref_models::ref_petri_net::{ArcType, PetriNet};
 use dteam::reinforcement::{Agent, SARSAAgent};
 use dteam::{RlAction, RlState};
+use dteam::utils::dense_kernel::KBitSet;
 use std::collections::HashMap;
 
 #[global_allocator]
@@ -14,8 +15,8 @@ fn main() {
     println!("Starting Zero-Allocation Benchmark...");
 
     // 1. RL Hot Path
-    let mut agent = SARSAAgent::<RlState, RlAction>::new();
-    let state = RlState {
+    let mut agent = SARSAAgent::<RlState<4>, RlAction>::new();
+    let state = RlState::<4> {
         health_level: 1,
         event_rate_q: 0,
         activity_count_q: 0,
@@ -24,8 +25,9 @@ fn main() {
         rework_ratio_q: 0,
         circuit_state: 0,
         cycle_phase: 0,
-        marking_mask: 1,
+        marking_mask: KBitSet::zero(),
         activities_hash: 1,
+        ontology_mask: KBitSet::zero(),
     };
 
     println!("Executing 1,000,000 RL updates...");

@@ -60,6 +60,18 @@ fn bench_replay_parity(c: &mut Criterion) {
         b.iter(|| apply_token_based_replay_bcinr(black_box(&net), black_box(&projection)))
     });
 
+    let mut act_to_index = std::collections::HashMap::new();
+    act_to_index.insert("A".into(), 0);
+    let min_projection = EventLogActivityProjection {
+        activities: vec!["A".into()],
+        act_to_index,
+        traces: vec![(vec![0], 1)],
+    };
+
+    group.bench_function("BCINR Pure Bitset Replayer (Minimal 1-Event Trace)", |b| {
+        b.iter(|| apply_token_based_replay_bcinr(black_box(&net), black_box(&min_projection)))
+    });
+
     group.finish();
 }
 

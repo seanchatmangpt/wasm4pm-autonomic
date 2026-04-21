@@ -126,3 +126,7 @@ harness = false
 [[bench]]
 name = "scc_bench"
 harness = false
+
+[[bench]]
+name = "universe64_bench"
+harness = false

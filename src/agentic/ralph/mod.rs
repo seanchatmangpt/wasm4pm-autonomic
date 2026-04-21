@@ -1,5 +1,6 @@
 pub mod controller;
 pub mod execution;
+pub mod patterns;
 pub mod phase;
 pub mod router;
 pub mod verifier;

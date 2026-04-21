@@ -28,6 +28,11 @@ fn bench_dteam_ops(c: &mut Criterion) {
         b.iter(|| engine.run(black_box(&log)))
     });
 
+    let min_log = create_large_log(1);
+    group.bench_function("Engine/run_precheck (Minimal 1-Event Trace)", |b| {
+        b.iter(|| engine.run(black_box(&min_log)))
+    });
+
     group.finish();
 }
 

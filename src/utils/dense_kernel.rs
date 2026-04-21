@@ -336,9 +336,17 @@ pub type K64 = KBitSet<1>;
 // PACKED KEY TABLE
 // ============================================================================
 
+const EMPTY_INDEX: u32 = u32::MAX;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PackedKeyTable<K, V> {
     entries: Vec<(u64, K, V)>,
+    #[serde(skip, default = "default_indices")]
+    indices: Vec<u32>,
+}
+
+fn default_indices() -> Vec<u32> {
+    Vec::new()
 }
 
 impl<K: PartialEq, V: PartialEq> PartialEq for PackedKeyTable<K, V> {
@@ -348,51 +356,124 @@ impl<K: PartialEq, V: PartialEq> PartialEq for PackedKeyTable<K, V> {
 }
 
 impl<K, V> PackedKeyTable<K, V> {
+    #[inline(always)]
     pub fn new() -> Self {
         Self {
             entries: Vec::new(),
+            indices: Vec::new(),
         }
     }
+
+    #[inline(always)]
     pub fn with_capacity(cap: usize) -> Self {
+        if cap == 0 {
+            return Self::new();
+        }
+        let cap = cap.next_power_of_two().max(16);
         Self {
             entries: Vec::with_capacity(cap),
+            indices: vec![EMPTY_INDEX; cap],
         }
     }
+
+    #[inline(never)]
+    fn rebuild_indices_if_needed(&mut self) {
+        if !self.indices.is_empty() && self.indices.len() > self.entries.len() * 2 {
+            return;
+        }
+        let cap = self.entries.len().next_power_of_two().max(16) * 2;
+        self.indices.clear();
+        self.indices.resize(cap, EMPTY_INDEX);
+        let mask = (cap - 1) as u64;
+        for (i, &(hash, _, _)) in self.entries.iter().enumerate() {
+            let mut idx = (hash & mask) as usize;
+            loop {
+                if self.indices[idx] == EMPTY_INDEX {
+                    self.indices[idx] = i as u32;
+                    break;
+                }
+                idx = (idx + 1) & mask as usize;
+            }
+        }
+    }
+
+    #[inline(always)]
     pub fn insert(&mut self, hash: u64, key: K, value: V) {
-        match self.entries.binary_search_by_key(&hash, |(h, _, _)| *h) {
-            Ok(i) => self.entries[i] = (hash, key, value),
-            Err(i) => self.entries.insert(i, (hash, key, value)),
+        if self.indices.is_empty() || self.entries.len() * 2 >= self.indices.len() {
+            self.rebuild_indices_if_needed();
+        }
+        let mask = (self.indices.len() - 1) as u64;
+        let mut idx = (hash & mask) as usize;
+        loop {
+            let entry_idx = self.indices[idx];
+            if entry_idx == EMPTY_INDEX {
+                let new_idx = self.entries.len() as u32;
+                self.indices[idx] = new_idx;
+                self.entries.push((hash, key, value));
+                return;
+            }
+            if unsafe { self.entries.get_unchecked(entry_idx as usize).0 } == hash {
+                unsafe { *self.entries.get_unchecked_mut(entry_idx as usize) = (hash, key, value) };
+                return;
+            }
+            idx = (idx + 1) & mask as usize;
         }
     }
-    #[inline]
+
+    #[inline(always)]
     pub fn get(&self, hash: u64) -> Option<&V> {
-        self.entries
-            .binary_search_by_key(&hash, |(h, _, _)| *h)
-            .ok()
-            .map(|i| &self.entries[i].2)
+        if self.indices.is_empty() { return None; }
+        let mask = (self.indices.len() - 1) as u64;
+        let mut idx = (hash & mask) as usize;
+        loop {
+            let entry_idx = unsafe { *self.indices.get_unchecked(idx) };
+            if entry_idx == EMPTY_INDEX {
+                return None;
+            }
+            let entry = unsafe { self.entries.get_unchecked(entry_idx as usize) };
+            if entry.0 == hash {
+                return Some(&entry.2);
+            }
+            idx = (idx + 1) & mask as usize;
+        }
     }
-    #[inline]
+
+    #[inline(always)]
     pub fn get_mut(&mut self, hash: u64) -> Option<&mut V> {
-        self.entries
-            .binary_search_by_key(&hash, |(h, _, _)| *h)
-            .ok()
-            .map(|i| &mut self.entries[i].2)
+        if self.indices.is_empty() { return None; }
+        let mask = (self.indices.len() - 1) as u64;
+        let mut idx = (hash & mask) as usize;
+        loop {
+            let entry_idx = unsafe { *self.indices.get_unchecked(idx) };
+            if entry_idx == EMPTY_INDEX {
+                return None;
+            }
+            if unsafe { self.entries.get_unchecked(entry_idx as usize).0 } == hash {
+                return Some(&mut unsafe { self.entries.get_unchecked_mut(entry_idx as usize) }.2);
+            }
+            idx = (idx + 1) & mask as usize;
+        }
     }
-    #[inline]
+
+    #[inline(always)]
     pub fn len(&self) -> usize {
         self.entries.len()
     }
-    #[inline]
+
+    #[inline(always)]
     pub fn is_empty(&self) -> bool {
         self.entries.is_empty()
     }
-    #[inline]
+
+    #[inline(always)]
     pub fn iter(&self) -> impl Iterator<Item = &(u64, K, V)> {
         self.entries.iter()
     }
-    #[inline]
+
+    #[inline(always)]
     pub fn clear(&mut self) {
         self.entries.clear();
+        self.indices.fill(EMPTY_INDEX);
     }
 }
 

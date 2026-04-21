@@ -82,6 +82,7 @@ pub fn train_with_provenance_projected(
             circuit_state: 0,
             cycle_phase: 0,
             ontology_mask,
+            universe: None,
         };
 
         let action = agent.select_action(state);

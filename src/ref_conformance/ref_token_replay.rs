@@ -252,20 +252,35 @@ pub fn apply_token_based_replay_bcinr(
         trans_to_idx.insert(*id, i);
     }
 
-    let mut input_masks = vec![0u64; num_transitions + 1];
-    let mut output_masks = vec![0u64; num_transitions + 1];
+    #[derive(Clone, Copy)]
+    struct TransMasks {
+        in_mask: u64,
+        out_mask: u64,
+        in_count: u32,
+        out_count: u32,
+    }
+
+    let mut trans_masks = vec![
+        TransMasks {
+            in_mask: 0,
+            out_mask: 0,
+            in_count: 0,
+            out_count: 0,
+        };
+        num_transitions + 1
+    ];
 
     for arc in &petri_net.arcs {
         match arc.from_to {
             ArcType::PlaceTransition(from, to) => {
                 let p_idx = *place_to_idx.get(&from).unwrap();
                 let t_idx = *trans_to_idx.get(&to).unwrap();
-                input_masks[t_idx] |= 1u64 << p_idx;
+                trans_masks[t_idx].in_mask |= 1u64 << p_idx;
             }
             ArcType::TransitionPlace(from, to) => {
                 let t_idx = *trans_to_idx.get(&from).unwrap();
                 let p_idx = *place_to_idx.get(&to).unwrap();
-                output_masks[t_idx] |= 1u64 << p_idx;
+                trans_masks[t_idx].out_mask |= 1u64 << p_idx;
             }
         }
     }
@@ -273,11 +288,9 @@ pub fn apply_token_based_replay_bcinr(
     // Index for activities not in the model (dummy transition with 0 in/out masks)
     let dummy_t_idx = num_transitions;
 
-    let mut input_counts = vec![0u32; num_transitions + 1];
-    let mut output_counts = vec![0u32; num_transitions + 1];
     for i in 0..num_transitions {
-        input_counts[i] = input_masks[i].count_ones();
-        output_counts[i] = output_masks[i].count_ones();
+        trans_masks[i].in_count = trans_masks[i].in_mask.count_ones();
+        trans_masks[i].out_count = trans_masks[i].out_mask.count_ones();
     }
 
     let initial_mask: u64 = petri_net
@@ -320,17 +333,19 @@ pub fn apply_token_based_replay_bcinr(
         let mut local_produced = initial_mask.count_ones();
 
         for &act_idx in trace {
-            // 100% Branchless Hot Path
-            let t_idx = trans_mapping[act_idx];
-            let in_mask = input_masks[t_idx];
+            // 100% Branchless Hot Path with get_unchecked
+            unsafe {
+                let t_idx = *trans_mapping.get_unchecked(act_idx);
+                let tm = trans_masks.get_unchecked(t_idx);
 
-            let missing = in_mask & !marking;
-            local_missing += missing.count_ones();
+                let missing = tm.in_mask & !marking;
+                local_missing += missing.count_ones();
 
-            marking = (marking & !in_mask) | output_masks[t_idx];
+                marking = (marking & !tm.in_mask) | tm.out_mask;
 
-            local_consumed += input_counts[t_idx];
-            local_produced += output_counts[t_idx];
+                local_consumed += tm.in_count;
+                local_produced += tm.out_count;
+            }
         }
 
         let missing_final = final_mask & !marking;

@@ -135,8 +135,23 @@ pub fn token_replay_projected(log: &ProjectedLog, petri_net: &PetriNet) -> f64 {
     let num_transitions = petri_net.transitions.len();
     let dummy_t_idx = num_transitions;
 
-    let mut input_masks = vec![0u64; num_transitions + 1];
-    let mut output_masks = vec![0u64; num_transitions + 1];
+    #[derive(Clone, Copy)]
+    struct TransMasks {
+        in_mask: u64,
+        out_mask: u64,
+        in_count: u32,
+        out_count: u32,
+    }
+
+    let mut trans_masks = vec![
+        TransMasks {
+            in_mask: 0,
+            out_mask: 0,
+            in_count: 0,
+            out_count: 0,
+        };
+        num_transitions + 1
+    ];
 
     for arc in &petri_net.arcs {
         let mut is_input = false;
@@ -152,19 +167,17 @@ pub fn token_replay_projected(log: &ProjectedLog, petri_net: &PetriNet) -> f64 {
             let p_id = if is_input { &arc.from } else { &arc.to };
             if let Some(&p_idx) = place_to_idx.get(fnv1a_64(p_id.as_bytes())) {
                 if is_input {
-                    input_masks[t_idx] |= 1u64 << p_idx;
+                    trans_masks[t_idx].in_mask |= 1u64 << p_idx;
                 } else {
-                    output_masks[t_idx] |= 1u64 << p_idx;
+                    trans_masks[t_idx].out_mask |= 1u64 << p_idx;
                 }
             }
         }
     }
 
-    let mut input_counts = vec![0u32; num_transitions + 1];
-    let mut output_counts = vec![0u32; num_transitions + 1];
     for i in 0..num_transitions {
-        input_counts[i] = input_masks[i].count_ones();
-        output_counts[i] = output_masks[i].count_ones();
+        trans_masks[i].in_count = trans_masks[i].in_mask.count_ones();
+        trans_masks[i].out_count = trans_masks[i].out_mask.count_ones();
     }
 
     let mut initial_mask = 0u64;
@@ -205,12 +218,14 @@ pub fn token_replay_projected(log: &ProjectedLog, petri_net: &PetriNet) -> f64 {
         let mut produced_tokens = initial_mask.count_ones();
 
         for &act_idx in trace {
-            let t_idx = act_to_t_idx[act_idx];
-            let in_mask = input_masks[t_idx];
-            missing_tokens += (in_mask & !marking).count_ones();
-            marking = (marking & !in_mask) | output_masks[t_idx];
-            consumed_tokens += input_counts[t_idx];
-            produced_tokens += output_counts[t_idx];
+            unsafe {
+                let t_idx = *act_to_t_idx.get_unchecked(act_idx);
+                let tm = trans_masks.get_unchecked(t_idx);
+                missing_tokens += (tm.in_mask & !marking).count_ones();
+                marking = (marking & !tm.in_mask) | tm.out_mask;
+                consumed_tokens += tm.in_count;
+                produced_tokens += tm.out_count;
+            }
         }
 
         missing_tokens += (final_mask & !marking).count_ones();
@@ -260,8 +275,23 @@ pub fn token_replay(log: &EventLog, petri_net: &PetriNet) -> Vec<ConformanceResu
     let num_transitions = petri_net.transitions.len();
     let dummy_t_idx = num_transitions;
 
-    let mut input_masks = vec![0u64; num_transitions + 1];
-    let mut output_masks = vec![0u64; num_transitions + 1];
+    #[derive(Clone, Copy)]
+    struct TransMasks {
+        in_mask: u64,
+        out_mask: u64,
+        in_count: u32,
+        out_count: u32,
+    }
+
+    let mut trans_masks = vec![
+        TransMasks {
+            in_mask: 0,
+            out_mask: 0,
+            in_count: 0,
+            out_count: 0,
+        };
+        num_transitions + 1
+    ];
 
     for arc in &petri_net.arcs {
         let mut is_input = false;
@@ -278,19 +308,17 @@ pub fn token_replay(log: &EventLog, petri_net: &PetriNet) -> Vec<ConformanceResu
             let p_id = if is_input { &arc.from } else { &arc.to };
             if let Some(&p_idx) = place_to_idx.get(fnv1a_64(p_id.as_bytes())) {
                 if is_input {
-                    input_masks[t_idx] |= 1u64 << p_idx;
+                    trans_masks[t_idx].in_mask |= 1u64 << p_idx;
                 } else {
-                    output_masks[t_idx] |= 1u64 << p_idx;
+                    trans_masks[t_idx].out_mask |= 1u64 << p_idx;
                 }
             }
         }
     }
 
-    let mut input_counts = vec![0u32; num_transitions + 1];
-    let mut output_counts = vec![0u32; num_transitions + 1];
     for i in 0..num_transitions {
-        input_counts[i] = input_masks[i].count_ones();
-        output_counts[i] = output_masks[i].count_ones();
+        trans_masks[i].in_count = trans_masks[i].in_mask.count_ones();
+        trans_masks[i].out_count = trans_masks[i].out_mask.count_ones();
     }
 
     let mut initial_mask = 0u64;
@@ -332,12 +360,14 @@ pub fn token_replay(log: &EventLog, petri_net: &PetriNet) -> Vec<ConformanceResu
                     }
                 }
 
-                let in_mask = input_masks[t_idx];
-                let missing = in_mask & !marking;
-                missing_tokens += missing.count_ones();
-                marking = (marking & !in_mask) | output_masks[t_idx];
-                consumed_tokens += input_counts[t_idx];
-                produced_tokens += output_counts[t_idx];
+                unsafe {
+                    let tm = trans_masks.get_unchecked(t_idx);
+                    let missing = tm.in_mask & !marking;
+                    missing_tokens += missing.count_ones();
+                    marking = (marking & !tm.in_mask) | tm.out_mask;
+                    consumed_tokens += tm.in_count;
+                    produced_tokens += tm.out_count;
+                }
             }
 
             let missing_final = final_mask & !marking;
