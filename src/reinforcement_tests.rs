@@ -160,10 +160,10 @@ mod tests {
     #[test]
     fn test_double_q_serialization_roundtrip() {
         let agent = DoubleQLearning::<RlState, RlAction>::new();
-        let state = create_state(42);
+        let state = create_state(0);
 
         for _ in 0..100 {
-            agent.update(state, RlAction::Optimize, 100.0, create_state(43), true);
+            agent.update(state, RlAction::Optimize, 100.0, create_state(1), true);
         }
 
         let serialized = agent.export_as_serialized(3);

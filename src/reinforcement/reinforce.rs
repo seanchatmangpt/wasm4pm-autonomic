@@ -49,18 +49,49 @@ impl<S: WorkflowState, A: WorkflowAction> ReinforceAgent<S, A> {
         let theta = self.theta.borrow();
         let weights = get_q_values::<S, A>(&*theta, &state);
 
-        let probs = softmax_probs(weights);
+        let mut admissible_logits = [0.0f32; 64];
+        let mut found = false;
+        let count = A::ACTION_COUNT.min(64);
+        
+        for i in 0..count {
+            if let Some(a) = A::from_index(i) {
+                if state.is_admissible(a) {
+                    admissible_logits[i] = weights[i];
+                    found = true;
+                } else {
+                    admissible_logits[i] = -1e9;
+                }
+            }
+        }
+
+        if !found {
+            return A::from_index(0).unwrap();
+        }
+
+        let probs = softmax_probs(&admissible_logits[..count]);
         let u = self.rng.borrow_mut().f32();
         let mut acc = 0.0;
 
         for (idx, p) in probs.iter().enumerate() {
-            acc += *p;
-            if u <= acc {
-                return A::from_index(idx).unwrap();
+            if let Some(a) = A::from_index(idx) {
+                if state.is_admissible(a) {
+                    acc += *p;
+                    if u <= acc {
+                        return a;
+                    }
+                }
             }
         }
 
-        A::from_index(A::ACTION_COUNT - 1).unwrap()
+        // Fallback to last admissible action
+        for i in (0..count).rev() {
+            if let Some(a) = A::from_index(i) {
+                if state.is_admissible(a) {
+                    return a;
+                }
+            }
+        }
+        A::from_index(0).unwrap()
     }
 
     #[allow(dead_code)]
@@ -70,6 +101,8 @@ impl<S: WorkflowState, A: WorkflowAction> ReinforceAgent<S, A> {
             return;
         }
 
+        // We still need a Vec for returns because trajectory length is dynamic
+        // but this is called once per episode, not in the nanosecond-hot loop of select_action.
         let mut returns = vec![0.0f32; n];
         let mut g = 0.0f32;
         for i in (0..n).rev() {
@@ -81,20 +114,36 @@ impl<S: WorkflowState, A: WorkflowAction> ReinforceAgent<S, A> {
 
         for (t, (state, action, _)) in trajectory.iter().enumerate() {
             ensure_state::<S, A>(&mut *theta, *state);
-            let logits = get_q_values::<S, A>(&*theta, state);
-            let probs = softmax_probs(logits);
+            let weights = get_q_values::<S, A>(&*theta, state);
+
+            let mut admissible_logits = [0.0f32; 64];
+            let count = A::ACTION_COUNT.min(64);
+            for i in 0..count {
+                if let Some(a) = A::from_index(i) {
+                    if state.is_admissible(a) {
+                        admissible_logits[i] = weights[i];
+                    } else {
+                        admissible_logits[i] = -1e9;
+                    }
+                }
+            }
+            let probs = softmax_probs(&admissible_logits[..count]);
             let a_idx = action.to_index();
             let g_t = returns[t];
 
             let h = hash_state(state);
-            let weights = theta.get_mut(h).unwrap();
-            for j in 0..A::ACTION_COUNT {
-                let grad = if j == a_idx {
-                    1.0 - probs[j]
-                } else {
-                    -probs[j]
-                };
-                weights[j] += self.learning_rate * g_t * grad;
+            let target_weights = theta.get_mut(h).unwrap();
+            for j in 0..count {
+                if let Some(a) = A::from_index(j) {
+                    if state.is_admissible(a) {
+                        let grad = if j == a_idx {
+                            1.0 - probs[j]
+                        } else {
+                            -probs[j]
+                        };
+                        target_weights[j] += self.learning_rate * g_t * grad;
+                    }
+                }
             }
         }
     }

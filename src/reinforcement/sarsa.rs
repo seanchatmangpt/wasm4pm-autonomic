@@ -66,8 +66,32 @@ impl<S: WorkflowState, A: WorkflowAction> SARSAAgent<S, A> {
     pub fn epsilon_greedy_action(&self, state: S, epsilon: f32) -> A {
         let eps = clamp_probability(epsilon);
         if self.rng.borrow_mut().f32() < eps {
-            let idx = self.rng.borrow_mut().usize(..A::ACTION_COUNT);
-            A::from_index(idx).unwrap()
+            // Randomly select an ADMISSIBLE action (Zero-heap)
+            let mut count = 0;
+            for i in 0..A::ACTION_COUNT {
+                if let Some(a) = A::from_index(i) {
+                    if state.is_admissible(a) {
+                        count += 1;
+                    }
+                }
+            }
+            
+            if count == 0 {
+                return A::from_index(0).unwrap(); // Fallback
+            }
+            
+            let mut choice = self.rng.borrow_mut().usize(..count);
+            for i in 0..A::ACTION_COUNT {
+                if let Some(a) = A::from_index(i) {
+                    if state.is_admissible(a) {
+                        if choice == 0 {
+                            return a;
+                        }
+                        choice -= 1;
+                    }
+                }
+            }
+            A::from_index(0).unwrap()
         } else {
             self.greedy_action(state)
         }
@@ -76,7 +100,23 @@ impl<S: WorkflowState, A: WorkflowAction> SARSAAgent<S, A> {
     fn greedy_action(&self, state: S) -> A {
         let q_table = self.q_table.borrow();
         let q_vals = get_q_values::<S, A>(&*q_table, &state);
-        A::from_index(greedy_index(q_vals)).unwrap()
+        
+        let mut best_idx = 0;
+        let mut max_val = f32::NEG_INFINITY;
+        let mut found = false;
+
+        for i in 0..A::ACTION_COUNT {
+            if let Some(a) = A::from_index(i) {
+                if state.is_admissible(a) {
+                    if q_vals[i] > max_val || !found {
+                        max_val = q_vals[i];
+                        best_idx = i;
+                        found = true;
+                    }
+                }
+            }
+        }
+        A::from_index(best_idx).unwrap()
     }
 
     #[allow(dead_code)]

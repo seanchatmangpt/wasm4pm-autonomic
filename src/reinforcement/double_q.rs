@@ -57,8 +57,32 @@ impl<S: WorkflowState, A: WorkflowAction> DoubleQLearning<S, A> {
     #[allow(dead_code)]
     pub fn select_action(&self, state: S) -> A {
         if self.rng.borrow_mut().f32() < self.exploration_rate {
-            let idx = self.rng.borrow_mut().usize(..A::ACTION_COUNT);
-            A::from_index(idx).unwrap()
+            // Randomly select an ADMISSIBLE action (Zero-heap)
+            let mut count = 0;
+            for i in 0..A::ACTION_COUNT {
+                if let Some(a) = A::from_index(i) {
+                    if state.is_admissible(a) {
+                        count += 1;
+                    }
+                }
+            }
+            
+            if count == 0 {
+                return A::from_index(0).unwrap();
+            }
+            
+            let mut choice = self.rng.borrow_mut().usize(..count);
+            for i in 0..A::ACTION_COUNT {
+                if let Some(a) = A::from_index(i) {
+                    if state.is_admissible(a) {
+                        if choice == 0 {
+                            return a;
+                        }
+                        choice -= 1;
+                    }
+                }
+            }
+            A::from_index(0).unwrap()
         } else {
             self.greedy_action(state)
         }
@@ -71,12 +95,24 @@ impl<S: WorkflowState, A: WorkflowAction> DoubleQLearning<S, A> {
         let va = get_q_values::<S, A>(&*qa, &state);
         let vb = get_q_values::<S, A>(&*qb, &state);
 
-        let mut merged = vec![0.0; A::ACTION_COUNT];
+        let mut best_idx = 0;
+        let mut max_val = f32::NEG_INFINITY;
+        let mut found = false;
+
         for i in 0..A::ACTION_COUNT {
-            merged[i] = va[i] + vb[i];
+            if let Some(a) = A::from_index(i) {
+                if state.is_admissible(a) {
+                    let val = va[i] + vb[i];
+                    if val > max_val || !found {
+                        max_val = val;
+                        best_idx = i;
+                        found = true;
+                    }
+                }
+            }
         }
 
-        A::from_index(greedy_index(&merged)).unwrap()
+        A::from_index(best_idx).unwrap()
     }
 
     #[allow(dead_code)]

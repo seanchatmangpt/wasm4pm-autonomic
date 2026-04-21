@@ -222,12 +222,11 @@ impl<const WORDS: usize> KBitSet<WORDS> {
 
     #[inline]
     pub fn contains_all(self, required: Self) -> bool {
+        let mut diff = 0u64;
         for i in 0..WORDS {
-            if (required.words[i] & !self.words[i]) != 0 {
-                return false;
-            }
+            diff |= required.words[i] & !self.words[i];
         }
-        true
+        diff == 0
     }
 
     #[inline]
@@ -268,12 +267,21 @@ impl<const WORDS: usize> KBitSet<WORDS> {
 
     #[inline]
     pub fn is_empty(&self) -> bool {
-        for w in &self.words {
-            if *w != 0 {
-                return false;
-            }
+        let mut res = 0u64;
+        for i in 0..WORDS {
+            res |= self.words[i];
         }
-        true
+        res == 0
+    }
+
+    #[inline]
+    pub fn is_enabled_mask(self, required: Self) -> u64 {
+        let mut diff = 0u64;
+        for i in 0..WORDS {
+            diff |= required.words[i] & !self.words[i];
+        }
+        let is_nonzero = (diff | diff.wrapping_neg()) >> 63;
+        1 - is_nonzero
     }
 }
 

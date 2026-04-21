@@ -63,6 +63,14 @@ impl reinforcement::WorkflowState for RlState {
     fn is_terminal(&self) -> bool {
         self.health_level < 0 || self.health_level >= 5
     }
+    fn is_admissible<A: reinforcement::WorkflowAction>(&self, action: A) -> bool {
+        match action.to_index() {
+            0 => true, // Idle is always admissible
+            1 => self.health_level < 5, // Optimize (was < 4, blocking goal reach)
+            2 => self.health_level > 0, // Rework
+            _ => true,
+        }
+    }
 }
 
 pub mod rl_state_serialization {
@@ -149,9 +157,24 @@ pub mod dteam {
     /// This module contains the logic for zero-branch transition firing and Bellman updates.
     pub mod kernel {
         pub mod branchless {
-            /// In a full implementation, this would use bcinr-style select_u64
-            /// to perform updates without data-dependent branching.
-            pub fn apply_branchless_update() {}
+            use crate::utils::bitset::select_u64;
+            use crate::RlState;
+
+            /// Fires a transition branchlessly in the RL state.
+            /// This is the μ-kernel's hot-path execution primitive.
+            pub fn apply_branchless_fire(state: &mut RlState, in_mask: u64, out_mask: u64) -> bool {
+                // Check if enabled (100% branchless)
+                let is_enabled = ((state.marking_mask & in_mask) ^ in_mask) == 0;
+                let cond = is_enabled as u64;
+
+                // fired_marking = (marking & !in) | out
+                let next_marking = (state.marking_mask & !in_mask) | out_mask;
+                
+                // Select either fired or original marking branchlessly
+                state.marking_mask = select_u64(cond, next_marking, state.marking_mask);
+                
+                is_enabled
+            }
         }
     }
 
