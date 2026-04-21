@@ -1,3 +1,4 @@
+use crate::utils::dense_kernel::StaticPackedKeyTable;
 use fastrand::Rng;
 use std::cell::RefCell;
 use std::marker::PhantomData;
@@ -5,8 +6,12 @@ use std::marker::PhantomData;
 use super::*;
 
 /// Q-Learning agent: model-free, off-policy
-pub struct QLearning<S: WorkflowState, A: WorkflowAction> {
-    pub(crate) q_table: RefCell<PackedKeyTable<S, Vec<f32>>>,
+pub struct QLearning<S: WorkflowState, A: WorkflowAction>
+where
+    S: Copy + Default,
+    A::Values: Copy + Default,
+{
+    pub(crate) q_table: RefCell<StaticPackedKeyTable<S, A::Values, 1024>>,
     pub(crate) learning_rate: f32,
     pub(crate) discount_factor: f32,
     pub(crate) exploration_rate: f32,
@@ -17,11 +22,16 @@ pub struct QLearning<S: WorkflowState, A: WorkflowAction> {
     pub(crate) _phantom: PhantomData<A>,
 }
 
-impl<S: WorkflowState, A: WorkflowAction> QLearning<S, A> {
+impl<S, A> QLearning<S, A>
+where
+    S: WorkflowState + Copy + Default,
+    A: WorkflowAction,
+    A::Values: Copy + Default,
+{
     #[allow(dead_code)]
     pub fn new() -> Self {
         Self {
-            q_table: RefCell::new(PackedKeyTable::default()),
+            q_table: RefCell::new(StaticPackedKeyTable::new()),
             learning_rate: DEFAULT_LEARNING_RATE,
             discount_factor: DEFAULT_DISCOUNT_FACTOR,
             exploration_rate: DEFAULT_EXPLORATION_RATE,
@@ -36,7 +46,7 @@ impl<S: WorkflowState, A: WorkflowAction> QLearning<S, A> {
     #[allow(dead_code)]
     pub fn new_with_seed(lr: f32, df: f32, seed: u64) -> Self {
         Self {
-            q_table: RefCell::new(PackedKeyTable::default()),
+            q_table: RefCell::new(StaticPackedKeyTable::new()),
             learning_rate: lr,
             discount_factor: df,
             exploration_rate: DEFAULT_EXPLORATION_RATE,
@@ -70,26 +80,38 @@ impl<S: WorkflowState, A: WorkflowAction> QLearning<S, A> {
 
     fn best_action(&self, state: S) -> A {
         let q_table = self.q_table.borrow();
-        let q_values = get_q_values::<S, A>(&*q_table, &state);
+        let h = hash_state(&state);
+        let q_values = q_table
+            .get(h)
+            .map(|v| v.as_slice())
+            .unwrap_or(&[0.0; 3][..A::ACTION_COUNT]);
         A::from_index(greedy_index(q_values)).unwrap()
     }
 
     #[allow(dead_code)]
     pub fn update(&self, state: S, action: A, reward: f32, next_state: S, done: bool) {
         let mut q_table = self.q_table.borrow_mut();
-        ensure_state::<S, A>(&mut *q_table, state);
+        let h_state = hash_state(&state);
+
+        if q_table.get(h_state).is_none() {
+            let _ = q_table.insert(h_state, state, A::Values::default());
+        }
 
         let next_val = if done {
             0.0
         } else {
-            max_q::<S, A>(&*q_table, &next_state)
+            let h_next = hash_state(&next_state);
+            q_table
+                .get(h_next)
+                .map(|v| v.as_slice().iter().fold(f32::NEG_INFINITY, |a, &b| a.max(b)))
+                .unwrap_or(0.0)
         };
 
         let action_idx = action.to_index();
-        let h = hash_state(&state);
-        let current_q = q_table.get(h).unwrap()[action_idx];
+        let q_entry = q_table.get_mut(h_state).unwrap();
+        let current_q = q_entry.get(action_idx);
         let target = reward + self.discount_factor * next_val;
-        q_table.get_mut(h).unwrap()[action_idx] += self.learning_rate * (target - current_q);
+        q_entry.set(action_idx, current_q + self.learning_rate * (target - current_q));
 
         *self.total_reward.borrow_mut() += reward;
     }
@@ -108,7 +130,7 @@ impl<S: WorkflowState, A: WorkflowAction> QLearning<S, A> {
         let q_table = self.q_table.borrow();
         q_table
             .get(hash_state(state))
-            .map(|q_vals| q_vals[action.to_index()])
+            .map(|q_vals| q_vals.get(action.to_index()))
             .unwrap_or(0.0)
     }
 
@@ -128,7 +150,12 @@ impl<S: WorkflowState, A: WorkflowAction> QLearning<S, A> {
     }
 }
 
-impl<S: WorkflowState, A: WorkflowAction> Default for QLearning<S, A> {
+impl<S, A> Default for QLearning<S, A>
+where
+    S: WorkflowState + Copy + Default,
+    A: WorkflowAction,
+    A::Values: Copy + Default,
+{
     fn default() -> Self {
         Self::new()
     }
@@ -157,7 +184,7 @@ impl QLearning<crate::RlState, crate::RlAction> {
                 state.circuit_state,
                 state.cycle_phase,
             );
-            state_values.insert(key, q_values.clone());
+            state_values.insert(key, q_values.as_slice().to_vec());
         }
 
         SerializedAgentQTable {
@@ -190,12 +217,21 @@ impl QLearning<crate::RlState, crate::RlAction> {
                 marking_mask: 0,
                 activities_hash: 0,
             };
-            q_table.insert(hash_state(&state), state, q_values);
+            let mut vals = [0.0; 3];
+            for (i, &v) in q_values.iter().enumerate().take(3) {
+                vals[i] = v;
+            }
+            let _ = q_table.insert(hash_state(&state), state, vals);
         }
     }
 }
 
-impl<S: WorkflowState, A: WorkflowAction> Agent<S, A> for QLearning<S, A> {
+impl<S, A> Agent<S, A> for QLearning<S, A>
+where
+    S: WorkflowState + Copy + Default,
+    A: WorkflowAction,
+    A::Values: Copy + Default,
+{
     fn select_action(&self, state: S) -> A {
         self.select_action(state)
     }
@@ -207,7 +243,12 @@ impl<S: WorkflowState, A: WorkflowAction> Agent<S, A> for QLearning<S, A> {
     fn reset(&self) {}
 }
 
-impl<S: WorkflowState, A: WorkflowAction> AgentMeta for QLearning<S, A> {
+impl<S, A> AgentMeta for QLearning<S, A>
+where
+    S: WorkflowState + Copy + Default,
+    A: WorkflowAction,
+    A::Values: Copy + Default,
+{
     fn name(&self) -> &'static str {
         "QLearning"
     }

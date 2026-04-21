@@ -1,22 +1,33 @@
+use crate::utils::dense_kernel::StaticPackedKeyTable;
 use fastrand::Rng;
 use std::cell::RefCell;
 use std::marker::PhantomData;
 
 use super::*;
 
-pub struct ReinforceAgent<S: WorkflowState, A: WorkflowAction> {
-    pub(crate) theta: RefCell<PackedKeyTable<S, Vec<f32>>>,
+pub struct ReinforceAgent<S, A>
+where
+    S: WorkflowState + Copy + Default,
+    A: WorkflowAction,
+    A::Values: Copy + Default,
+{
+    pub(crate) theta: RefCell<StaticPackedKeyTable<S, A::Values, 1024>>,
     pub(crate) learning_rate: f32,
     pub(crate) discount_factor: f32,
     pub(crate) rng: RefCell<Rng>,
     pub(crate) _phantom: PhantomData<A>,
 }
 
-impl<S: WorkflowState, A: WorkflowAction> ReinforceAgent<S, A> {
+impl<S, A> ReinforceAgent<S, A>
+where
+    S: WorkflowState + Copy + Default,
+    A: WorkflowAction,
+    A::Values: Copy + Default,
+{
     #[allow(dead_code)]
     pub fn new() -> Self {
         Self {
-            theta: RefCell::new(PackedKeyTable::default()),
+            theta: RefCell::new(StaticPackedKeyTable::new()),
             learning_rate: REINFORCE_LEARNING_RATE,
             discount_factor: DEFAULT_DISCOUNT_FACTOR,
             rng: RefCell::new(Rng::new()),
@@ -27,7 +38,7 @@ impl<S: WorkflowState, A: WorkflowAction> ReinforceAgent<S, A> {
     #[allow(dead_code)]
     pub fn new_with_seed(lr: f32, df: f32, seed: u64) -> Self {
         Self {
-            theta: RefCell::new(PackedKeyTable::default()),
+            theta: RefCell::new(StaticPackedKeyTable::new()),
             learning_rate: lr,
             discount_factor: df,
             rng: RefCell::new(Rng::with_seed(seed)),
@@ -47,16 +58,25 @@ impl<S: WorkflowState, A: WorkflowAction> ReinforceAgent<S, A> {
     #[allow(dead_code)]
     pub fn select_action(&self, state: S) -> A {
         let theta = self.theta.borrow();
-        let weights = get_q_values::<S, A>(&*theta, &state);
+        let h = hash_state(&state);
+        let weights = theta.get(h).map(|v| v.as_slice()).unwrap_or(&[0.0; 3][..A::ACTION_COUNT]);
 
-        let probs = softmax_probs(weights);
-        let u = self.rng.borrow_mut().f32();
+        let max_logit = weights.iter().cloned().fold(f32::NEG_INFINITY, f32::max);
+        let mut sum_exp = 0.0;
+        let mut exps = [0.0; 3];
+        for (i, &w) in weights.iter().enumerate().take(3) {
+            let e = (w - max_logit).exp();
+            exps[i] = e;
+            sum_exp += e;
+        }
+
+        let u = self.rng.borrow_mut().f32() * sum_exp;
         let mut acc = 0.0;
 
-        for (idx, p) in probs.iter().enumerate() {
-            acc += *p;
+        for (i, &e) in exps.iter().enumerate().take(3) {
+            acc += e;
             if u <= acc {
-                return A::from_index(idx).unwrap();
+                return A::from_index(i).unwrap();
             }
         }
 
@@ -70,31 +90,36 @@ impl<S: WorkflowState, A: WorkflowAction> ReinforceAgent<S, A> {
             return;
         }
 
-        let mut returns = vec![0.0f32; n];
         let mut g = 0.0f32;
-        for i in (0..n).rev() {
-            g = trajectory[i].2 + self.discount_factor * g;
-            returns[i] = g;
-        }
-
         let mut theta = self.theta.borrow_mut();
 
-        for (t, (state, action, _)) in trajectory.iter().enumerate() {
-            ensure_state::<S, A>(&mut *theta, *state);
-            let logits = get_q_values::<S, A>(&*theta, state);
-            let probs = softmax_probs(logits);
-            let a_idx = action.to_index();
-            let g_t = returns[t];
+        for (_t, (state, action, reward)) in trajectory.iter().enumerate().rev() {
+            g = *reward + self.discount_factor * g;
 
             let h = hash_state(state);
+            if theta.get(h).is_none() {
+                let _ = theta.insert(h, *state, A::Values::default());
+            }
             let weights = theta.get_mut(h).unwrap();
+
+            // Softmax gradient
+            let mut sum_exp = 0.0;
+            let mut exps = [0.0; 3];
+            let w_slice = weights.as_slice();
+            let max_logit = w_slice.iter().cloned().fold(f32::NEG_INFINITY, f32::max);
+
+            for (i, &w) in w_slice.iter().enumerate().take(3) {
+                let e = (w - max_logit).exp();
+                exps[i] = e;
+                sum_exp += e;
+            }
+
+            let a_idx = action.to_index();
             for j in 0..A::ACTION_COUNT {
-                let grad = if j == a_idx {
-                    1.0 - probs[j]
-                } else {
-                    -probs[j]
-                };
-                weights[j] += self.learning_rate * g_t * grad;
+                let p_j = exps[j] / sum_exp;
+                let grad = if j == a_idx { 1.0 - p_j } else { -p_j };
+                let current = weights.get(j);
+                weights.set(j, current + self.learning_rate * g * grad);
             }
         }
     }
@@ -105,9 +130,9 @@ impl<S: WorkflowState, A: WorkflowAction> ReinforceAgent<S, A> {
     }
 
     #[allow(dead_code)]
-    pub fn get_policy_weights(&self, state: S) -> Vec<f32> {
+    pub fn get_policy_weights(&self, state: S) -> A::Values {
         let theta = self.theta.borrow();
-        get_q_values::<S, A>(&*theta, &state).to_vec()
+        *theta.get(hash_state(&state)).unwrap_or(&A::Values::default())
     }
 
     pub fn set_exploration_rate(&mut self, _rate: f32) {
@@ -115,7 +140,12 @@ impl<S: WorkflowState, A: WorkflowAction> ReinforceAgent<S, A> {
     }
 }
 
-impl<S: WorkflowState, A: WorkflowAction> Default for ReinforceAgent<S, A> {
+impl<S, A> Default for ReinforceAgent<S, A>
+where
+    S: WorkflowState + Copy + Default,
+    A: WorkflowAction,
+    A::Values: Copy + Default,
+{
     fn default() -> Self {
         Self::new()
     }
@@ -144,7 +174,7 @@ impl ReinforceAgent<crate::RlState, crate::RlAction> {
                 state.circuit_state,
                 state.cycle_phase,
             );
-            state_values.insert(key, weights.clone());
+            state_values.insert(key, weights.as_slice().to_vec());
         }
 
         SerializedAgentQTable {
@@ -163,7 +193,7 @@ impl ReinforceAgent<crate::RlState, crate::RlAction> {
         let mut theta = self.theta.borrow_mut();
         theta.clear();
 
-        for (key, weights) in table.state_values {
+        for (key, weights_vec) in table.state_values {
             let (h, e, a, s, d, r, c, p) = decode_rl_state_key(key);
             let state = crate::RlState {
                 health_level: h,
@@ -177,12 +207,21 @@ impl ReinforceAgent<crate::RlState, crate::RlAction> {
                 marking_mask: 0,
                 activities_hash: 0,
             };
-            theta.insert(hash_state(&state), state, weights);
+            let mut weights = [0.0; 3];
+            for (i, &w) in weights_vec.iter().enumerate().take(3) {
+                weights[i] = w;
+            }
+            let _ = theta.insert(hash_state(&state), state, weights);
         }
     }
 }
 
-impl<S: WorkflowState, A: WorkflowAction> Agent<S, A> for ReinforceAgent<S, A> {
+impl<S, A> Agent<S, A> for ReinforceAgent<S, A>
+where
+    S: WorkflowState + Copy + Default,
+    A: WorkflowAction,
+    A::Values: Copy + Default,
+{
     fn select_action(&self, state: S) -> A {
         self.select_action(state)
     }
@@ -194,7 +233,12 @@ impl<S: WorkflowState, A: WorkflowAction> Agent<S, A> for ReinforceAgent<S, A> {
     fn reset(&self) {}
 }
 
-impl<S: WorkflowState, A: WorkflowAction> AgentMeta for ReinforceAgent<S, A> {
+impl<S, A> AgentMeta for ReinforceAgent<S, A>
+where
+    S: WorkflowState + Copy + Default,
+    A: WorkflowAction,
+    A::Values: Copy + Default,
+{
     fn name(&self) -> &'static str {
         "REINFORCE"
     }

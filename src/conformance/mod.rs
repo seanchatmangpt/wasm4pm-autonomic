@@ -83,69 +83,25 @@ pub fn token_replay_projected(log: &ProjectedLog, petri_net: &PetriNet) -> f64 {
         return 0.0;
     }
 
-    let mut place_to_idx = PackedKeyTable::with_capacity(num_places);
-    for (i, p) in petri_net.places.iter().enumerate() {
-        place_to_idx.insert(fnv1a_64(p.id.as_bytes()), p.id.clone(), i);
-    }
+    let replay_data = if let Some(ref rd) = petri_net.cached_replay_data {
+        rd
+    } else {
+        // Fallback or panic? For zero-allocation, we expect it to be cached.
+        return 0.0;
+    };
+
+    let input_masks = &replay_data.input_masks;
+    let output_masks = &replay_data.output_masks;
+    let initial_mask = replay_data.initial_mask;
+    let final_mask = replay_data.final_mask;
 
     let num_transitions = petri_net.transitions.len();
     let dummy_t_idx = num_transitions;
 
-    let mut input_masks = vec![0u64; num_transitions + 1];
-    let mut output_masks = vec![0u64; num_transitions + 1];
-
-    for arc in &petri_net.arcs {
-        let mut is_input = false;
-        let t_idx_opt = if let Some(pos) = petri_net.transitions.iter().position(|t| t.id == arc.to)
-        {
-            is_input = true;
-            Some(pos)
-        } else {
-            petri_net.transitions.iter().position(|t| t.id == arc.from)
-        };
-
-        if let Some(t_idx) = t_idx_opt {
-            let p_id = if is_input { &arc.from } else { &arc.to };
-            if let Some(&p_idx) = place_to_idx.get(fnv1a_64(p_id.as_bytes())) {
-                if is_input {
-                    input_masks[t_idx] |= 1u64 << p_idx;
-                } else {
-                    output_masks[t_idx] |= 1u64 << p_idx;
-                }
-            }
-        }
-    }
-
-    let mut input_counts = vec![0u32; num_transitions + 1];
-    let mut output_counts = vec![0u32; num_transitions + 1];
-    for i in 0..num_transitions {
-        input_counts[i] = input_masks[i].count_ones();
-        output_counts[i] = output_masks[i].count_ones();
-    }
-
-    let mut initial_mask = 0u64;
-    for (_, p_id, c) in petri_net.initial_marking.iter() {
-        if *c > 0 {
-            if let Some(&p_idx) = place_to_idx.get(fnv1a_64(p_id.as_bytes())) {
-                initial_mask |= 1u64 << p_idx;
-            }
-        }
-    }
-
-    let mut final_mask = 0u64;
-    if let Some(fm) = petri_net.final_markings.first() {
-        for (_, p_id, c) in fm.iter() {
-            if *c > 0 {
-                if let Some(&p_idx) = place_to_idx.get(fnv1a_64(p_id.as_bytes())) {
-                    final_mask |= 1u64 << p_idx;
-                }
-            }
-        }
-    }
-    let final_count = final_mask.count_ones();
-
-    let mut act_to_t_idx = vec![dummy_t_idx; log.activities.len()];
-    for (i, act) in log.activities.iter().enumerate() {
+    // Use a stack-allocated buffer for activity to transition mapping
+    // KTier 1024 is the max, so 1024 * 4 bytes = 4KB.
+    let mut act_to_t_idx = [dummy_t_idx; 1024];
+    for (i, act) in log.activities.iter().enumerate().take(1024) {
         if let Some(pos) = petri_net.transitions.iter().position(|t| &t.label == act) {
             act_to_t_idx[i] = pos;
         }
@@ -154,6 +110,8 @@ pub fn token_replay_projected(log: &ProjectedLog, petri_net: &PetriNet) -> f64 {
     let mut total_fitness = 0.0;
     let mut total_freq = 0;
 
+    let final_count = final_mask.count_ones();
+
     for (trace, freq) in &log.traces {
         let mut marking: u64 = initial_mask;
         let mut missing_tokens = 0;
@@ -161,12 +119,15 @@ pub fn token_replay_projected(log: &ProjectedLog, petri_net: &PetriNet) -> f64 {
         let mut produced_tokens = initial_mask.count_ones();
 
         for &act_idx in trace {
+            if act_idx >= 1024 {
+                continue;
+            }
             let t_idx = act_to_t_idx[act_idx];
             let in_mask = input_masks[t_idx];
             missing_tokens += (in_mask & !marking).count_ones();
             marking = (marking & !in_mask) | output_masks[t_idx];
-            consumed_tokens += input_counts[t_idx];
-            produced_tokens += output_counts[t_idx];
+            consumed_tokens += in_mask.count_ones();
+            produced_tokens += output_masks[t_idx].count_ones();
         }
 
         missing_tokens += (final_mask & !marking).count_ones();

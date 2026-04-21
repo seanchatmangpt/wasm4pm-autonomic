@@ -46,15 +46,21 @@ pub fn train_with_provenance_projected(
     _lambda: f32,
 ) -> (PetriNet, Vec<u8>) {
     let mut model = PetriNet::default();
+    
+    // Crucial: ensure model is compiled so token_replay_projected has cached masks
+    model.compile_incidence();
+
     let agent: QLearning<RlState, RlAction> = QLearning::with_hyperparams(
         config.rl.learning_rate,
         config.rl.discount_factor,
         config.rl.exploration_rate,
     );
 
-    let mut trajectory = Vec::new();
+    // Pre-allocate trajectory to avoid allocations in hot path
+    let mut trajectory = Vec::with_capacity(config.discovery.max_training_epochs);
 
     for _epoch in 0..config.discovery.max_training_epochs {
+        // Now zero-allocation!
         let avg_f = token_replay_projected(train_log, &model);
 
         let _unsoundness_u = model.structural_unsoundness_score();
@@ -66,18 +72,7 @@ pub fn train_with_provenance_projected(
             break;
         }
 
-        let state = RlState {
-            marking_mask: 0,
-            activities_hash: 0,
-            health_level: 0,
-            event_rate_q: 0,
-            activity_count_q: 0,
-            spc_alert_level: 0,
-            drift_status: 0,
-            rework_ratio_q: 0,
-            circuit_state: 0,
-            cycle_phase: 0,
-        };
+        let state = RlState::default();
 
         let action = agent.select_action(state);
         trajectory.push(action.to_index() as u8);

@@ -6,6 +6,7 @@ pub mod models;
 pub mod reinforcement;
 pub mod reinforcement_tests;
 pub mod proptest_kernel_verification;
+pub mod proptest_zero_allocation;
 pub mod utils;
 
 // Re-export models for easier access
@@ -13,7 +14,7 @@ pub use conformance::*;
 pub use models::*;
 
 // Zero-heap, stack-allocated RL state for nanosecond-scale updates.
-#[derive(Clone, Copy, Eq, Hash, PartialEq, Debug)]
+#[derive(Clone, Copy, Eq, Hash, PartialEq, Debug, Default)]
 pub struct RlState {
     pub health_level: i8,
     pub event_rate_q: i8,
@@ -36,6 +37,8 @@ pub enum RlAction {
 
 impl reinforcement::WorkflowAction for RlAction {
     const ACTION_COUNT: usize = 3;
+    type Values = [f32; 3];
+
     fn to_index(&self) -> usize {
         match self {
             RlAction::Idle => 0,
@@ -55,11 +58,6 @@ impl reinforcement::WorkflowAction for RlAction {
 
 // Minimal RlState impls for reinforcement trait
 impl reinforcement::WorkflowState for RlState {
-    fn features(&self) -> Vec<f32> {
-        // Optimized feature vector: only allocate if necessary for function approx.
-        // For Q-Table, this is rarely called in the hot path.
-        vec![self.health_level as f32, self.marking_mask as f32]
-    }
     fn is_terminal(&self) -> bool {
         self.health_level < 0 || self.health_level >= 5
     }

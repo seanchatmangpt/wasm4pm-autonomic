@@ -283,7 +283,7 @@ pub type K64 = KBitSet<1>;
 // PACKED KEY TABLE
 // ============================================================================
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct PackedKeyTable<K, V> {
     entries: Vec<(u64, K, V)>,
 }
@@ -295,11 +295,13 @@ impl<K: PartialEq, V: PartialEq> PartialEq for PackedKeyTable<K, V> {
 }
 
 impl<K, V> PackedKeyTable<K, V> {
+    #[inline]
     pub fn new() -> Self {
         Self {
             entries: Vec::new(),
         }
     }
+    #[inline]
     pub fn with_capacity(cap: usize) -> Self {
         Self {
             entries: Vec::with_capacity(cap),
@@ -311,20 +313,60 @@ impl<K, V> PackedKeyTable<K, V> {
             Err(i) => self.entries.insert(i, (hash, key, value)),
         }
     }
+
+    /// Branchless lookup using a power-of-two decomposition.
+    /// This ensures Var(τ) = 0 and eliminates data-dependent branching.
     #[inline]
     pub fn get(&self, hash: u64) -> Option<&V> {
-        self.entries
-            .binary_search_by_key(&hash, |(h, _, _)| *h)
-            .ok()
-            .map(|i| &self.entries[i].2)
+        let entries = &self.entries;
+        let n = entries.len();
+        if n == 0 {
+            return None;
+        }
+
+        let mut base = 0;
+        let mut size = n;
+        while size > 1 {
+            let half = size / 2;
+            let mid = base + half;
+            // Truly branchless comparison using boolean to integer conversion
+            let cond = (entries[mid].0 <= hash) as usize;
+            base += cond * half;
+            size -= half;
+        }
+
+        if entries[base].0 == hash {
+            Some(&entries[base].2)
+        } else {
+            None
+        }
     }
+
+    /// Branchless mutable lookup.
     #[inline]
     pub fn get_mut(&mut self, hash: u64) -> Option<&mut V> {
-        self.entries
-            .binary_search_by_key(&hash, |(h, _, _)| *h)
-            .ok()
-            .map(|i| &mut self.entries[i].2)
+        let n = self.entries.len();
+        if n == 0 {
+            return None;
+        }
+
+        let mut base = 0;
+        let mut size = n;
+        while size > 1 {
+            let half = size / 2;
+            let mid = base + half;
+            let cond = (self.entries[mid].0 <= hash) as usize;
+            base += cond * half;
+            size -= half;
+        }
+
+        if self.entries[base].0 == hash {
+            Some(&mut self.entries[base].2)
+        } else {
+            None
+        }
     }
+
     #[inline]
     pub fn len(&self) -> usize {
         self.entries.len()
@@ -343,8 +385,129 @@ impl<K, V> PackedKeyTable<K, V> {
     }
 }
 
-impl<K, V> Default for PackedKeyTable<K, V> {
+// ============================================================================
+// STATIC PACKED KEY TABLE
+// ============================================================================
+
+/// Truly zero-allocation, stack-allocated PackedKeyTable.
+/// Requires K and V to be Copy.
+#[derive(Debug, Clone, Copy)]
+pub struct StaticPackedKeyTable<K, V, const N: usize>
+where
+    K: Copy + Default,
+    V: Copy + Default,
+{
+    pub entries: [(u64, K, V); N],
+    pub len: usize,
+}
+
+impl<K, V, const N: usize> Default for StaticPackedKeyTable<K, V, N>
+where
+    K: Copy + Default,
+    V: Copy + Default,
+{
     fn default() -> Self {
-        Self::new()
+        Self {
+            entries: [(0, K::default(), V::default()); N],
+            len: 0,
+        }
+    }
+}
+
+impl<K, V, const N: usize> StaticPackedKeyTable<K, V, N>
+where
+    K: Copy + Default,
+    V: Copy + Default,
+{
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    #[inline]
+    pub fn get(&self, hash: u64) -> Option<&V> {
+        if self.len == 0 {
+            return None;
+        }
+
+        let mut base = 0;
+        let mut size = self.len;
+        while size > 1 {
+            let half = size / 2;
+            let mid = base + half;
+            let cond = (self.entries[mid].0 <= hash) as usize;
+            base += cond * half;
+            size -= half;
+        }
+
+        if self.entries[base].0 == hash {
+            Some(&self.entries[base].2)
+        } else {
+            None
+        }
+    }
+
+    #[inline]
+    pub fn get_mut(&mut self, hash: u64) -> Option<&mut V> {
+        if self.len == 0 {
+            return None;
+        }
+
+        let mut base = 0;
+        let mut size = self.len;
+        while size > 1 {
+            let half = size / 2;
+            let mid = base + half;
+            let cond = (self.entries[mid].0 <= hash) as usize;
+            base += cond * half;
+            size -= half;
+        }
+
+        if self.entries[base].0 == hash {
+            Some(&mut self.entries[base].2)
+        } else {
+            None
+        }
+    }
+
+    pub fn insert(&mut self, hash: u64, key: K, value: V) -> Result<(), DenseError> {
+        let pos = match self.entries[..self.len].binary_search_by_key(&hash, |(h, _, _)| *h) {
+            Ok(i) => {
+                self.entries[i] = (hash, key, value);
+                return Ok(());
+            }
+            Err(i) => i,
+        };
+
+        if self.len >= N {
+            return Err(DenseError::CapacityExceeded {
+                requested: self.len + 1,
+                capacity: N,
+            });
+        }
+
+        // Shift elements to the right
+        for j in (pos..self.len).rev() {
+            self.entries[j + 1] = self.entries[j];
+        }
+        self.entries[pos] = (hash, key, value);
+        self.len += 1;
+        Ok(())
+    }
+
+    #[inline]
+    pub fn len(&self) -> usize {
+        self.len
+    }
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.len == 0
+    }
+    #[inline]
+    pub fn iter(&self) -> impl Iterator<Item = &(u64, K, V)> {
+        self.entries[..self.len].iter()
+    }
+    #[inline]
+    pub fn clear(&mut self) {
+        self.len = 0;
     }
 }

@@ -1,3 +1,4 @@
+use crate::utils::dense_kernel::StaticPackedKeyTable;
 use fastrand::Rng;
 use std::cell::RefCell;
 use std::marker::PhantomData;
@@ -5,12 +6,17 @@ use std::marker::PhantomData;
 use super::*;
 
 /// SARSA agent: model-free, on-policy
-///
+
 /// This implementation keeps a pending `(next_state, next_action)` pair captured
 /// at action-selection time so that the subsequent update can use the actual
 /// on-policy next action.
-pub struct SARSAAgent<S: WorkflowState, A: WorkflowAction> {
-    pub(crate) q_table: RefCell<PackedKeyTable<S, Vec<f32>>>,
+pub struct SARSAAgent<S, A>
+where
+    S: WorkflowState + Copy + Default,
+    A: WorkflowAction,
+    A::Values: Copy + Default,
+{
+    pub(crate) q_table: RefCell<StaticPackedKeyTable<S, A::Values, 1024>>,
     pub(crate) learning_rate: f32,
     pub(crate) discount_factor: f32,
     pub(crate) exploration_rate: f32,
@@ -20,11 +26,16 @@ pub struct SARSAAgent<S: WorkflowState, A: WorkflowAction> {
     pub(crate) _phantom: PhantomData<A>,
 }
 
-impl<S: WorkflowState, A: WorkflowAction> SARSAAgent<S, A> {
+impl<S, A> SARSAAgent<S, A>
+where
+    S: WorkflowState + Copy + Default,
+    A: WorkflowAction,
+    A::Values: Copy + Default,
+{
     #[allow(dead_code)]
     pub fn new() -> Self {
         Self {
-            q_table: RefCell::new(PackedKeyTable::default()),
+            q_table: RefCell::new(StaticPackedKeyTable::new()),
             learning_rate: DEFAULT_LEARNING_RATE,
             discount_factor: DEFAULT_DISCOUNT_FACTOR,
             exploration_rate: DEFAULT_EXPLORATION_RATE,
@@ -38,7 +49,7 @@ impl<S: WorkflowState, A: WorkflowAction> SARSAAgent<S, A> {
     #[allow(dead_code)]
     pub fn new_with_seed(lr: f32, df: f32, seed: u64) -> Self {
         Self {
-            q_table: RefCell::new(PackedKeyTable::default()),
+            q_table: RefCell::new(StaticPackedKeyTable::new()),
             learning_rate: lr,
             discount_factor: df,
             exploration_rate: DEFAULT_EXPLORATION_RATE,
@@ -75,7 +86,7 @@ impl<S: WorkflowState, A: WorkflowAction> SARSAAgent<S, A> {
 
     fn greedy_action(&self, state: S) -> A {
         let q_table = self.q_table.borrow();
-        let q_vals = get_q_values::<S, A>(&*q_table, &state);
+        let q_vals = q_table.get(hash_state(&state)).map(|v| v.as_slice()).unwrap_or(&[0.0; 3][..A::ACTION_COUNT]);
         A::from_index(greedy_index(q_vals)).unwrap()
     }
 
@@ -90,19 +101,24 @@ impl<S: WorkflowState, A: WorkflowAction> SARSAAgent<S, A> {
         done: bool,
     ) {
         let mut q_table = self.q_table.borrow_mut();
-        ensure_state::<S, A>(&mut *q_table, state);
+        let h_state = hash_state(&state);
+        if q_table.get(h_state).is_none() {
+            let _ = q_table.insert(h_state, state, A::Values::default());
+        }
 
         let next_q = if done {
             0.0
         } else {
-            get_q_values::<S, A>(&*q_table, &next_state)[next_action.to_index()]
+            q_table.get(hash_state(&next_state))
+                .map(|v| v.get(next_action.to_index()))
+                .unwrap_or(0.0)
         };
 
         let action_idx = action.to_index();
-        let h = hash_state(&state);
-        let current_q = q_table.get(h).unwrap()[action_idx];
+        let q_entry = q_table.get_mut(h_state).unwrap();
+        let current_q = q_entry.get(action_idx);
         let target = reward + self.discount_factor * next_q;
-        q_table.get_mut(h).unwrap()[action_idx] += self.learning_rate * (target - current_q);
+        q_entry.set(action_idx, current_q + self.learning_rate * (target - current_q));
     }
 
     #[allow(dead_code)]
@@ -125,7 +141,12 @@ impl<S: WorkflowState, A: WorkflowAction> SARSAAgent<S, A> {
     }
 }
 
-impl<S: WorkflowState, A: WorkflowAction> Default for SARSAAgent<S, A> {
+impl<S, A> Default for SARSAAgent<S, A>
+where
+    S: WorkflowState + Copy + Default,
+    A: WorkflowAction,
+    A::Values: Copy + Default,
+{
     fn default() -> Self {
         Self::new()
     }
@@ -154,7 +175,7 @@ impl SARSAAgent<crate::RlState, crate::RlAction> {
                 state.circuit_state,
                 state.cycle_phase,
             );
-            state_values.insert(key, q_values.clone());
+            state_values.insert(key, q_values.as_slice().to_vec());
         }
 
         SerializedAgentQTable {
@@ -173,7 +194,7 @@ impl SARSAAgent<crate::RlState, crate::RlAction> {
         let mut q_table = self.q_table.borrow_mut();
         q_table.clear();
 
-        for (key, q_values) in table.state_values {
+        for (key, q_values_vec) in table.state_values {
             let (h, e, a, s, d, r, c, p) = decode_rl_state_key(key);
             let state = crate::RlState {
                 health_level: h,
@@ -187,12 +208,21 @@ impl SARSAAgent<crate::RlState, crate::RlAction> {
                 marking_mask: 0,
                 activities_hash: 0,
             };
-            q_table.insert(hash_state(&state), state, q_values);
+            let mut q_values = [0.0; 3];
+            for (i, &v) in q_values_vec.iter().enumerate().take(3) {
+                q_values[i] = v;
+            }
+            let _ = q_table.insert(hash_state(&state), state, q_values);
         }
     }
 }
 
-impl<S: WorkflowState, A: WorkflowAction> Agent<S, A> for SARSAAgent<S, A> {
+impl<S, A> Agent<S, A> for SARSAAgent<S, A>
+where
+    S: WorkflowState + Copy + Default,
+    A: WorkflowAction,
+    A::Values: Copy + Default,
+{
     fn select_action(&self, state: S) -> A {
         self.select_action(state)
     }
@@ -220,7 +250,12 @@ impl<S: WorkflowState, A: WorkflowAction> Agent<S, A> for SARSAAgent<S, A> {
     }
 }
 
-impl<S: WorkflowState, A: WorkflowAction> AgentMeta for SARSAAgent<S, A> {
+impl<S, A> AgentMeta for SARSAAgent<S, A>
+where
+    S: WorkflowState + Copy + Default,
+    A: WorkflowAction,
+    A::Values: Copy + Default,
+{
     fn name(&self) -> &'static str {
         "SARSA"
     }

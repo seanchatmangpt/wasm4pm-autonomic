@@ -22,19 +22,51 @@ pub use q_learning::QLearning;
 pub use reinforce::ReinforceAgent;
 pub use sarsa::SARSAAgent;
 
-/// State for reinforcement learning (must be hashable and copyable)
-pub trait WorkflowState: Clone + Copy + Eq + Hash {
-    /// State features for function approximation
-    fn features(&self) -> Vec<f32>;
+/// Fixed-size array of action values to eliminate heap allocations.
+pub trait ActionArray: Default + Clone + Copy + Send + Sync {
+    fn get(&self, index: usize) -> f32;
+    fn set(&mut self, index: usize, value: f32);
+    fn len(&self) -> usize;
+    fn as_slice(&self) -> &[f32];
+    fn as_mut_slice(&mut self) -> &mut [f32];
+}
 
+impl ActionArray for [f32; 3] {
+    #[inline]
+    fn get(&self, index: usize) -> f32 {
+        self[index]
+    }
+    #[inline]
+    fn set(&mut self, index: usize, value: f32) {
+        self[index] = value;
+    }
+    #[inline]
+    fn len(&self) -> usize {
+        3
+    }
+    #[inline]
+    fn as_slice(&self) -> &[f32] {
+        self
+    }
+    #[inline]
+    fn as_mut_slice(&mut self) -> &mut [f32] {
+        self
+    }
+}
+
+/// State for reinforcement learning (must be hashable and copyable)
+pub trait WorkflowState: Clone + Copy + Eq + Hash + Send + Sync {
     /// Is this a terminal state?
     fn is_terminal(&self) -> bool;
 }
 
 /// Action for reinforcement learning (must be copyable)
-pub trait WorkflowAction: Clone + Copy + Eq + Hash {
+pub trait WorkflowAction: Clone + Copy + Eq + Hash + Send + Sync {
     /// Total number of possible actions
     const ACTION_COUNT: usize;
+
+    /// Associated fixed-size array type for action values
+    type Values: ActionArray;
 
     /// Convert to index (0..ACTION_COUNT)
     fn to_index(&self) -> usize;
@@ -59,13 +91,6 @@ pub trait AgentMeta {
 
 // --- Common Utilities ---
 
-/*
-#[inline]
-pub(crate) fn zeros<A: WorkflowAction>() -> Vec<f32> {
-    vec![0.0; A::ACTION_COUNT]
-}
-*/
-
 #[inline]
 pub(crate) fn clamp_probability(x: f32) -> f32 {
     x.clamp(0.0, 1.0)
@@ -77,12 +102,16 @@ pub(crate) fn decay_probability(current: f32, decay: f32) -> f32 {
 }
 
 pub(crate) fn greedy_index(values: &[f32]) -> usize {
-    values
-        .iter()
-        .enumerate()
-        .max_by(|a, b| a.1.partial_cmp(b.1).unwrap_or(std::cmp::Ordering::Equal))
-        .map(|(idx, _)| idx)
-        .unwrap_or(0)
+    let mut best_idx = 0;
+    let mut max_val = f32::NEG_INFINITY;
+
+    for (idx, &val) in values.iter().enumerate() {
+        if val > max_val {
+            max_val = val;
+            best_idx = idx;
+        }
+    }
+    best_idx
 }
 
 #[inline]
@@ -90,67 +119,4 @@ pub(crate) fn hash_state<S: Hash>(state: &S) -> u64 {
     let mut hasher = rustc_hash::FxHasher::default();
     state.hash(&mut hasher);
     hasher.finish()
-}
-
-pub(crate) fn get_q_values<'a, S, A>(table: &'a PackedKeyTable<S, Vec<f32>>, state: &S) -> &'a [f32]
-where
-    S: WorkflowState,
-    A: WorkflowAction,
-{
-    static ZEROS: [f32; 256] = [0.0; 256];
-    table
-        .get(hash_state(state))
-        .map(|v| v.as_slice())
-        .unwrap_or(&ZEROS[..A::ACTION_COUNT])
-}
-
-pub(crate) fn ensure_state<S, A>(table: &mut PackedKeyTable<S, Vec<f32>>, state: S)
-where
-    S: WorkflowState,
-    A: WorkflowAction,
-{
-    let h = hash_state(&state);
-    if table.get(h).is_none() {
-        table.insert(h, state, vec![0.0; A::ACTION_COUNT]);
-    }
-}
-
-pub(crate) fn max_q<S, A>(table: &PackedKeyTable<S, Vec<f32>>, state: &S) -> f32
-where
-    S: WorkflowState,
-    A: WorkflowAction,
-{
-    get_q_values::<S, A>(table, state)
-        .iter()
-        .fold(f32::NEG_INFINITY, |a, &b| a.max(b))
-}
-
-pub(crate) fn epsilon_greedy_probs(values: &[f32], epsilon: f32) -> Vec<f32> {
-    let n = values.len();
-    if n == 0 {
-        return Vec::new();
-    }
-
-    let eps = clamp_probability(epsilon);
-    let greedy = greedy_index(values);
-    let uniform = eps / n as f32;
-    let mut probs = vec![uniform; n];
-    probs[greedy] += 1.0 - eps;
-    probs
-}
-
-pub(crate) fn softmax_probs(logits: &[f32]) -> Vec<f32> {
-    if logits.is_empty() {
-        return Vec::new();
-    }
-
-    let max_logit = logits.iter().cloned().fold(f32::NEG_INFINITY, f32::max);
-    let exps: Vec<f32> = logits.iter().map(|&x| (x - max_logit).exp()).collect();
-    let z: f32 = exps.iter().sum();
-
-    if z <= 0.0 || !z.is_finite() {
-        vec![1.0 / logits.len() as f32; logits.len()]
-    } else {
-        exps.into_iter().map(|e| e / z).collect()
-    }
 }
