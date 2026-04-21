@@ -164,6 +164,7 @@ pub fn token_replay_projected(log: &ProjectedLog, petri_net: &PetriNet) -> f64 {
         return 0.0;
     }
 
+<<<<<<< HEAD
     let replay_data = if let Some(ref rd) = petri_net.cached_replay_data {
         rd
     } else {
@@ -242,6 +243,18 @@ pub fn token_replay_projected(log: &ProjectedLog, petri_net: &PetriNet) -> f64 {
     }
 
     let mut initial_mask = crate::utils::dense_kernel::KBitSet::<16>::zero();
+=======
+    let w = petri_net.incidence_matrix();
+    let num_transitions = petri_net.transitions.len();
+    let dummy_t_idx = num_transitions;
+
+    let mut initial_mask = 0u64;
+    let mut place_to_idx = PackedKeyTable::with_capacity(num_places);
+    for (i, p) in petri_net.places.iter().enumerate() {
+        place_to_idx.insert(fnv1a_64(p.id.as_bytes()), p.id.clone(), i);
+    }
+
+>>>>>>> wreckit/branchless-state-equation-calculus-eliminate-conditional-logic-in-petrinet-verification
     for (_, p_id, c) in petri_net.initial_marking.iter() {
         if *c > 0 {
             if let Some(&p_idx) = place_to_idx.get(fnv1a_64(p_id.as_bytes())) {
@@ -310,12 +323,23 @@ pub fn token_replay_projected(log: &ProjectedLog, petri_net: &PetriNet) -> f64 {
                 continue;
             }
             let t_idx = act_to_t_idx[act_idx];
-            let in_mask = input_masks[t_idx];
+            if t_idx == dummy_t_idx {
+                continue;
+            }
+            let in_mask = w.input_masks[t_idx].words[0];
+            let out_mask = w.output_masks[t_idx].words[0];
+
             missing_tokens += (in_mask & !marking).count_ones();
+<<<<<<< HEAD
             marking = (marking & !in_mask) | output_masks[t_idx];
             consumed_tokens += in_mask.count_ones();
             produced_tokens += output_masks[t_idx].count_ones();
 >>>>>>> wreckit/zero-heap-packedkeytable-eliminate-all-latent-allocations-in-pkt-hot-paths
+=======
+            marking = (marking & !in_mask) | out_mask;
+            consumed_tokens += in_mask.count_ones();
+            produced_tokens += out_mask.count_ones();
+>>>>>>> wreckit/branchless-state-equation-calculus-eliminate-conditional-logic-in-petrinet-verification
         }
 
         missing_tokens += marking.missing_count(final_mask);
@@ -352,8 +376,12 @@ pub fn token_replay(log: &EventLog, petri_net: &PetriNet) -> Vec<ConformanceResu
             .collect();
     }
 
+    let w = petri_net.incidence_matrix();
+    let num_transitions = petri_net.transitions.len();
+    let dummy_t_idx = num_transitions;
+
     let mut place_to_idx = PackedKeyTable::with_capacity(num_places);
-    let mut act_to_t_idx = PackedKeyTable::with_capacity(petri_net.transitions.len());
+    let mut act_to_t_idx = PackedKeyTable::with_capacity(num_transitions);
 
     for (i, p) in petri_net.places.iter().enumerate() {
         place_to_idx.insert(fnv1a_64(p.id.as_bytes()), p.id.clone(), i);
@@ -362,6 +390,7 @@ pub fn token_replay(log: &EventLog, petri_net: &PetriNet) -> Vec<ConformanceResu
         act_to_t_idx.insert(fnv1a_64(t.label.as_bytes()), t.label.clone(), i);
     }
 
+<<<<<<< HEAD
     let num_transitions = petri_net.transitions.len();
     let dummy_t_idx = num_transitions;
 
@@ -428,6 +457,9 @@ pub fn token_replay(log: &EventLog, petri_net: &PetriNet) -> Vec<ConformanceResu
     }
 
     let mut initial_mask = crate::utils::dense_kernel::KBitSet::<16>::zero();
+=======
+    let mut initial_mask = 0u64;
+>>>>>>> wreckit/branchless-state-equation-calculus-eliminate-conditional-logic-in-petrinet-verification
     for (_, p_id, c) in petri_net.initial_marking.iter() {
         if *c > 0 {
             if let Some(&p_idx) = place_to_idx.get(fnv1a_64(p_id.as_bytes())) {
@@ -467,6 +499,7 @@ pub fn token_replay(log: &EventLog, petri_net: &PetriNet) -> Vec<ConformanceResu
                 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
                 unsafe {
                     let tm = trans_masks.get_unchecked(t_idx);
                     let missing = tm.in_mask & !marking;
@@ -482,6 +515,19 @@ pub fn token_replay(log: &EventLog, petri_net: &PetriNet) -> Vec<ConformanceResu
                 consumed_tokens += input_counts[t_idx];
                 produced_tokens += output_counts[t_idx];
 >>>>>>> wreckit/formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o
+=======
+                if t_idx == dummy_t_idx {
+                    continue;
+                }
+
+                let in_mask = w.input_masks[t_idx].words[0];
+                let out_mask = w.output_masks[t_idx].words[0];
+
+                missing_tokens += (in_mask & !marking).count_ones();
+                marking = (marking & !in_mask) | out_mask;
+                consumed_tokens += in_mask.count_ones();
+                produced_tokens += out_mask.count_ones();
+>>>>>>> wreckit/branchless-state-equation-calculus-eliminate-conditional-logic-in-petrinet-verification
             }
 
             missing_tokens += marking.missing_count(final_mask);

@@ -260,31 +260,20 @@ pub mod dteam {
 <<<<<<< HEAD
 <<<<<<< HEAD
             use crate::models::petri_net::FlatIncidenceMatrix;
+            use crate::utils::dense_kernel::KBitSet;
 
-            /// Performs a branchless Petri net transition update using the state equation:
-            /// M' = M + Wx, where W is the incidence matrix and x is the firing vector.
-            /// For small nets (<= 64 places), M can be represented as a bitmask,
-            /// and the update can be performed via bitwise logic.
-            /// This implementation computes M' = (M & !input_mask) | output_mask
-            /// for a chosen transition.
+            /// Performs a 100% branchless Petri net transition update using precomputed masks.
+            /// Logic: M' = (M & !input_mask) | output_mask
+            /// This implementation eliminates all data-dependent branching and loops in the hot path.
             pub fn apply_branchless_update(
                 marking_mask: u64,
                 transition_idx: usize,
                 incidence: &FlatIncidenceMatrix,
             ) -> u64 {
-                let mut input_mask = 0u64;
-                let mut output_mask = 0u64;
-
-                for place_idx in 0..incidence.places_count {
-                    let val = incidence.get(place_idx, transition_idx);
-                    if val < 0 {
-                        // Consumes tokens
-                        input_mask |= 1u64 << place_idx;
-                    } else if val > 0 {
-                        // Produces tokens
-                        output_mask |= 1u64 << place_idx;
-                    }
-                }
+                // Extract the first word of the masks (for <= 64 places)
+                // For larger K-Tiers, a multi-word version of this kernel is used.
+                let input_mask = incidence.input_masks[transition_idx].words[0];
+                let output_mask = incidence.output_masks[transition_idx].words[0];
 
                 (marking_mask & !input_mask) | output_mask
 =======
@@ -353,6 +342,22 @@ pub mod dteam {
                 
                 next
 >>>>>>> wreckit/deterministic-kernel-μ-verification-create-cross-architecture-test-suite-to-verify-var-τ-0
+            }
+
+            /// Multi-word branchless update for higher K-Tiers.
+            pub fn apply_ktier_update<const W: usize>(
+                marking: KBitSet<W>,
+                transition_idx: usize,
+                incidence: &FlatIncidenceMatrix,
+            ) -> KBitSet<W> {
+                let input = incidence.input_masks[transition_idx];
+                let output = incidence.output_masks[transition_idx];
+
+                let mut next = KBitSet::<W>::zero();
+                for i in 0..W {
+                    next.words[i] = (marking.words[i] & !input.words[i]) | output.words[i];
+                }
+                next
             }
         }
     }

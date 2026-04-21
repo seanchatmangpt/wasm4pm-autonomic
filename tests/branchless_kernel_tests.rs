@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use dteam::dteam::kernel::branchless::apply_branchless_update;
-    use dteam::models::petri_net::{FlatIncidenceMatrix, PetriNet, Place, Transition, Arc};
+    use dteam::models::petri_net::{PetriNet, Place, Transition, Arc};
 
     #[test]
     fn test_branchless_transition_update() {
@@ -14,11 +14,7 @@ mod tests {
         net.arcs.push(Arc { from: "p1".to_string(), to: "t1".to_string(), weight: Some(1) });
         net.arcs.push(Arc { from: "t1".to_string(), to: "p2".to_string(), weight: Some(1) });
         
-        let incidence = FlatIncidenceMatrix {
-            data: vec![-1, 1], // p1 -> t1 is -1, t1 -> p2 is 1 (for t1 column)
-            places_count: 2,
-            transitions_count: 1,
-        };
+        let incidence = net.incidence_matrix();
 
         // Initially p1 has token (mask 0b01)
         let initial_marking = 0b01u64;

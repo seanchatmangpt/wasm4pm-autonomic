@@ -166,11 +166,15 @@ Notable public items:
 - **`proptest_kernel_verification`**: μ-kernel property tests; verifies $Var(\tau) = 0$ determinism, `KTier` capacity boundaries, MDL formula correctness, and cryptographic manifest integrity.
 - **`reinforcement_tests`**: Convergence and serialization roundtrips for tabular agents.
 <<<<<<< HEAD
+<<<<<<< HEAD
 >>>>>>> wreckit/cryptographic-execution-provenance-enhance-executionmanifest-with-full-h-l-π-h-n-hashing
 =======
 - **`proptest_kernel_verification`**: Property-based tests for μ-kernel determinism across multiple `KTier` settings (K64-K4096).
 - **`provenance_mdl_verification`**: Integration tests for `ExecutionManifest` compliance and MDL minimality Φ(N) verification.
 >>>>>>> wreckit/k-tier-scalability-optimize-bitset-alignment-for-k-1024-and-beyond
+=======
+- **`proptest_kernel_verification`**: Property-based tests for the branchless μ-kernel and K-Tier state updates.
+>>>>>>> wreckit/branchless-state-equation-calculus-eliminate-conditional-logic-in-petrinet-verification
 - **`io/xes_tests`**, **`conformance/case_centric/adversarial_tests`**, **`automation`**, **`dteam::orchestration`**, **`autonomic::kernel`**, **`skeptic_harness`**: narrower unit tests.
 
 Run everything: **`cargo test --lib`**.
