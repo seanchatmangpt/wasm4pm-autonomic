@@ -1,3 +1,15 @@
+U64-T1-Cell: Implement sub-200ns branchless Petri64 local transition in Plane_S.
+U64-T1-Sparse: Implement active-word-scoped transition for T1-admissible multi-cell firing.
+U64-T2-Full: Implement 32 KiB block scan for institutional conformance geometry (Hamming distance).
+U64-Delta-Builder: Implement sparse u64 XOR delta generation in the Scratch Plane.
+U64-Receipt-Mixer: Implement rolling FNV-1a state mixing for Delta-Receipt provenance.
+U64-Coord-Mapper: Compile 3D (domain, cell, place) coordinates into 4096-word memory offsets.
+U64-Ready-Maintainer: Implement bit-to-transition dependency mapping to automatically enable T1 firing.
+U64-Projection-Engine: Deriving disposible views (SaaS/PaaS) from U64 Delta-Receipt streams.
+U64-Instruction-Decoder: Implement zero-copy mapping of admitted operator IDs to Scratch-resident masks.
+U64-Dual-Plane-Memory: Secure 64 KiB L1 resident allocation for Data (U_t) and Scratch (S_t) planes.
+U64-Ontology-Guard: Implement LawMask enforcement in the Admission Kernel to prevent out-of-ontology state.
+U64-RL-Update: Refactor RL update kernels to consume sparse U64 Delta events as state input.
 Formal Ontology Closure: Implement strict activity footprint boundaries in the Engine to enforce O*.
 MDL Refinement: Upgrade structural scoring in src/models/petri_net.rs to follow Φ(N) exactly.
 Deterministic Kernel μ Verification: Create cross-architecture test suite to verify Var(τ) = 0.
