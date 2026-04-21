@@ -164,14 +164,22 @@ pub fn token_replay_projected(log: &ProjectedLog, petri_net: &PetriNet) -> f64 {
         return 0.0;
     }
 
-    let mut place_to_idx = PackedKeyTable::with_capacity(num_places);
-    for (i, p) in petri_net.places.iter().enumerate() {
-        place_to_idx.insert(fnv1a_64(p.id.as_bytes()), p.id.clone(), i);
-    }
+    let replay_data = if let Some(ref rd) = petri_net.cached_replay_data {
+        rd
+    } else {
+        // Fallback or panic? For zero-allocation, we expect it to be cached.
+        return 0.0;
+    };
+
+    let input_masks = &replay_data.input_masks;
+    let output_masks = &replay_data.output_masks;
+    let initial_mask = replay_data.initial_mask;
+    let final_mask = replay_data.final_mask;
 
     let num_transitions = petri_net.transitions.len();
     let dummy_t_idx = num_transitions;
 
+<<<<<<< HEAD
 <<<<<<< HEAD
     #[derive(Clone, Copy)]
     struct TransMasks {
@@ -256,6 +264,12 @@ pub fn token_replay_projected(log: &ProjectedLog, petri_net: &PetriNet) -> f64 {
 
     let mut act_to_t_idx = vec![dummy_t_idx; log.activities.len()];
     for (i, act) in log.activities.iter().enumerate() {
+=======
+    // Use a stack-allocated buffer for activity to transition mapping
+    // KTier 1024 is the max, so 1024 * 4 bytes = 4KB.
+    let mut act_to_t_idx = [dummy_t_idx; 1024];
+    for (i, act) in log.activities.iter().enumerate().take(1024) {
+>>>>>>> wreckit/zero-heap-packedkeytable-eliminate-all-latent-allocations-in-pkt-hot-paths
         if let Some(pos) = petri_net.transitions.iter().position(|t| &t.label == act) {
             act_to_t_idx[i] = pos;
         }
@@ -264,6 +278,8 @@ pub fn token_replay_projected(log: &ProjectedLog, petri_net: &PetriNet) -> f64 {
     let mut total_fitness = 0.0;
     let mut total_freq = 0;
 
+    let final_count = final_mask.count_ones();
+
     for (trace, freq) in &log.traces {
         let mut marking = initial_mask;
         let mut missing_tokens = 0;
@@ -271,6 +287,7 @@ pub fn token_replay_projected(log: &ProjectedLog, petri_net: &PetriNet) -> f64 {
         let mut produced_tokens = initial_mask.pop_count();
 
         for &act_idx in trace {
+<<<<<<< HEAD
 <<<<<<< HEAD
             unsafe {
                 let t_idx = *act_to_t_idx.get_unchecked(act_idx);
@@ -288,6 +305,17 @@ pub fn token_replay_projected(log: &ProjectedLog, petri_net: &PetriNet) -> f64 {
             consumed_tokens += input_counts[t_idx];
             produced_tokens += output_counts[t_idx];
 >>>>>>> wreckit/formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o
+=======
+            if act_idx >= 1024 {
+                continue;
+            }
+            let t_idx = act_to_t_idx[act_idx];
+            let in_mask = input_masks[t_idx];
+            missing_tokens += (in_mask & !marking).count_ones();
+            marking = (marking & !in_mask) | output_masks[t_idx];
+            consumed_tokens += in_mask.count_ones();
+            produced_tokens += output_masks[t_idx].count_ones();
+>>>>>>> wreckit/zero-heap-packedkeytable-eliminate-all-latent-allocations-in-pkt-hot-paths
         }
 
         missing_tokens += marking.missing_count(final_mask);

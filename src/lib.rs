@@ -10,6 +10,7 @@ pub mod reinforcement_tests;
 <<<<<<< HEAD
 <<<<<<< HEAD
 pub mod proptest_kernel_verification;
+<<<<<<< HEAD
 =======
 >>>>>>> wreckit/1-formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o-and-prevent-out-of-ontology-state-reachability
 pub mod ontology_proptests;
@@ -17,6 +18,9 @@ pub mod ontology_proptests;
 >>>>>>> wreckit/cryptographic-execution-provenance-enhance-executionmanifest-with-full-h-l-π-h-n-hashing
 =======
 >>>>>>> wreckit/mdl-refinement-upgrade-structural-scoring-in-src-models-petri-net-rs-to-follow-φ-n-exactly
+=======
+pub mod proptest_zero_allocation;
+>>>>>>> wreckit/zero-heap-packedkeytable-eliminate-all-latent-allocations-in-pkt-hot-paths
 pub mod utils;
 pub use agentic::ralph::patterns::universe64::Universe64;
 
@@ -25,8 +29,13 @@ pub use conformance::*;
 pub use models::*;
 
 // Zero-heap, stack-allocated RL state for nanosecond-scale updates.
+<<<<<<< HEAD
 #[derive(Clone, Copy, Eq, Hash, PartialEq, Debug)]
 pub struct RlState<const WORDS: usize> {
+=======
+#[derive(Clone, Copy, Eq, Hash, PartialEq, Debug, Default)]
+pub struct RlState {
+>>>>>>> wreckit/zero-heap-packedkeytable-eliminate-all-latent-allocations-in-pkt-hot-paths
     pub health_level: i8,
     pub event_rate_q: i8,
     pub activity_count_q: i8,
@@ -60,6 +69,8 @@ pub enum RlAction {
 
 impl reinforcement::WorkflowAction for RlAction {
     const ACTION_COUNT: usize = 3;
+    type Values = [f32; 3];
+
     fn to_index(&self) -> usize {
         match self {
             RlAction::Idle => 0,
@@ -127,6 +138,7 @@ impl<const WORDS: usize> reinforcement::WorkflowState for RlState<WORDS> {
 =======
 impl reinforcement::WorkflowState for RlState {
 <<<<<<< HEAD
+<<<<<<< HEAD
     fn features(&self) -> Vec<f32> {
         // Optimized feature vector: only allocate if necessary for function approx.
         // For Q-Table, this is rarely called in the hot path.
@@ -142,6 +154,8 @@ impl reinforcement::WorkflowState for RlState {
         }
 >>>>>>> wreckit/linear-reinforcement-learning-implement-linucb-with-zero-heap-state-matrices
     }
+=======
+>>>>>>> wreckit/zero-heap-packedkeytable-eliminate-all-latent-allocations-in-pkt-hot-paths
     fn is_terminal(&self) -> bool {
         self.health_level < 0 || self.health_level >= 5
     }

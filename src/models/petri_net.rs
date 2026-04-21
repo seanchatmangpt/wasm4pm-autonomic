@@ -21,6 +21,14 @@ pub struct Arc {
     pub weight: Option<usize>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct CachedReplayData {
+    pub input_masks: Vec<u64>,
+    pub output_masks: Vec<u64>,
+    pub initial_mask: u64,
+    pub final_mask: u64,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct PetriNet {
     pub places: Vec<Place>,
@@ -36,6 +44,10 @@ pub struct PetriNet {
     /// Cached dense index for fast node lookups
     #[serde(skip)]
     pub cached_index: Option<DenseIndex>,
+
+    /// Cached replay masks for zero-allocation conformance
+    #[serde(skip)]
+    pub cached_replay_data: Option<CachedReplayData>,
 }
 
 impl PartialEq for PetriNet {
@@ -85,6 +97,7 @@ impl PetriNet {
         }
 
         let place_count = self.places.len();
+<<<<<<< HEAD
         let trans_count = self.transitions.len();
         let total_nodes = place_count + trans_count;
         
@@ -94,14 +107,30 @@ impl PetriNet {
 
         let mut in_degrees = KBitSet::<16>::zero();
         let mut out_degrees = KBitSet::<16>::zero();
+=======
+        let total_nodes = place_count + self.transitions.len();
+        
+        // Zero-heap: use stack buffer for degrees
+        let mut in_degrees = [0u64; 16];
+        let mut out_degrees = [0u64; 16];
+>>>>>>> wreckit/zero-heap-packedkeytable-eliminate-all-latent-allocations-in-pkt-hot-paths
 
         if let Some(ref index) = self.cached_index {
             for arc in &self.arcs {
                 if let (Some(from_idx), Some(to_idx)) =
                     (index.dense_id(&arc.from), index.dense_id(&arc.to))
                 {
+<<<<<<< HEAD
                     let _ = out_degrees.set(from_idx as usize);
                     let _ = in_degrees.set(to_idx as usize);
+=======
+                    let from_idx = from_idx as usize;
+                    let to_idx = to_idx as usize;
+                    if from_idx < 1024 && to_idx < 1024 {
+                        out_degrees[from_idx / 64] |= 1u64 << (from_idx % 64);
+                        in_degrees[to_idx / 64] |= 1u64 << (to_idx % 64);
+                    }
+>>>>>>> wreckit/zero-heap-packedkeytable-eliminate-all-latent-allocations-in-pkt-hot-paths
                 }
             }
         } else {
@@ -111,8 +140,15 @@ impl PetriNet {
                     id_to_index.get(fnv1a_64(arc.from.as_bytes())),
                     id_to_index.get(fnv1a_64(arc.to.as_bytes())),
                 ) {
+<<<<<<< HEAD
                     let _ = out_degrees.set(from_idx);
                     let _ = in_degrees.set(to_idx);
+=======
+                    if from_idx < 1024 && to_idx < 1024 {
+                        out_degrees[from_idx / 64] |= 1u64 << (from_idx % 64);
+                        in_degrees[to_idx / 64] |= 1u64 << (to_idx % 64);
+                    }
+>>>>>>> wreckit/zero-heap-packedkeytable-eliminate-all-latent-allocations-in-pkt-hot-paths
                 }
             }
         }
@@ -121,8 +157,14 @@ impl PetriNet {
         let mut sink_places_count = 0;
 
         for i in 0..place_count {
+<<<<<<< HEAD
             let has_in = in_degrees.contains(i);
             let has_out = out_degrees.contains(i);
+=======
+            if i >= 1024 { break; }
+            let has_in = (in_degrees[i / 64] & (1u64 << (i % 64))) != 0;
+            let has_out = (out_degrees[i / 64] & (1u64 << (i % 64))) != 0;
+>>>>>>> wreckit/zero-heap-packedkeytable-eliminate-all-latent-allocations-in-pkt-hot-paths
             if !has_in {
                 source_places_count += 1;
             }
@@ -137,8 +179,14 @@ impl PetriNet {
 
         // Transitions must have at least one input and one output
         for i in place_count..total_nodes {
+<<<<<<< HEAD
             let has_in = in_degrees.contains(i);
             let has_out = out_degrees.contains(i);
+=======
+            if i >= 1024 { break; }
+            let has_in = (in_degrees[i / 64] & (1u64 << (i % 64))) != 0;
+            let has_out = (out_degrees[i / 64] & (1u64 << (i % 64))) != 0;
+>>>>>>> wreckit/zero-heap-packedkeytable-eliminate-all-latent-allocations-in-pkt-hot-paths
             if !has_in || !has_out {
                 return false;
             }
@@ -257,6 +305,71 @@ impl PetriNet {
         }
 
         self.cached_incidence = Some(self.compute_incidence());
+        self.cached_replay_data = self.compute_replay_data();
+    }
+
+    fn compute_replay_data(&self) -> Option<CachedReplayData> {
+        let num_places = self.places.len();
+        if num_places > 64 {
+            return None;
+        }
+
+        let mut place_to_idx = PackedKeyTable::with_capacity(num_places);
+        for (i, p) in self.places.iter().enumerate() {
+            place_to_idx.insert(fnv1a_64(p.id.as_bytes()), p.id.clone(), i);
+        }
+
+        let num_transitions = self.transitions.len();
+        let mut input_masks = vec![0u64; num_transitions + 1];
+        let mut output_masks = vec![0u64; num_transitions + 1];
+
+        for arc in &self.arcs {
+            let mut is_input = false;
+            let t_idx_opt = if let Some(pos) = self.transitions.iter().position(|t| t.id == arc.to) {
+                is_input = true;
+                Some(pos)
+            } else {
+                self.transitions.iter().position(|t| t.id == arc.from)
+            };
+
+            if let Some(t_idx) = t_idx_opt {
+                let p_id = if is_input { &arc.from } else { &arc.to };
+                if let Some(&p_idx) = place_to_idx.get(fnv1a_64(p_id.as_bytes())) {
+                    if is_input {
+                        input_masks[t_idx] |= 1u64 << p_idx;
+                    } else {
+                        output_masks[t_idx] |= 1u64 << p_idx;
+                    }
+                }
+            }
+        }
+
+        let mut initial_mask = 0u64;
+        for (_, p_id, c) in self.initial_marking.iter() {
+            if *c > 0 {
+                if let Some(&p_idx) = place_to_idx.get(fnv1a_64(p_id.as_bytes())) {
+                    initial_mask |= 1u64 << p_idx;
+                }
+            }
+        }
+
+        let mut final_mask = 0u64;
+        if let Some(fm) = self.final_markings.first() {
+            for (_, p_id, c) in fm.iter() {
+                if *c > 0 {
+                    if let Some(&p_idx) = place_to_idx.get(fnv1a_64(p_id.as_bytes())) {
+                        final_mask |= 1u64 << p_idx;
+                    }
+                }
+            }
+        }
+
+        Some(CachedReplayData {
+            input_masks,
+            output_masks,
+            initial_mask,
+            final_mask,
+        })
     }
 
     /// Computes the incidence matrix on the fly.
@@ -309,12 +422,9 @@ impl PetriNet {
     }
 
     /// Generates the Incidence Matrix (W) in a flat representation.
-    /// Returns the cached matrix if available, otherwise computes it on the fly.
-    pub fn incidence_matrix(&self) -> FlatIncidenceMatrix {
-        if let Some(ref cached) = self.cached_incidence {
-            return cached.clone();
-        }
-        self.compute_incidence()
+    /// Returns a reference to the cached matrix if available.
+    pub fn incidence_matrix(&self) -> Option<&FlatIncidenceMatrix> {
+        self.cached_incidence.as_ref()
     }
 
     /// Verifies the structural bounds of the workflow net state equation.
@@ -323,7 +433,18 @@ impl PetriNet {
         if !self.is_structural_workflow_net() {
             return false;
         }
-        let w = self.incidence_matrix();
+
+        if let Some(ref rd) = self.cached_replay_data {
+            for i in 0..self.transitions.len() {
+                if rd.input_masks[i] == 0 || rd.output_masks[i] == 0 {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // Fallback for large nets or uncompiled nets (not in hot path)
+        let w = self.cached_incidence.as_ref().cloned().unwrap_or_else(|| self.compute_incidence());
         let p_count = self.places.len();
         let t_count = self.transitions.len();
 
@@ -353,6 +474,7 @@ impl PetriNet {
         }
 
         let place_count = self.places.len();
+<<<<<<< HEAD
         let trans_count = self.transitions.len();
         let total_nodes = place_count + trans_count;
         
@@ -362,14 +484,29 @@ impl PetriNet {
 
         let mut in_degrees = KBitSet::<16>::zero();
         let mut out_degrees = KBitSet::<16>::zero();
+=======
+        let total_nodes = place_count + self.transitions.len();
+
+        let mut in_degrees = [0u64; 16];
+        let mut out_degrees = [0u64; 16];
+>>>>>>> wreckit/zero-heap-packedkeytable-eliminate-all-latent-allocations-in-pkt-hot-paths
 
         if let Some(ref index) = self.cached_index {
             for arc in &self.arcs {
                 if let (Some(from_idx), Some(to_idx)) =
                     (index.dense_id(&arc.from), index.dense_id(&arc.to))
                 {
+<<<<<<< HEAD
                     let _ = out_degrees.set(from_idx as usize);
                     let _ = in_degrees.set(to_idx as usize);
+=======
+                    let from_idx = from_idx as usize;
+                    let to_idx = to_idx as usize;
+                    if from_idx < 1024 && to_idx < 1024 {
+                        out_degrees[from_idx / 64] |= 1u64 << (from_idx % 64);
+                        in_degrees[to_idx / 64] |= 1u64 << (to_idx % 64);
+                    }
+>>>>>>> wreckit/zero-heap-packedkeytable-eliminate-all-latent-allocations-in-pkt-hot-paths
                 }
             }
         } else {
@@ -379,8 +516,15 @@ impl PetriNet {
                     id_to_index.get(fnv1a_64(arc.from.as_bytes())),
                     id_to_index.get(fnv1a_64(arc.to.as_bytes())),
                 ) {
+<<<<<<< HEAD
                     let _ = out_degrees.set(from_idx);
                     let _ = in_degrees.set(to_idx);
+=======
+                    if from_idx < 1024 && to_idx < 1024 {
+                        out_degrees[from_idx / 64] |= 1u64 << (from_idx % 64);
+                        in_degrees[to_idx / 64] |= 1u64 << (to_idx % 64);
+                    }
+>>>>>>> wreckit/zero-heap-packedkeytable-eliminate-all-latent-allocations-in-pkt-hot-paths
                 }
             }
         }
@@ -389,8 +533,14 @@ impl PetriNet {
         let mut source_places_count = 0;
         let mut sink_places_count = 0;
         for i in 0..place_count {
+<<<<<<< HEAD
             let has_in = in_degrees.contains(i);
             let has_out = out_degrees.contains(i);
+=======
+            if i >= 1024 { break; }
+            let has_in = (in_degrees[i / 64] & (1u64 << (i % 64))) != 0;
+            let has_out = (out_degrees[i / 64] & (1u64 << (i % 64))) != 0;
+>>>>>>> wreckit/zero-heap-packedkeytable-eliminate-all-latent-allocations-in-pkt-hot-paths
             if !has_in {
                 source_places_count += 1;
             }
@@ -403,8 +553,14 @@ impl PetriNet {
         score += (sink_places_count as f32 - 1.0).abs();
 
         for i in place_count..total_nodes {
+<<<<<<< HEAD
             let has_in = in_degrees.contains(i);
             let has_out = out_degrees.contains(i);
+=======
+            if i >= 1024 { break; }
+            let has_in = (in_degrees[i / 64] & (1u64 << (i % 64))) != 0;
+            let has_out = (out_degrees[i / 64] & (1u64 << (i % 64))) != 0;
+>>>>>>> wreckit/zero-heap-packedkeytable-eliminate-all-latent-allocations-in-pkt-hot-paths
             if !has_in {
                 score += 1.0;
             }
@@ -414,8 +570,14 @@ impl PetriNet {
         }
 
         for i in 0..place_count {
+<<<<<<< HEAD
             let has_in = in_degrees.contains(i);
             let has_out = out_degrees.contains(i);
+=======
+            if i >= 1024 { break; }
+            let has_in = (in_degrees[i / 64] & (1u64 << (i % 64))) != 0;
+            let has_out = (out_degrees[i / 64] & (1u64 << (i % 64))) != 0;
+>>>>>>> wreckit/zero-heap-packedkeytable-eliminate-all-latent-allocations-in-pkt-hot-paths
             if !has_in && !has_out {
                 score += 2.0;
             }
@@ -523,16 +685,16 @@ mod tests {
             weight: Some(2),
         });
 
-        let w = net.incidence_matrix();
+        net.compile_incidence();
+        let w = net.incidence_matrix().unwrap();
         assert_eq!(w.places_count, 2);
         assert_eq!(w.transitions_count, 1);
         assert_eq!(w.get(0, 0), -1); // p1 -> t1
         assert_eq!(w.get(1, 0), 2); // t1 -> p2
 
-        net.compile_incidence();
         assert!(net.cached_incidence.is_some());
         assert!(net.cached_index.is_some());
-        let w_cached = net.incidence_matrix();
+        let w_cached = net.incidence_matrix().unwrap();
         assert_eq!(w, w_cached);
     }
 

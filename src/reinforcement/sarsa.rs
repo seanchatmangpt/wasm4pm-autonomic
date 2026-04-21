@@ -1,13 +1,19 @@
+<<<<<<< HEAD
+=======
+use crate::utils::dense_kernel::StaticPackedKeyTable;
+use fastrand::Rng;
+>>>>>>> wreckit/zero-heap-packedkeytable-eliminate-all-latent-allocations-in-pkt-hot-paths
 use std::cell::RefCell;
 use std::marker::PhantomData;
 
 use super::*;
 
 /// SARSA agent: model-free, on-policy
-///
+
 /// This implementation keeps a pending `(next_state, next_action)` pair captured
 /// at action-selection time so that the subsequent update can use the actual
 /// on-policy next action.
+<<<<<<< HEAD
 <<<<<<< HEAD
 pub struct SARSAAgent<S: WorkflowState, A: WorkflowAction> {
     pub(crate) q_table: RefCell<PackedKeyTable<S, QArray>>,
@@ -15,17 +21,35 @@ pub struct SARSAAgent<S: WorkflowState, A: WorkflowAction> {
 pub struct SARSAAgent<S: WorkflowState, A: WorkflowAction, V: QValueStore = Vec<f32>> {
     pub(crate) q_table: RefCell<PackedKeyTable<S, V>>,
 >>>>>>> wreckit/k-tier-scalability-optimize-bitset-alignment-for-k-1024-and-beyond
+=======
+pub struct SARSAAgent<S, A>
+where
+    S: WorkflowState + Copy + Default,
+    A: WorkflowAction,
+    A::Values: Copy + Default,
+{
+    pub(crate) q_table: RefCell<StaticPackedKeyTable<S, A::Values, 1024>>,
+>>>>>>> wreckit/zero-heap-packedkeytable-eliminate-all-latent-allocations-in-pkt-hot-paths
     pub(crate) learning_rate: f32,
     pub(crate) discount_factor: f32,
     pub(crate) episode_count: RefCell<usize>,
     pub(crate) _phantom: PhantomData<A>,
 }
 
+<<<<<<< HEAD
 impl<S: WorkflowState, A: WorkflowAction, V: QValueStore> SARSAAgent<S, A, V> {
+=======
+impl<S, A> SARSAAgent<S, A>
+where
+    S: WorkflowState + Copy + Default,
+    A: WorkflowAction,
+    A::Values: Copy + Default,
+{
+>>>>>>> wreckit/zero-heap-packedkeytable-eliminate-all-latent-allocations-in-pkt-hot-paths
     #[allow(dead_code)]
     pub fn new() -> Self {
         Self {
-            q_table: RefCell::new(PackedKeyTable::default()),
+            q_table: RefCell::new(StaticPackedKeyTable::new()),
             learning_rate: DEFAULT_LEARNING_RATE,
             discount_factor: DEFAULT_DISCOUNT_FACTOR,
             episode_count: RefCell::new(0),
@@ -49,7 +73,7 @@ impl<S: WorkflowState, A: WorkflowAction, V: QValueStore> SARSAAgent<S, A, V> {
     #[allow(dead_code)]
     pub fn new_with_params(lr: f32, df: f32) -> Self {
         Self {
-            q_table: RefCell::new(PackedKeyTable::default()),
+            q_table: RefCell::new(StaticPackedKeyTable::new()),
             learning_rate: lr,
             discount_factor: df,
             episode_count: RefCell::new(0),
@@ -123,6 +147,7 @@ impl<S: WorkflowState, A: WorkflowAction, V: QValueStore> SARSAAgent<S, A, V> {
     fn greedy_action(&self, state: S) -> A {
         let q_table = self.q_table.borrow();
 <<<<<<< HEAD
+<<<<<<< HEAD
         let q_vals = get_q_values::<S, A>(&*q_table, &state);
 <<<<<<< HEAD
         let idx = q_vals
@@ -153,6 +178,9 @@ impl<S: WorkflowState, A: WorkflowAction, V: QValueStore> SARSAAgent<S, A, V> {
 >>>>>>> wreckit/admissibility-reachability-pruning-implement-branchless-guards-to-prevent-bad-states-in-markings
 =======
         let q_vals = get_q_values::<S, A, V>(&*q_table, &state);
+=======
+        let q_vals = q_table.get(hash_state(&state)).map(|v| v.as_slice()).unwrap_or(&[0.0; 3][..A::ACTION_COUNT]);
+>>>>>>> wreckit/zero-heap-packedkeytable-eliminate-all-latent-allocations-in-pkt-hot-paths
         A::from_index(greedy_index(q_vals)).unwrap()
 >>>>>>> wreckit/k-tier-scalability-optimize-bitset-alignment-for-k-1024-and-beyond
     }
@@ -168,11 +196,19 @@ impl<S: WorkflowState, A: WorkflowAction, V: QValueStore> SARSAAgent<S, A, V> {
         done: bool,
     ) {
         let mut q_table = self.q_table.borrow_mut();
+<<<<<<< HEAD
         ensure_state::<S, A, V>(&mut *q_table, state);
+=======
+        let h_state = hash_state(&state);
+        if q_table.get(h_state).is_none() {
+            let _ = q_table.insert(h_state, state, A::Values::default());
+        }
+>>>>>>> wreckit/zero-heap-packedkeytable-eliminate-all-latent-allocations-in-pkt-hot-paths
 
         let next_q = if done {
             0.0
         } else {
+<<<<<<< HEAD
             get_q_values::<S, A, V>(&*q_table, &next_state)[next_action.to_index()]
         };
 
@@ -189,6 +225,46 @@ impl<S: WorkflowState, A: WorkflowAction, V: QValueStore> SARSAAgent<S, A, V> {
 }
 
 impl<S: WorkflowState, A: WorkflowAction, V: QValueStore> Default for SARSAAgent<S, A, V> {
+=======
+            q_table.get(hash_state(&next_state))
+                .map(|v| v.get(next_action.to_index()))
+                .unwrap_or(0.0)
+        };
+
+        let action_idx = action.to_index();
+        let q_entry = q_table.get_mut(h_state).unwrap();
+        let current_q = q_entry.get(action_idx);
+        let target = reward + self.discount_factor * next_q;
+        q_entry.set(action_idx, current_q + self.learning_rate * (target - current_q));
+    }
+
+    #[allow(dead_code)]
+    pub fn decay_exploration(&mut self) {
+        self.exploration_rate = decay_probability(self.exploration_rate, self.exploration_decay);
+    }
+
+    pub fn set_exploration_rate(&mut self, rate: f32) {
+        self.exploration_rate = clamp_probability(rate);
+    }
+
+    #[allow(dead_code)]
+    pub fn clear_pending(&self) {
+        *self.pending_next.borrow_mut() = None;
+    }
+
+    #[allow(dead_code)]
+    pub fn get_exploration_rate(&self) -> f32 {
+        self.exploration_rate
+    }
+}
+
+impl<S, A> Default for SARSAAgent<S, A>
+where
+    S: WorkflowState + Copy + Default,
+    A: WorkflowAction,
+    A::Values: Copy + Default,
+{
+>>>>>>> wreckit/zero-heap-packedkeytable-eliminate-all-latent-allocations-in-pkt-hot-paths
     fn default() -> Self {
         Self::new()
     }
@@ -217,7 +293,11 @@ impl SARSAAgent<crate::RlState<1>, crate::RlAction, Vec<f32>> {
                 state.circuit_state,
                 state.cycle_phase,
             );
+<<<<<<< HEAD
             state_values.insert(key, q_values.to_vec());
+=======
+            state_values.insert(key, q_values.as_slice().to_vec());
+>>>>>>> wreckit/zero-heap-packedkeytable-eliminate-all-latent-allocations-in-pkt-hot-paths
         }
 
         SerializedAgentQTable {
@@ -237,7 +317,7 @@ impl SARSAAgent<crate::RlState<1>, crate::RlAction, Vec<f32>> {
         let mut q_table = self.q_table.borrow_mut();
         q_table.clear();
 
-        for (key, q_values) in table.state_values {
+        for (key, q_values_vec) in table.state_values {
             let (h, e, a, s, d, r, c, p) = decode_rl_state_key(key);
             let state = crate::RlState::<1> {
                 health_level: h,
@@ -260,14 +340,31 @@ impl SARSAAgent<crate::RlState<1>, crate::RlAction, Vec<f32>> {
 =======
 >>>>>>> wreckit/1-formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o-and-prevent-out-of-ontology-state-reachability
             };
+<<<<<<< HEAD
             let mut q_array = [0.0; ACTION_MAX_LIMIT];
             q_array.copy_from_slice(&q_values);
             q_table.insert(hash_state(&state), state, q_array);
+=======
+            let mut q_values = [0.0; 3];
+            for (i, &v) in q_values_vec.iter().enumerate().take(3) {
+                q_values[i] = v;
+            }
+            let _ = q_table.insert(hash_state(&state), state, q_values);
+>>>>>>> wreckit/zero-heap-packedkeytable-eliminate-all-latent-allocations-in-pkt-hot-paths
         }
     }
 }
 
+<<<<<<< HEAD
 impl<S: WorkflowState, A: WorkflowAction, V: QValueStore> Agent<S, A> for SARSAAgent<S, A, V> {
+=======
+impl<S, A> Agent<S, A> for SARSAAgent<S, A>
+where
+    S: WorkflowState + Copy + Default,
+    A: WorkflowAction,
+    A::Values: Copy + Default,
+{
+>>>>>>> wreckit/zero-heap-packedkeytable-eliminate-all-latent-allocations-in-pkt-hot-paths
     fn select_action(&self, state: S) -> A {
         self.select_action(state)
     }
@@ -282,7 +379,16 @@ impl<S: WorkflowState, A: WorkflowAction, V: QValueStore> Agent<S, A> for SARSAA
     }
 }
 
+<<<<<<< HEAD
 impl<S: WorkflowState, A: WorkflowAction, V: QValueStore> AgentMeta for SARSAAgent<S, A, V> {
+=======
+impl<S, A> AgentMeta for SARSAAgent<S, A>
+where
+    S: WorkflowState + Copy + Default,
+    A: WorkflowAction,
+    A::Values: Copy + Default,
+{
+>>>>>>> wreckit/zero-heap-packedkeytable-eliminate-all-latent-allocations-in-pkt-hot-paths
     fn name(&self) -> &'static str {
         "SARSA"
     }

@@ -71,6 +71,7 @@ pub fn train_with_provenance_projected(
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     let agent: QLearning<RlState<1>, RlAction> = QLearning::with_hyperparams(
 =======
     
@@ -95,6 +96,10 @@ pub fn train_with_provenance_projected(
         model.arcs.push(crate::models::petri_net::Arc { from: "p_start".to_string(), to: t.id.clone(), weight: None });
         model.arcs.push(crate::models::petri_net::Arc { from: t.id.clone(), to: "p_end".to_string(), weight: None });
     }
+=======
+    
+    // Crucial: ensure model is compiled so token_replay_projected has cached masks
+>>>>>>> wreckit/zero-heap-packedkeytable-eliminate-all-latent-allocations-in-pkt-hot-paths
     model.compile_incidence();
 
     let agent: QLearning<RlState, RlAction> = QLearning::with_hyperparams(
@@ -109,10 +114,16 @@ pub fn train_with_provenance_projected(
     );
     agent.set_exploration_rate(config.rl.exploration_rate);
 
+<<<<<<< HEAD
     let mut trajectory = Vec::new();
     let ontology_mask = ontology.map(|o| o.bitset).unwrap_or_else(|| crate::utils::dense_kernel::KBitSet::<16>::zero());
+=======
+    // Pre-allocate trajectory to avoid allocations in hot path
+    let mut trajectory = Vec::with_capacity(config.discovery.max_training_epochs);
+>>>>>>> wreckit/zero-heap-packedkeytable-eliminate-all-latent-allocations-in-pkt-hot-paths
 
     for _epoch in 0..config.discovery.max_training_epochs {
+        // Now zero-allocation!
         let avg_f = token_replay_projected(train_log, &model);
 <<<<<<< HEAD
         
@@ -132,6 +143,7 @@ pub fn train_with_provenance_projected(
             break;
 =======
 
+<<<<<<< HEAD
     let trajectory = match config.rl.algorithm.as_str() {
         "LinUCB" => {
             let mut agent: crate::ml::linucb::LinUcb<3, 9, 3> =
@@ -174,6 +186,9 @@ pub fn train_with_provenance_projected(
 =======
 >>>>>>> wreckit/1-formal-ontology-closure-implement-strict-activity-footprint-boundaries-in-the-engine-to-enforce-o-and-prevent-out-of-ontology-state-reachability
         };
+=======
+        let state = RlState::default();
+>>>>>>> wreckit/zero-heap-packedkeytable-eliminate-all-latent-allocations-in-pkt-hot-paths
 
         let action = agent.select_action(state);
         trajectory.push(action.to_index() as u8);
