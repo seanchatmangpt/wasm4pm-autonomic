@@ -1,5 +1,14 @@
 # 45 — POWL8 × POWL64: How the Two Languages Orchestrate Everything
 
+> **Naming note (added retroactively):** This document was written before
+> the canonical-names pass in doc 48. Where the text says `Cowboy`, read
+> `Runner` (or `fn step(…)`); `Loa` → `LanePolicy`; `Finn` → `Broker` /
+> `SpscRing`; `Aleph` → `Snapshot { inner, … }`. The Gibson names are
+> literary framing; the canonical names are what the source code uses.
+> See `docs/opus/47` and `docs/opus/48` for the full glossary.
+> Shipped as code in `unibit-powl` and `unibit-orchestrator` crates
+> (doc 58).
+
 ## The two POWLs
 
 Everything in the archive so far has used "POWL" as a single language.

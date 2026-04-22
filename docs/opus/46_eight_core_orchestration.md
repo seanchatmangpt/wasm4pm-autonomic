@@ -1,5 +1,14 @@
 # 46 — Eight Cores, Eight Loa, One Motion
 
+> **Naming note (added retroactively):** Written pre-doc-48. Canonical
+> mapping: `Loa` → `LanePolicy`; `LoaStraylight` → per-core
+> `HotRegion` slice; `FederatedCzi` → `WatchdogShards<N>` (shipped in
+> `unibit-watchdog`); `ReduceBuffer` → shipped in `unibit-orchestrator`.
+> The 35 ns critical path described here remains a target; doc 58
+> measured the std-based implementation at ~23 µs per motion because
+> `std::sync::Condvar` wake-up costs dominate. Closing the gap requires
+> lock-free worker wake-up, which is future work — see doc 59.
+
 ## The alignment
 
 The universe has been cooperating. Every ladder converges on eight:
