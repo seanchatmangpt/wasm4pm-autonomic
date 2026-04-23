@@ -21,8 +21,8 @@ description = "Standard CI pipeline: formatting, linting, building, and testing.
 dependencies = ["fmt-check", "lint", "check", "test"]
 
 [tasks.pre-merge]
-description = "Comprehensive pre-merge verification pipeline (CI + Doc)."
-dependencies = ["ci", "doc"]
+description = "Comprehensive pre-merge verification pipeline (CI + Doc + DoD)."
+dependencies = ["ci", "doc", "dod"]
 
 # --- Code Quality ---
 
