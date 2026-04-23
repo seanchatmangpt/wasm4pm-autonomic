@@ -126,13 +126,13 @@ mod tests {
 
     #[test]
     fn test_cluster_empty() {
-        assert_eq!(cluster(&[], 3, 10), vec![]);
+        assert_eq!(cluster(&[], 3, 10), Vec::<usize>::new());
     }
 
     #[test]
     fn test_cluster_k_zero() {
         let features = vec![vec![1.0, 2.0]];
-        assert_eq!(cluster(&features, 0, 10), vec![]);
+        assert_eq!(cluster(&features, 0, 10), Vec::<usize>::new());
     }
 
     #[test]
@@ -163,8 +163,8 @@ mod tests {
 
     #[test]
     fn test_classify_unsupervised_empty() {
-        let result = classify_unsupervised(&[], &[]);
-        assert_eq!(result, vec![]);
+        let result: Vec<bool> = classify_unsupervised(&[], &[]);
+        assert!(result.is_empty());
     }
 
     #[test]

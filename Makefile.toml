@@ -155,6 +155,16 @@ mv docs/thesis/main.pdf docs/thesis/dteam-whitepaper.pdf
 echo "Whitepaper successfully generated at docs/thesis/dteam-whitepaper.pdf"
 '''
 
+[tasks.dod]
+description = "Definition of Done — verify compile, tests, and AutoML pipeline artifact invariants."
+command = "cargo"
+args = ["run", "--bin", "dod", "--release", "--quiet"]
+
+[tasks.dod-dev]
+description = "Definition of Done (dev build — faster iteration)."
+command = "cargo"
+args = ["run", "--bin", "dod", "--quiet"]
+
 [tasks.clean]
 description = "Clean cargo artifacts and generated documentation."
 script_runner = "@shell"

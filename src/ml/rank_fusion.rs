@@ -217,8 +217,8 @@ mod tests {
     #[test]
     fn test_borda_count_edge_empty() {
         // Empty signals → all false (n=0)
-        let result = borda_count(&[], &[], 2);
-        assert_eq!(result, vec![]);
+        let result: Vec<bool> = borda_count(&[], &[], 2);
+        assert!(result.is_empty());
     }
 
     #[test]
