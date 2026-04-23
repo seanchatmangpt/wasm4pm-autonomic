@@ -1,7 +1,8 @@
 /**
- * The 40 runs from the Sprawl trilogy, mapped to unibit arenas
- * (see docs/opus/60). Table-driven with hand-crafted overrides for
- * the 11 runs that carry bespoke camera choreography and annotations.
+ * The 30 runs from the Sprawl trilogy (10 per book), mapped to unibit
+ * arenas (see docs/opus/60). Table-driven with hand-crafted overrides
+ * for 11 of those 30 runs that carry bespoke camera choreography and
+ * annotations; the remaining 19 use `buildRun` + defaults.
  */
 
 import { CANONICAL_FIELDS, MotionRequest } from './unibit';

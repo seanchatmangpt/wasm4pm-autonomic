@@ -105,13 +105,21 @@ export function EpisodeScene({ run }: { run: Run }) {
           gap: 8,
         }}
       >
-        <button onClick={rerun} style={buttonStyle} data-testid="run-button">
+        <button
+          onClick={rerun}
+          style={buttonStyle}
+          data-testid="run-button"
+          aria-label="Run this motion again with the next instruction id"
+          type="button"
+        >
           RUN
         </button>
         <button
           onClick={tamper}
           style={{ ...buttonStyle, borderColor: '#e63333' }}
           data-testid="tamper-button"
+          aria-label="Tamper with the state to force a denial"
+          type="button"
         >
           TAMPER
         </button>
