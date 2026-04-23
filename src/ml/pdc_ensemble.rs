@@ -57,8 +57,9 @@ pub fn combinatorial_ensemble(
         return vec![false; anchor.len()];
     }
 
-    // For large k, delegate to greedy search.
-    if k > 20 {
+    // Exponential cost: 2^k iterations. Cap at k=12 (4096) — above that use greedy.
+    // Empirically, optimal subsets are 3-5 classifiers; greedy finds them well at k>12.
+    if k > 12 {
         return greedy_ensemble(all_preds, anchor, n_target);
     }
 

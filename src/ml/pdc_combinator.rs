@@ -6,14 +6,22 @@
 //! the log filename.
 
 use crate::conformance::bitmask_replay::{classify_exact, replay_log, NetBitmask64};
+use crate::ml::hdc;
 use crate::ml::pdc_ensemble::{
-    best_bool_score_pair, calibrate_to_target, combinatorial_ensemble, full_combinatorial, score,
-    vote_fractions,
+    best_bool_score_pair, calibrate_to_target, combinatorial_ensemble, full_combinatorial,
+    greedy_ensemble, score, vote_fractions,
 };
-use crate::ml::pdc_features::{extract_log_features, pseudo_labels};
-use crate::ml::pdc_supervised::{run_supervised, to_named_list as sup_named};
+use crate::ml::pdc_features::{
+    build_vocabulary, extract_log_features, extract_log_features_with_vocab, pseudo_labels,
+};
+use crate::ml::pdc_supervised::{
+    run_supervised, run_supervised_transfer, to_named_list as sup_named,
+};
 use crate::ml::pdc_unsupervised::{run_unsupervised, to_named_list as unsup_named};
+use crate::ml::rank_fusion::{bool_to_score, borda_count, reciprocal_rank_fusion};
+use crate::ml::stacking::stack_ensemble;
 use crate::ml::synthetic_trainer::classify_with_synthetic;
+use crate::ml::weighted_vote::{auto_weighted_vote, precision_weighted_vote};
 use crate::models::{AttributeValue, EventLog};
 
 // ── Parameter config ──────────────────────────────────────────────────────────
@@ -105,22 +113,45 @@ pub struct CombinatorResult {
 ///
 /// 1. Extract 7+vocab features (fitness, in_language, norm_len, norm_unique,
 ///    is_perfect, missing_norm, remaining_norm, BoW).
-/// 2. Pool supervised (11) + unsupervised (6) + synthetic (1 ensemble) + baseline
-///    classify_exact → up to 19 bool predictions.
+/// 2. Pool supervised (11) + unsupervised (6) + synthetic (1 ensemble) + HDC (1) + baseline
+///    classify_exact → up to 20 bool predictions.
 /// 3. Build 4 score signals (fitness, is_perfect, 1-missing_norm, 1-remaining_norm).
 /// 4. Run `full_combinatorial`, `best_bool_score_pair`, `combinatorial_ensemble`,
 ///    and optional parameter-aware routing.
 /// 5. Return results sorted by score descending.
 ///
 /// * `log_name` — optional filename used to decode the 6-bit parameter config.
+/// * `train_labeled` — optional `(training_log, labels)` for supervised transfer learning.
+///   When `Some`, trains classifiers on real labels (typically 40 labeled traces from the
+///   `_11` file) instead of 1000 pseudo-labeled test traces — ~24× faster per benchmark.
 pub fn run_combinator(
     log: &EventLog,
     net: &NetBitmask64,
     n_target: usize,
     log_name: Option<&str>,
+    train_labeled: Option<(&EventLog, &[bool])>,
 ) -> Vec<CombinatorResult> {
     // ── 1. Feature extraction + conformance signals ───────────────────────────
-    let (features, in_lang, fitness) = extract_log_features(log, net);
+    let (features, in_lang, fitness) = if let Some((train_log, _)) = train_labeled {
+        // Build shared vocabulary so train and test features live in the same space.
+        let mut vocab = build_vocabulary(log);
+        for w in build_vocabulary(train_log) {
+            if !vocab.contains(&w) {
+                vocab.push(w);
+            }
+        }
+        vocab.sort();
+        let max_len = log
+            .traces
+            .iter()
+            .chain(train_log.traces.iter())
+            .map(|t| t.events.len())
+            .max()
+            .unwrap_or(1);
+        extract_log_features_with_vocab(log, net, &vocab, max_len)
+    } else {
+        extract_log_features(log, net)
+    };
 
     let replay = replay_log(net, log);
     let is_perfect_scores: Vec<f64> = replay
@@ -164,11 +195,34 @@ pub fn run_combinator(
     };
 
     // ── 3. Build classifier pool ──────────────────────────────────────────────
-    // Pseudo-labels for supervised (bool) and unsupervised (Option<bool>)
+    // Pseudo-labels for unsupervised classifiers (always needed)
     let pseudo_opt = pseudo_labels(&in_lang, &fitness);
     let pseudo_bool: Vec<bool> = pseudo_opt.iter().map(|p| p.unwrap_or(false)).collect();
 
-    let sup = run_supervised(&features, &pseudo_bool);
+    // Use real labels when available (24× faster: 40 train traces vs 1000 pseudo-labeled).
+    let sup = if let Some((train_log, train_lbls)) = train_labeled {
+        let vocab = {
+            let mut v = build_vocabulary(log);
+            for w in build_vocabulary(train_log) {
+                if !v.contains(&w) {
+                    v.push(w);
+                }
+            }
+            v.sort();
+            v
+        };
+        let max_len = log
+            .traces
+            .iter()
+            .chain(train_log.traces.iter())
+            .map(|t| t.events.len())
+            .max()
+            .unwrap_or(1);
+        let (train_feats, _, _) = extract_log_features_with_vocab(train_log, net, &vocab, max_len);
+        run_supervised_transfer(&train_feats, train_lbls, &features)
+    } else {
+        run_supervised(&features, &pseudo_bool)
+    };
     let unsup = run_unsupervised(&features, &pseudo_opt, &fitness, n_target);
 
     let act_seqs: Vec<Vec<String>> = log
@@ -194,6 +248,10 @@ pub fn run_combinator(
         .collect();
     let synth = classify_with_synthetic(net, &act_seqs, n_synthetic, n_target);
 
+    // HDC transductive: fit on test sequences, classify same sequences (+1)
+    let hdc_clf = hdc::fit(&act_seqs);
+    let hdc_preds = hdc::classify(&hdc_clf, &act_seqs, n_target);
+
     // ── 4. Collect all bool predictions ──────────────────────────────────────
     let mut bool_preds: Vec<Vec<bool>> = Vec::new();
     bool_preds.push(classify_exact(net, log, n_target)); // baseline
@@ -203,7 +261,8 @@ pub fn run_combinator(
     for (_, v) in unsup_named(&unsup) {
         bool_preds.push(v);
     } // +6
-    bool_preds.push(synth.ensemble.clone()); // +1  → total ≤19
+    bool_preds.push(synth.ensemble.clone()); // +1
+    bool_preds.push(hdc_preds); //              +1  → total ≤20
 
     // ── 5. Score signals (higher = more positive, bounded [0,1]) ─────────────
     let score_signals: Vec<Vec<f64>> = vec![
@@ -212,6 +271,30 @@ pub fn run_combinator(
         missing_norm.iter().map(|v| 1.0 - v).collect(),
         remaining_norm.iter().map(|v| 1.0 - v).collect(),
     ];
+
+    // ── 4b. Meta-ensemble derived bool predictions ────────────────────────────
+    let awv_pred = auto_weighted_vote(&bool_preds, anchor, n_target);
+    let pwv_pred = precision_weighted_vote(&bool_preds, anchor, n_target);
+    let stack_pred = stack_ensemble(&bool_preds, anchor, n_target);
+
+    // ── 5b. Rank-fusion bool predictions → extended score signals ─────────────
+    let higher_is_better = vec![true; score_signals.len()];
+    let borda_pred = borda_count(&score_signals, &higher_is_better, n_target);
+    let rrf_pred = reciprocal_rank_fusion(&score_signals, &higher_is_better, n_target);
+
+    let mut extended_score_signals = score_signals.clone();
+    extended_score_signals.push(bool_to_score(&borda_pred));
+    extended_score_signals.push(bool_to_score(&rrf_pred));
+    extended_score_signals.push(bool_to_score(&awv_pred));
+    extended_score_signals.push(bool_to_score(&pwv_pred));
+    extended_score_signals.push(bool_to_score(&stack_pred));
+
+    let mut extended_bool_preds = bool_preds.clone();
+    extended_bool_preds.push(borda_pred.clone());
+    extended_bool_preds.push(rrf_pred.clone());
+    extended_bool_preds.push(awv_pred.clone());
+    extended_bool_preds.push(pwv_pred.clone());
+    extended_bool_preds.push(stack_pred.clone());
 
     // ── 6. Combinatorial search ───────────────────────────────────────────────
     let mut results: Vec<CombinatorResult> = Vec::new();
@@ -278,6 +361,68 @@ pub fn run_combinator(
                 cfg.loops, complexity
             ),
             n_classifiers: 3,
+        });
+    }
+
+    // 6e. full_combinatorial with extended score signals (original bool pool, 9 signals)
+    {
+        let k = bool_preds.len();
+        let m = extended_score_signals.len();
+        let preds = full_combinatorial(&bool_preds, &extended_score_signals, anchor, n_target);
+        let s = score(&preds, anchor, n_target);
+        results.push(CombinatorResult {
+            predictions: preds,
+            score: s,
+            strategy_name: format!("full_combo_ext(k={k},m={m})"),
+            n_classifiers: k + m,
+        });
+    }
+
+    // 6f. greedy ensemble on extended bool pool (25 preds)
+    {
+        let k = extended_bool_preds.len();
+        let preds = greedy_ensemble(&extended_bool_preds, anchor, n_target);
+        let s = score(&preds, anchor, n_target);
+        results.push(CombinatorResult {
+            predictions: preds,
+            score: s,
+            strategy_name: format!("greedy_ext(k={k})"),
+            n_classifiers: k,
+        });
+    }
+
+    // 6g. best_pair on extended pools
+    {
+        let k = extended_bool_preds.len();
+        let preds = best_bool_score_pair(
+            &extended_bool_preds,
+            &extended_score_signals,
+            anchor,
+            n_target,
+        );
+        let s = score(&preds, anchor, n_target);
+        results.push(CombinatorResult {
+            predictions: preds,
+            score: s,
+            strategy_name: format!("best_pair_ext(k={k})"),
+            n_classifiers: 2,
+        });
+    }
+
+    // 6h. named individual derived predictions (already computed, zero extra cost)
+    for (name, preds) in [
+        ("borda_fusion", borda_pred),
+        ("rrf_fusion", rrf_pred),
+        ("auto_weighted_vote", awv_pred),
+        ("prec_weighted_vote", pwv_pred),
+        ("stack_ensemble", stack_pred),
+    ] {
+        let s = score(&preds, anchor, n_target);
+        results.push(CombinatorResult {
+            predictions: preds,
+            score: s,
+            strategy_name: name.into(),
+            n_classifiers: bool_preds.len(),
         });
     }
 

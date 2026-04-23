@@ -1,9 +1,13 @@
+pub mod automl;
+pub mod automl_eval;
 pub mod decision_stump;
 pub mod decision_tree;
 pub mod deep_learning;
 pub mod gaussian_naive_bayes;
 pub mod gradient_boosting;
 pub mod gradient_descent;
+pub mod hdc;
+pub mod hdit_automl;
 pub mod hierarchical_clustering;
 pub mod kmeans;
 pub mod knn;

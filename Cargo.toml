@@ -147,3 +147,7 @@ harness = false
 [[bench]]
 name = "universe64_bench"
 harness = false
+
+[[bench]]
+name = "pdc_pipeline_bench"
+harness = false

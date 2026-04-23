@@ -127,6 +127,60 @@ pub fn run_supervised(features: &[Vec<f64>], labels: &[bool]) -> SupervisedPredi
 }
 
 // ---------------------------------------------------------------------------
+// Transfer (inductive) pipeline
+// ---------------------------------------------------------------------------
+
+/// Train supervised classifiers on labeled training data, predict on separate test features.
+/// Both feature matrices must have the same column count (use a shared vocabulary).
+pub fn run_supervised_transfer(
+    train_features: &[Vec<f64>],
+    train_labels: &[bool],
+    test_features: &[Vec<f64>],
+) -> SupervisedPredictions {
+    let n_test = test_features.len();
+    if train_features.is_empty() || n_test == 0 || !train_features.iter().any(|f| !f.is_empty()) {
+        return SupervisedPredictions {
+            knn: vec![false; n_test],
+            naive_bayes: vec![false; n_test],
+            decision_tree: vec![false; n_test],
+            logistic_regression: vec![false; n_test],
+            gaussian_nb: vec![false; n_test],
+            nearest_centroid: vec![false; n_test],
+            perceptron: vec![false; n_test],
+            neural_net: vec![false; n_test],
+            gradient_boosting: vec![false; n_test],
+            decision_stump: vec![false; n_test],
+            linear_classify: vec![false; n_test],
+        };
+    }
+    SupervisedPredictions {
+        knn: knn::classify_k3(train_features, train_labels, test_features),
+        naive_bayes: naive_bayes::classify(train_features, train_labels, test_features),
+        decision_tree: decision_tree::classify_d3(train_features, train_labels, test_features),
+        logistic_regression: logistic_regression::classify_default(
+            train_features,
+            train_labels,
+            test_features,
+        ),
+        gaussian_nb: gaussian_naive_bayes::classify(train_features, train_labels, test_features),
+        nearest_centroid: nearest_centroid::classify(train_features, train_labels, test_features),
+        perceptron: perceptron::classify_default(train_features, train_labels, test_features),
+        neural_net: neural_network::classify_default(train_features, train_labels, test_features),
+        gradient_boosting: gradient_boosting::classify_default(
+            train_features,
+            train_labels,
+            test_features,
+        ),
+        decision_stump: decision_stump::classify(train_features, train_labels, test_features),
+        linear_classify: linear_regression::classify_multiple(
+            train_features,
+            train_labels,
+            test_features,
+        ),
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Inspection helper
 // ---------------------------------------------------------------------------
 
@@ -250,7 +304,28 @@ mod tests {
         }
     }
 
-    // ── 5. Clearly separable data — at least some classifiers predict correctly ─
+    // ── 5. run_supervised_transfer — basic lengths ────────────────────────────
+
+    #[test]
+    fn test_run_supervised_transfer_basic() {
+        let train = vec![vec![1.0, 0.0], vec![0.0, 1.0]];
+        let labels = vec![true, false];
+        let test = vec![vec![1.0, 0.0], vec![0.0, 1.0], vec![0.5, 0.5]];
+        let preds = run_supervised_transfer(&train, &labels, &test);
+        assert_eq!(preds.knn.len(), 3);
+        assert_eq!(preds.neural_net.len(), 3);
+    }
+
+    // ── 6. run_supervised_transfer — empty guard ──────────────────────────────
+
+    #[test]
+    fn test_run_supervised_transfer_empty() {
+        let preds = run_supervised_transfer(&[], &[], &[vec![1.0, 0.0]]);
+        assert_eq!(preds.knn.len(), 1);
+        assert!(!preds.knn[0]);
+    }
+
+    // ── 7. Clearly separable data — at least some classifiers predict correctly ─
 
     #[test]
     fn test_separable_data_some_classifiers_correct() {

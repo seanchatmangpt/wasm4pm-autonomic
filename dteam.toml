@@ -70,3 +70,13 @@ manifest_bus_path = "tmp/dmanifest_bus"
 batch_size = 10
 # Maximum memory pages
 max_pages = 16
+
+[automl]
+# Disabled by default — enable to run RL hyperparameter search per log
+enabled = false
+# Search strategy: "random" (budget-capped) or "grid" (exhaustive)
+strategy = "random"
+# Number of RandomSearch trials per log
+budget = 20
+# Base seed for reproducibility
+seed = 42

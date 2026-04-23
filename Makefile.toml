@@ -102,6 +102,16 @@ args = ["run", "--example", "autonomic_runner"]
 [tasks.run.env]
 RUST_LOG = "info"
 
+# --- PDC 2025 ---
+
+[tasks.pdc]
+description = "Run the PDC 2025 process discovery pipeline (all strategies, release build)."
+command = "cargo"
+args = ["run", "--bin", "pdc2025", "--release"]
+
+[tasks.pdc.env]
+RUST_LOG = "info"
+
 [tasks.doc]
 description = "Generate the whitepaper PDF using pdflatex."
 script_runner = "@shell"

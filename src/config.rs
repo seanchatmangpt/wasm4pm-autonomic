@@ -12,6 +12,8 @@ pub struct AutonomicConfig {
     pub discovery: DiscoveryConfig,
     pub paths: PathConfig,
     pub wasm: WasmConfig,
+    #[serde(default)]
+    pub automl: AutomlConfig,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -86,6 +88,25 @@ pub struct WasmConfig {
     pub max_pages: usize,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AutomlConfig {
+    pub enabled: bool,
+    pub strategy: String,
+    pub budget: usize,
+    pub seed: u64,
+}
+
+impl Default for AutomlConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            strategy: "random".to_string(),
+            budget: 20,
+            seed: 42,
+        }
+    }
+}
+
 impl Default for AutonomicConfig {
     fn default() -> Self {
         let mut reward_weights = HashMap::new();
@@ -147,6 +168,7 @@ impl Default for AutonomicConfig {
                 batch_size: 10,
                 max_pages: 16,
             },
+            automl: AutomlConfig::default(),
         }
     }
 }
