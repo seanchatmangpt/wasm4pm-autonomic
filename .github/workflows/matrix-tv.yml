@@ -1,0 +1,58 @@
+name: matrix-tv
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/matrix-tv/**'
+      - '.github/workflows/matrix-tv.yml'
+  pull_request:
+    paths:
+      - 'apps/matrix-tv/**'
+      - '.github/workflows/matrix-tv.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: apps/matrix-tv
+
+jobs:
+  build-and-test:
+    name: build + playwright
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: ['20', '22']
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: 'npm'
+          cache-dependency-path: apps/matrix-tv/package-lock.json
+
+      - run: npm ci
+
+      - name: TypeScript typecheck
+        run: npx tsc --noEmit
+
+      - name: Next.js build
+        run: npm run build
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Playwright tests
+        run: npx playwright test --reporter=github
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-node-${{ matrix.node }}
+          path: apps/matrix-tv/playwright-report/
+          retention-days: 7
