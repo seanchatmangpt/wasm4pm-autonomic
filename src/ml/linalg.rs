@@ -265,10 +265,7 @@ mod tests {
         assert_eq!(vec_add(&[1.0, 2.0, 3.0], &[4.0]), vec![5.0, 2.0, 3.0]);
     }
 
-    #[test]
-    fn test_vec_add_empty() {
-        assert_eq!(vec_add(&[], &[]), Vec::<f64>::new());
-    }
+    // (test_vec_add_empty consolidated into test_linalg_empty_inputs_parametric below)
 
     // ── vec_sub ───────────────────────────────────────────────────────────────
     #[test]
@@ -286,10 +283,7 @@ mod tests {
     }
 
     // ── vec_sum ───────────────────────────────────────────────────────────────
-    #[test]
-    fn test_vec_sum_empty() {
-        assert_eq!(vec_sum(&[]), Vec::<f64>::new());
-    }
+    // (test_vec_sum_empty consolidated into test_linalg_empty_inputs_parametric below)
 
     #[test]
     fn test_vec_sum_multiple() {
@@ -310,10 +304,7 @@ mod tests {
         assert!(vec_approx_eq(&vec_mean(&vecs), &[2.0, 3.0], TOL));
     }
 
-    #[test]
-    fn test_vec_mean_empty() {
-        assert_eq!(vec_mean(&[]), Vec::<f64>::new());
-    }
+    // (test_vec_mean_empty consolidated into test_linalg_empty_inputs_parametric below)
 
     // ── dot ───────────────────────────────────────────────────────────────────
     #[test]
@@ -321,10 +312,7 @@ mod tests {
         assert!(approx(dot(&[1.0, 2.0, 3.0], &[4.0, 5.0, 6.0]), 32.0));
     }
 
-    #[test]
-    fn test_dot_empty() {
-        assert!(approx(dot(&[], &[]), 0.0));
-    }
+    // (test_dot_empty consolidated into test_linalg_empty_inputs_parametric below)
 
     // ── sum_of_squares / magnitude ────────────────────────────────────────────
     #[test]
@@ -355,10 +343,7 @@ mod tests {
         assert_eq!(shape(&m), (2, 3));
     }
 
-    #[test]
-    fn test_shape_empty() {
-        assert_eq!(shape(&[]), (0, 0));
-    }
+    // (test_shape_empty consolidated into test_linalg_empty_inputs_parametric below)
 
     #[test]
     fn test_get_row() {
@@ -434,10 +419,7 @@ mod tests {
         );
     }
 
-    #[test]
-    fn test_transpose_empty() {
-        assert_eq!(transpose(&[]), Vec::<Vec<f64>>::new());
-    }
+    // (test_transpose_empty consolidated into test_linalg_empty_inputs_parametric below)
 
     // ── mat_vec_mul ───────────────────────────────────────────────────────────
     #[test]
@@ -484,9 +466,28 @@ mod tests {
         assert!(approx(c[0][1], -1.0));
     }
 
+    // (test_correlation_matrix_empty consolidated into test_linalg_empty_inputs_parametric below)
+
+    /// Consolidated: 7 empty-input edge cases across linalg operations.
+    /// Each case reports its name on failure.
     #[test]
-    fn test_correlation_matrix_empty() {
-        assert_eq!(correlation_matrix(&[]), Vec::<Vec<f64>>::new());
+    fn test_linalg_empty_inputs_parametric() {
+        // vec_add, vec_sum, vec_mean, transpose, correlation_matrix all return empty Vec.
+        assert_eq!(vec_add(&[], &[]), Vec::<f64>::new(), "vec_add");
+        assert_eq!(vec_sum(&[]), Vec::<f64>::new(), "vec_sum");
+        assert_eq!(vec_mean(&[]), Vec::<f64>::new(), "vec_mean");
+        assert_eq!(transpose(&[]), Vec::<Vec<f64>>::new(), "transpose");
+        assert_eq!(
+            correlation_matrix(&[]),
+            Vec::<Vec<f64>>::new(),
+            "correlation_matrix"
+        );
+
+        // dot returns scalar 0.0 on empty inputs
+        assert!(approx(dot(&[], &[]), 0.0), "dot");
+
+        // shape returns (0, 0) on empty matrix
+        assert_eq!(shape(&[]), (0usize, 0usize), "shape");
     }
 
     #[test]

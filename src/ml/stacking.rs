@@ -435,87 +435,91 @@ mod tests {
     // stack_logistic
     // -----------------------------------------------------------------------
 
+    /// Consolidated: stack_logistic correctness at n_target ∈ {mid, zero, all}.
+    /// All three cases assert length + correct selected count; each reports its
+    /// name on failure.
     #[test]
-    fn test_stack_logistic_returns_correct_length() {
-        let all_preds = vec![
-            vec![true, false, true, false, true],
-            vec![false, true, true, false, false],
+    #[allow(clippy::type_complexity)]
+    fn test_stack_logistic_n_target_parametric() {
+        let cases: Vec<(&str, Vec<Vec<bool>>, Vec<bool>, usize, usize)> = vec![
+            // name, preds, anchor, n_target, expected_pos_count
+            (
+                "mid",
+                vec![
+                    vec![true, false, true, false, true],
+                    vec![false, true, true, false, false],
+                ],
+                vec![true, false, true, false, false],
+                2,
+                2,
+            ),
+            (
+                "zero",
+                vec![vec![true, false, true]],
+                vec![true, false, true],
+                0,
+                0,
+            ),
+            (
+                "all",
+                vec![vec![true, false, true, false]],
+                vec![true, false, true, false],
+                4,
+                4,
+            ),
         ];
-        let anchor = vec![true, false, true, false, false];
-        let n_target = 2;
-
-        let result = stack_logistic(&all_preds, &anchor, n_target);
-        assert_eq!(
-            result.len(),
-            5,
-            "result length should equal number of traces"
-        );
-        let selected = result.iter().filter(|&&b| b).count();
-        assert_eq!(
-            selected, n_target,
-            "exactly n_target traces should be selected"
-        );
-    }
-
-    #[test]
-    fn test_stack_logistic_n_target_zero() {
-        let all_preds = vec![vec![true, false, true]];
-        let anchor = vec![true, false, true];
-        let result = stack_logistic(&all_preds, &anchor, 0);
-        assert!(
-            result.iter().all(|&b| !b),
-            "n_target=0 should select nothing"
-        );
-    }
-
-    #[test]
-    fn test_stack_logistic_n_target_all() {
-        let all_preds = vec![vec![true, false, true, false]];
-        let anchor = vec![true, false, true, false];
-        let result = stack_logistic(&all_preds, &anchor, 4);
-        assert_eq!(result.iter().filter(|&&b| b).count(), 4);
+        for (name, preds, anchor, n_target, expected_pos) in cases {
+            let result = stack_logistic(&preds, &anchor, n_target);
+            assert_eq!(result.len(), anchor.len(), "case '{}': length", name);
+            assert_eq!(
+                result.iter().filter(|&&b| b).count(),
+                expected_pos,
+                "case '{}': expected {} positives at n_target={}",
+                name,
+                expected_pos,
+                n_target
+            );
+        }
     }
 
     // -----------------------------------------------------------------------
     // anchor all-false
     // -----------------------------------------------------------------------
 
+    /// Consolidated: all three meta-learners on an all-false anchor must
+    /// still return n_target positives (ties broken by stable index order).
+    /// Each case reports its name on failure so debuggability is preserved.
     #[test]
-    fn test_anchor_all_false_logistic() {
-        // All anchor labels are false → gradient descent converges to all-false
-        // predictions.  stack_logistic should still return a Vec of length n
-        // and exactly n_target selected (top-n by probability, which will be
-        // near-uniform — ties broken by index).
-        let all_preds = vec![
-            vec![false, false, false, false],
-            vec![false, false, false, false],
+    #[allow(clippy::type_complexity)]
+    fn test_anchor_all_false_parametric() {
+        type StackFn = fn(&[Vec<bool>], &[bool], usize) -> Vec<bool>;
+        let cases: Vec<(&str, StackFn, Vec<Vec<bool>>, Vec<bool>, usize)> = vec![
+            (
+                "logistic",
+                stack_logistic,
+                vec![vec![false; 4], vec![false; 4]],
+                vec![false; 4],
+                2,
+            ),
+            ("tree", stack_tree, vec![vec![false; 3]], vec![false; 3], 1),
+            (
+                "linear",
+                stack_linear,
+                vec![vec![false; 4]],
+                vec![false; 4],
+                2,
+            ),
         ];
-        let anchor = vec![false, false, false, false];
-        let n_target = 2;
-
-        let result = stack_logistic(&all_preds, &anchor, n_target);
-        assert_eq!(result.len(), 4);
-        assert_eq!(result.iter().filter(|&&b| b).count(), n_target);
-    }
-
-    #[test]
-    fn test_anchor_all_false_tree() {
-        let all_preds = vec![vec![false, false, false]];
-        let anchor = vec![false, false, false];
-
-        let result = stack_tree(&all_preds, &anchor, 1);
-        assert_eq!(result.len(), 3);
-        assert_eq!(result.iter().filter(|&&b| b).count(), 1);
-    }
-
-    #[test]
-    fn test_anchor_all_false_linear() {
-        let all_preds = vec![vec![false, false, false, false]];
-        let anchor = vec![false, false, false, false];
-
-        let result = stack_linear(&all_preds, &anchor, 2);
-        assert_eq!(result.len(), 4);
-        assert_eq!(result.iter().filter(|&&b| b).count(), 2);
+        for (name, f, preds, anchor, n_target) in cases {
+            let result = f(&preds, &anchor, n_target);
+            assert_eq!(result.len(), anchor.len(), "case '{}': length", name);
+            assert_eq!(
+                result.iter().filter(|&&b| b).count(),
+                n_target,
+                "case '{}': n_target positives",
+                name
+            );
+        }
     }
 
     // -----------------------------------------------------------------------

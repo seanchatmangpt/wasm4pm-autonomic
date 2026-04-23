@@ -35,5 +35,8 @@ pub mod synthetic_trainer;
 pub mod weighted_vote;
 pub mod word_vectors;
 
+#[cfg(test)]
+mod tests;
+
 pub use linucb::LinUcb;
 pub use naive_bayes::classify;

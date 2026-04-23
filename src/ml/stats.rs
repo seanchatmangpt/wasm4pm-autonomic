@@ -263,9 +263,13 @@ mod tests {
         assert!(approx_eq(mean(&[1.0, 2.0, 3.0, 4.0, 5.0]), 3.0, EPS));
     }
 
+    /// Consolidated: all 3 central-tendency estimators on empty input return
+    /// their identity/empty value. Each case reports its name on failure.
     #[test]
-    fn test_mean_empty() {
-        assert_eq!(mean(&[]), 0.0);
+    fn test_central_tendency_empty_inputs_parametric() {
+        assert_eq!(mean(&[]), 0.0, "mean(empty)");
+        assert_eq!(median(&[]), 0.0, "median(empty)");
+        assert!(mode(&[]).is_empty(), "mode(empty)");
     }
 
     #[test]
@@ -279,11 +283,6 @@ mod tests {
     }
 
     #[test]
-    fn test_median_empty() {
-        assert_eq!(median(&[]), 0.0);
-    }
-
-    #[test]
     fn test_mode_single() {
         let m = mode(&[1.0, 2.0, 2.0, 3.0]);
         assert_eq!(m, vec![2.0]);
@@ -294,11 +293,6 @@ mod tests {
         let m = mode(&[1.0, 1.0, 2.0, 2.0, 3.0]);
         // Both 1.0 and 2.0 appear twice; result is sorted.
         assert_eq!(m, vec![1.0, 2.0]);
-    }
-
-    #[test]
-    fn test_mode_empty() {
-        assert!(mode(&[]).is_empty());
     }
 
     #[test]

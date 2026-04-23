@@ -581,29 +581,39 @@ mod tests {
     // calibrate_to_target
     // ------------------------------------------------------------------
 
+    /// Consolidated: 3 n_target cases (exact / zero / all) in one parametric run.
+    /// Failure message identifies the specific case so debuggability is preserved.
     #[test]
-    fn test_calibrate_to_target_exact() {
-        // fracs: [0.8, 0.6, 0.4, 0.2] — top-2 are indices 0 and 1
-        let preds = vec![true, false, true, false];
-        let fracs = vec![0.8, 0.6, 0.4, 0.2];
-        let result = calibrate_to_target(&preds, &fracs, 2);
-        assert_eq!(result, vec![true, true, false, false]);
-    }
-
-    #[test]
-    fn test_calibrate_to_target_zero() {
-        let preds = vec![true, true, true];
-        let fracs = vec![0.9, 0.7, 0.5];
-        let result = calibrate_to_target(&preds, &fracs, 0);
-        assert_eq!(result, vec![false, false, false]);
-    }
-
-    #[test]
-    fn test_calibrate_to_target_all() {
-        let preds = vec![false, false, false];
-        let fracs = vec![0.1, 0.5, 0.3];
-        let result = calibrate_to_target(&preds, &fracs, 3);
-        assert_eq!(result, vec![true, true, true]);
+    #[allow(clippy::type_complexity)]
+    fn test_calibrate_to_target_parametric() {
+        let cases: Vec<(&str, Vec<bool>, Vec<f64>, usize, Vec<bool>)> = vec![
+            // name, preds, fracs, n_target, expected
+            (
+                "exact",
+                vec![true, false, true, false],
+                vec![0.8, 0.6, 0.4, 0.2],
+                2,
+                vec![true, true, false, false],
+            ),
+            (
+                "zero",
+                vec![true, true, true],
+                vec![0.9, 0.7, 0.5],
+                0,
+                vec![false, false, false],
+            ),
+            (
+                "all",
+                vec![false, false, false],
+                vec![0.1, 0.5, 0.3],
+                3,
+                vec![true, true, true],
+            ),
+        ];
+        for (name, preds, fracs, n_target, expected) in cases {
+            let result = calibrate_to_target(&preds, &fracs, n_target);
+            assert_eq!(result, expected, "case '{}' failed", name);
+        }
     }
 
     // ------------------------------------------------------------------
