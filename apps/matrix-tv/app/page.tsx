@@ -19,11 +19,29 @@ export default function EpisodeSelector() {
       <h1 style={{ fontSize: 40, letterSpacing: 2, marginBottom: 8 }}>
         Matrix · Sprawl Trilogy
       </h1>
-      <p style={{ opacity: 0.7, marginBottom: 32 }}>
+      <p style={{ opacity: 0.7, marginBottom: 24 }}>
         Every run on this page renders live from the same branchless admission
         algebra shipped in the <code>unibit</code> crates. No cliché text
         waterfall — the 64³ globe is the instrument.
       </p>
+      <Link
+        href="/sprawl"
+        data-testid="sprawl-link"
+        style={{
+          display: 'inline-block',
+          padding: '10px 18px',
+          marginBottom: 32,
+          background: 'linear-gradient(90deg, #4db2ff 0%, #9a1acc 100%)',
+          color: '#0c0f18',
+          textDecoration: 'none',
+          borderRadius: 6,
+          fontWeight: 700,
+          letterSpacing: 1,
+          fontSize: 13,
+        }}
+      >
+        ▶ play the Sprawl MUD — Case to Loa
+      </Link>
 
       {Object.entries(bySource).map(([source, runs]) => (
         <section key={source} style={{ marginBottom: 40 }}>
