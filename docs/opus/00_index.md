@@ -74,6 +74,7 @@ posture.
 | 58 | [58_finish_all.md](58_finish_all.md) | Closing P1/P2: POWL + Orchestrator crates, cargo deny clean, docs clean, C-ABI verified. 22 crates, 43 test suites pass. False flag retracted. |
 | 59 | [59_eighty_twenty.md](59_eighty_twenty.md) | 80/20 final: recursive Snapshot, WorkerPool (23µs honest), variance harness; fusion is pessimization; Condvar caps pool at 3µs. 23 crates. |
 | 60 | [60_threejs_neuromancer_tv.md](60_threejs_neuromancer_tv.md) | Three.js + Next.js interface for the Neuromancer TV series: 40 Sprawl-trilogy runs mapped to arenas 01–44; shader strategy; 5-week scope |
+| 61 | [61_final_consolidation.md](61_final_consolidation.md) | Final auto-mode pass: 4 new crates (powl64, outcome, negknowledge, multires), arenas 45–49, 209 e2e tests, workspace green |
 
 ## The spine, in one paragraph
 
