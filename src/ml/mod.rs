@@ -1,3 +1,4 @@
+pub mod rank_fusion;
 pub mod synthetic_trainer;
 pub mod deep_learning;
 pub mod pdc_features;
@@ -26,6 +27,8 @@ pub mod perceptron;
 pub mod pca;
 pub mod recommender;
 pub mod word_vectors;
+pub mod stacking;
+pub mod weighted_vote;
 
 pub use linucb::LinUcb;
 pub use naive_bayes::classify;

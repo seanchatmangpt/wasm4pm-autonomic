@@ -14,11 +14,14 @@ use dteam::conformance::trace_generator::enumerate_language_bounded;
 use dteam::io::pnml::read_pnml;
 use dteam::io::xes::XESReader;
 use dteam::io::xes_writer::write_classified_log;
-use dteam::ml::pdc_ensemble::{combinatorial_ensemble, vote_fractions};
+use dteam::ml::pdc_ensemble::{combinatorial_ensemble, vote_fractions, full_combinatorial, best_bool_score_pair};
 use dteam::ml::pdc_features::extract_log_features;
 use dteam::ml::pdc_supervised::run_supervised;
 use dteam::ml::pdc_unsupervised::run_unsupervised;
 use dteam::ml::synthetic_trainer::{classify_with_synthetic, extract_sequences};
+use dteam::ml::rank_fusion::{borda_count, bool_to_score, edit_dist_to_score, reciprocal_rank_fusion};
+use dteam::ml::weighted_vote::{auto_weighted_vote, precision_weighted_vote};
+use dteam::ml::stacking::{stack_ensemble, stack_logistic, stack_tree};
 use dteam::models::AttributeValue;
 use dteam::utils::dense_kernel::fnv1a_64;
 use log::info;
@@ -252,6 +255,7 @@ fn main() {
         };
 
         // ── Strategy E: Edit-distance k-NN on enumerated language ──────────────────
+        let mut edit_dists_global: Vec<usize> = vec![usize::MAX; log.traces.len()];
         let cls_e: Vec<bool> = if model_path.exists() {
             if let Ok(dnet) = read_pnml(&model_path) {
                 if dnet.places.len() <= 64 {
@@ -266,6 +270,7 @@ fn main() {
                         let distances: Vec<usize> = test_seqs.iter()
                             .map(|q| min_edit_distance(q, &lang_traces))
                             .collect();
+                        edit_dists_global = distances.clone();
                         // Take top-500 (smallest distance) as positive
                         let mut idx: Vec<(usize, usize)> = distances.iter().enumerate()
                             .map(|(i, &d)| (i, d)).collect();
@@ -277,6 +282,62 @@ fn main() {
                 } else { cls_f.clone() }
             } else { cls_f.clone() }
         } else { cls_f.clone() };
+
+        // ── Comprehensive signal fusion (all strategies pooled) ─────────────────────
+        let n_traces = log.traces.len();
+
+        // Collect ALL bool signals into one pool
+        let all_bool_signals: Vec<Vec<bool>> = vec![
+            cls_f.clone(), cls_g.clone(), cls_h.clone(),
+            cls_combo.clone(), cls_vote500.clone(),
+            cls_s_ensemble.clone(),
+            cls_e.clone(),
+        ];
+
+        // Continuous score signals (higher = more positive)
+        let score_neg_edit: Vec<f64> = edit_dist_to_score(&edit_dists_global);
+        let score_f_bool: Vec<f64> = bool_to_score(&cls_f);
+        let score_e_bool: Vec<f64> = bool_to_score(&cls_e);
+        let score_signals: Vec<Vec<f64>> = vec![score_neg_edit, score_f_bool, score_e_bool];
+
+        // Anchor proxy: trace predicted positive by at least 4 of 7 bool signals
+        let anchor_proxy: Vec<bool> = (0..n_traces).map(|i| {
+            all_bool_signals.iter().filter(|s| s[i]).count() >= 4
+        }).collect();
+
+        // Build combined signal pool (score + bool) for rank-fusion methods
+        let combined_signals: Vec<Vec<f64>> = {
+            let mut s = score_signals.clone();
+            s.extend(all_bool_signals.iter().map(|p| bool_to_score(p)));
+            s
+        };
+        let combined_hib: Vec<bool> = vec![true; combined_signals.len()];
+
+        // 1. Borda count fusion
+        let cls_borda = borda_count(&combined_signals, &combined_hib, 500);
+
+        // 2. Reciprocal rank fusion
+        let cls_rrf = reciprocal_rank_fusion(&combined_signals, &combined_hib, 500);
+
+        // 3. Weighted vote (anchor = majority of signals)
+        let cls_weighted = auto_weighted_vote(&all_bool_signals, &anchor_proxy, 500);
+
+        // 4. Precision-weighted vote
+        let cls_prec_weighted = precision_weighted_vote(&all_bool_signals, &anchor_proxy, 500);
+
+        // 5. Stacked meta-learner
+        let cls_stacked = stack_ensemble(&all_bool_signals, &anchor_proxy, 500);
+
+        // 6. Full combinatorial (bool + continuous)
+        let cls_full_combo = full_combinatorial(&all_bool_signals, &score_signals, &anchor_proxy, 500);
+
+        // 7. Best bool+score pair
+        let cls_best_pair = best_bool_score_pair(&all_bool_signals, &score_signals, &anchor_proxy, 500);
+
+        // Suppress unused import warnings for stack_logistic / stack_tree
+        // (stack_ensemble calls them internally; direct calls kept for completeness)
+        let _ = stack_logistic as fn(&[Vec<bool>], &[bool], usize) -> Vec<bool>;
+        let _ = stack_tree as fn(&[Vec<bool>], &[bool], usize) -> Vec<bool>;
 
         // ── Ensemble combinations ─────────────────────────────────────────────
 
@@ -318,6 +379,13 @@ fn main() {
             acc.s_knn      += (cls_s_knn[i]      == gt_lbl) as usize;
             acc.s_tree     += (cls_s_tree[i]     == gt_lbl) as usize;
             acc.s_nb       += (cls_s_nb[i]       == gt_lbl) as usize;
+            acc.borda         += (cls_borda[i]         == gt_lbl) as usize;
+            acc.rrf           += (cls_rrf[i]           == gt_lbl) as usize;
+            acc.weighted      += (cls_weighted[i]      == gt_lbl) as usize;
+            acc.prec_weighted += (cls_prec_weighted[i] == gt_lbl) as usize;
+            acc.stacked       += (cls_stacked[i]       == gt_lbl) as usize;
+            acc.full_combo    += (cls_full_combo[i]    == gt_lbl) as usize;
+            acc.best_pair     += (cls_best_pair[i]     == gt_lbl) as usize;
             acc.total += 1;
         }
 
@@ -354,6 +422,14 @@ fn main() {
     info!("  S.ensemble Majority vote ensemble:     {:.2}%", acc.s_ensemble as f64/t*100.0);
     info!("── Strategy E: Edit-distance k-NN on enumerated language ───────────────");
     info!("  E  edit-dist top-500:              {:.2}%", acc.e as f64/t*100.0);
+    info!("── Comprehensive Signal Fusion (all signals pooled) ─────────────────────");
+    info!("  Borda count fusion:              {:.2}%", acc.borda         as f64/t*100.0);
+    info!("  Reciprocal rank fusion:          {:.2}%", acc.rrf           as f64/t*100.0);
+    info!("  Weighted vote:                   {:.2}%", acc.weighted      as f64/t*100.0);
+    info!("  Precision-weighted vote:         {:.2}%", acc.prec_weighted as f64/t*100.0);
+    info!("  Stacked meta-learner:            {:.2}%", acc.stacked       as f64/t*100.0);
+    info!("  Full combinatorial (bool+score): {:.2}%", acc.full_combo    as f64/t*100.0);
+    info!("  Best bool+score pair:            {:.2}%", acc.best_pair     as f64/t*100.0);
 }
 
 #[derive(Default)]
@@ -368,6 +444,8 @@ struct Acc {
     s_knn: usize,
     s_tree: usize,
     s_nb: usize,
+    borda: usize, rrf: usize, weighted: usize, prec_weighted: usize,
+    stacked: usize, full_combo: usize, best_pair: usize,
 }
 
 fn seq_hash(trace: &dteam::models::Trace) -> u64 {

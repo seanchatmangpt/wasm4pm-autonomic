@@ -289,6 +289,146 @@ fn vote_fractions_subset(all_preds: &[Vec<bool>], subset: &[usize], n: usize) ->
         .collect()
 }
 
+/// Full combinatorial search over BOTH boolean predictions AND continuous score signals.
+///
+/// `bool_preds`: existing binary classifier outputs (Vec<Vec<bool>>)
+/// `score_signals`: continuous scored signals (e.g. fitness, neg_edit_dist, in_lang as f64);
+///   higher values = more likely positive for all signals.
+/// `anchor`: in-language BFS results used for scoring.
+/// `n_target`: 500 for PDC 2025.
+///
+/// Algorithm:
+/// 1. Convert each score_signal to bool by top-`n_target` threshold → add to bool pool.
+/// 2. Run `combinatorial_ensemble` on the combined pool (bool_preds + converted scores).
+/// 3. Return result.
+pub fn full_combinatorial(
+    bool_preds: &[Vec<bool>],
+    score_signals: &[Vec<f64>],
+    anchor: &[bool],
+    n_target: usize,
+) -> Vec<bool> {
+    // Convert each continuous signal to a bool vector via top-n_target threshold.
+    let converted: Vec<Vec<bool>> = score_signals
+        .iter()
+        .map(|sig| score_signal_to_bool(sig, n_target))
+        .collect();
+
+    // Build the combined pool: original bool preds + converted score signals.
+    let mut pool: Vec<Vec<bool>> = bool_preds.to_vec();
+    pool.extend(converted);
+
+    if pool.is_empty() {
+        return vec![false; anchor.len()];
+    }
+
+    combinatorial_ensemble(&pool, anchor, n_target)
+}
+
+/// Try all pairs (one bool_pred, one score_signal):
+/// for each pair take traces where `bool_pred=true`, among those take top-k by
+/// `score_signal`, plus fill remaining slots from `bool_pred=false` sorted by
+/// `score_signal` descending.
+/// Return the pair that maximises anchor agreement.
+///
+/// If either input slice is empty, returns all-false of length `anchor.len()`.
+pub fn best_bool_score_pair(
+    bool_preds: &[Vec<bool>],
+    score_signals: &[Vec<f64>],
+    anchor: &[bool],
+    n_target: usize,
+) -> Vec<bool> {
+    if bool_preds.is_empty() || score_signals.is_empty() {
+        return vec![false; anchor.len()];
+    }
+
+    let n = bool_preds
+        .iter()
+        .map(|v| v.len())
+        .chain(score_signals.iter().map(|v| v.len()))
+        .min()
+        .unwrap_or(0)
+        .min(anchor.len());
+
+    if n == 0 {
+        return vec![false; anchor.len()];
+    }
+
+    let mut best_score = f64::NEG_INFINITY;
+    let mut best_result: Option<Vec<bool>> = None;
+
+    for bp in bool_preds.iter() {
+        for sig in score_signals.iter() {
+            let candidate = pair_prediction(bp, sig, n, n_target);
+            let s = score(&candidate, &anchor[..n], n_target);
+            if s > best_score {
+                best_score = s;
+                best_result = Some(candidate);
+            }
+        }
+    }
+
+    best_result.unwrap_or_else(|| vec![false; n])
+}
+
+// ---------------------------------------------------------------------------
+// Internal helpers (continued)
+// ---------------------------------------------------------------------------
+
+/// Convert a continuous score vector to bools by marking the top `n_target`
+/// indices as `true` (sorted descending, ties broken by original index).
+fn score_signal_to_bool(sig: &[f64], n_target: usize) -> Vec<bool> {
+    let n = sig.len();
+    if n == 0 {
+        return Vec::new();
+    }
+    let mut order: Vec<usize> = (0..n).collect();
+    order.sort_by(|&a, &b| {
+        sig[b]
+            .partial_cmp(&sig[a])
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
+    let mut result = vec![false; n];
+    for &idx in order.iter().take(n_target) {
+        result[idx] = true;
+    }
+    result
+}
+
+/// Build a prediction vector for a (bool_pred, score_signal) pair:
+/// - Take indices where bool_pred=true, sorted by score_signal descending.
+///   Keep the top min(n_target, pos_count) as definite positives.
+/// - Fill remaining slots from bool_pred=false indices, sorted by score_signal descending.
+///
+/// Result length is `n`.
+fn pair_prediction(bp: &[bool], sig: &[f64], n: usize, n_target: usize) -> Vec<bool> {
+    let mut pos_indices: Vec<usize> = (0..n).filter(|&i| bp[i]).collect();
+    let mut neg_indices: Vec<usize> = (0..n).filter(|&i| !bp[i]).collect();
+
+    // Sort both groups by score descending.
+    pos_indices.sort_by(|&a, &b| {
+        sig[b]
+            .partial_cmp(&sig[a])
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
+    neg_indices.sort_by(|&a, &b| {
+        sig[b]
+            .partial_cmp(&sig[a])
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
+
+    let take_from_pos = pos_indices.len().min(n_target);
+    let remaining = n_target.saturating_sub(take_from_pos);
+
+    let mut result = vec![false; n];
+    for &idx in pos_indices.iter().take(take_from_pos) {
+        result[idx] = true;
+    }
+    for &idx in neg_indices.iter().take(remaining) {
+        result[idx] = true;
+    }
+    result
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -502,5 +642,117 @@ mod tests {
     fn test_score_empty_preds() {
         let s = score(&[], &[true, false], 1);
         assert!((s - 0.0).abs() < 1e-10);
+    }
+
+    // ------------------------------------------------------------------
+    // full_combinatorial
+    // ------------------------------------------------------------------
+
+    #[test]
+    fn test_full_combinatorial_uses_score_signals() {
+        // bool_preds: one classifier that is all-false (useless).
+        // score_signals: one signal that ranks traces 0-2 highest.
+        // anchor: first 3 are true.
+        // n_target = 3; the converted signal should push correct traces to top.
+        let bool_preds = vec![vec![false; 6]];
+        let score_signals = vec![vec![6.0, 5.0, 4.0, 1.0, 0.5, 0.0]];
+        let anchor = vec![true, true, true, false, false, false];
+
+        let result = full_combinatorial(&bool_preds, &score_signals, &anchor, 3);
+
+        let pos_count = result.iter().filter(|&&b| b).count();
+        assert_eq!(pos_count, 3, "expected exactly 3 positives, got {pos_count}");
+
+        let tp = result.iter().zip(anchor.iter()).filter(|(&p, &a)| p && a).count();
+        assert_eq!(tp, 3, "all 3 anchor positives should be recovered, got {tp}");
+    }
+
+    #[test]
+    fn test_full_combinatorial_empty_both() {
+        let result = full_combinatorial(&[], &[], &[true, false, true], 1);
+        assert_eq!(result, vec![false, false, false]);
+    }
+
+    #[test]
+    fn test_full_combinatorial_empty_score_signals() {
+        // Without score signals the function should still work using bool_preds only.
+        let bool_preds = vec![vec![true, false, true, false]];
+        let anchor = vec![true, false, true, false];
+
+        let result = full_combinatorial(&bool_preds, &[], &anchor, 2);
+
+        let pos_count = result.iter().filter(|&&b| b).count();
+        assert_eq!(pos_count, 2, "expected 2 positives, got {pos_count}");
+    }
+
+    // ------------------------------------------------------------------
+    // best_bool_score_pair
+    // ------------------------------------------------------------------
+
+    #[test]
+    fn test_best_bool_score_pair_selects_correct_pair() {
+        // 4 traces, n_target = 2.
+        // bool_preds[0]: [T, T, F, F]  ← aligned with anchor
+        // bool_preds[1]: [F, F, T, T]  ← anti-aligned
+        // score_signals[0]: [0.9, 0.8, 0.3, 0.1]  ← high for anchor traces
+        // anchor: [T, T, F, F]
+        //
+        // Best pair should be (bool_preds[0], score_signals[0]):
+        //   pos_by_bool = [0,1], top-2 = [0,1]; result = [T,T,F,F] → tp=2
+        let bool_preds = vec![
+            vec![true, true, false, false],
+            vec![false, false, true, true],
+        ];
+        let score_signals = vec![vec![0.9, 0.8, 0.3, 0.1]];
+        let anchor = vec![true, true, false, false];
+
+        let result = best_bool_score_pair(&bool_preds, &score_signals, &anchor, 2);
+
+        let pos_count = result.iter().filter(|&&b| b).count();
+        assert_eq!(pos_count, 2, "expected 2 positives, got {pos_count}");
+
+        let tp = result.iter().zip(anchor.iter()).filter(|(&p, &a)| p && a).count();
+        assert_eq!(tp, 2, "both anchor positives should be recovered, got {tp}");
+    }
+
+    #[test]
+    fn test_best_bool_score_pair_fills_from_negatives() {
+        // 6 traces, n_target = 4.
+        // bool_preds[0] = [T, T, F, F, F, F]  (only 2 positives, need 4)
+        // score_signals[0] = [0.1, 0.2, 0.9, 0.8, 0.7, 0.3]
+        // Fill 2 remaining from neg group sorted by signal: idx 2 (0.9), idx 3 (0.8)
+        // anchor = [T, T, T, T, F, F]
+        let bool_preds = vec![vec![true, true, false, false, false, false]];
+        let score_signals = vec![vec![0.1, 0.2, 0.9, 0.8, 0.7, 0.3]];
+        let anchor = vec![true, true, true, true, false, false];
+
+        let result = best_bool_score_pair(&bool_preds, &score_signals, &anchor, 4);
+
+        let pos_count = result.iter().filter(|&&b| b).count();
+        assert_eq!(pos_count, 4, "expected 4 positives, got {pos_count}");
+
+        // Indices 0,1 (from bool=true) and 2,3 (top negatives by signal) should be true.
+        assert!(result[0], "index 0 should be positive");
+        assert!(result[1], "index 1 should be positive");
+        assert!(result[2], "index 2 should be positive (top negative by signal)");
+        assert!(result[3], "index 3 should be positive (2nd negative by signal)");
+        assert!(!result[4], "index 4 should be negative");
+        assert!(!result[5], "index 5 should be negative");
+    }
+
+    #[test]
+    fn test_best_bool_score_pair_empty_bool_preds() {
+        let score_signals = vec![vec![1.0, 0.5, 0.0]];
+        let anchor = vec![true, false, true];
+        let result = best_bool_score_pair(&[], &score_signals, &anchor, 1);
+        assert_eq!(result, vec![false, false, false]);
+    }
+
+    #[test]
+    fn test_best_bool_score_pair_empty_score_signals() {
+        let bool_preds = vec![vec![true, false, true]];
+        let anchor = vec![true, false, true];
+        let result = best_bool_score_pair(&bool_preds, &[], &anchor, 1);
+        assert_eq!(result, vec![false, false, false]);
     }
 }
