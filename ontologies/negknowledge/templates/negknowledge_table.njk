@@ -1,0 +1,25 @@
+// GENERATED — do not edit by hand.
+// Source: ontologies/negknowledge/ontology/negknowledge.ttl
+// Template: ontologies/negknowledge/templates/negknowledge_table.njk
+//
+// Regenerate with `@unrdf/cli sync` from the ontologies/negknowledge
+// directory (see README.md).
+
+use unibit_negknowledge::{NegativeResult, Outcome};
+
+/// Negative-knowledge entries derived from the ontology.
+///
+/// This is an ontology-driven companion to the hand-authored
+/// `unibit_negknowledge::NEGATIVE_KNOWLEDGE`. Both tables share the
+/// same `NegativeResult` shape; consumers can choose either.
+pub const NEGATIVE_KNOWLEDGE_FROM_ONTOLOGY: &[NegativeResult] = &[
+{%- for row in rows %}
+    NegativeResult {
+        id: "{{ row.id }}",
+        attempt: "{{ row.attempt }}",
+        source: "{{ row.source }}",
+        outcome: Outcome::{{ row.outcome }},
+        reason: "{{ row.reason }}",
+    },
+{%- endfor %}
+];

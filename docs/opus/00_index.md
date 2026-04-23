@@ -75,6 +75,7 @@ posture.
 | 59 | [59_eighty_twenty.md](59_eighty_twenty.md) | 80/20 final: recursive Snapshot, WorkerPool (23µs honest), variance harness; fusion is pessimization; Condvar caps pool at 3µs. 23 crates. |
 | 60 | [60_threejs_neuromancer_tv.md](60_threejs_neuromancer_tv.md) | Three.js + Next.js interface for the Neuromancer TV series: 40 Sprawl-trilogy runs mapped to arenas 01–44; shader strategy; 5-week scope |
 | 61 | [61_final_consolidation.md](61_final_consolidation.md) | Final auto-mode pass: 4 new crates (powl64, outcome, negknowledge, multires), arenas 45–49, 209 e2e tests, workspace green |
+| 62 | [62_gaps_closed.md](62_gaps_closed.md) | 5-Explore/5-Plan/5-Write close: unibit-nif cdylib, NEON kernel (scalar still wins), asmcheck extension, SpinArmedPool (8% faster), table-driven runs.ts, unrdf codegen scaffold |
 
 ## The spine, in one paragraph
 

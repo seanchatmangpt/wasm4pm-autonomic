@@ -1,0 +1,29 @@
+[project]
+name = "unibit-negknowledge-demo"
+version = "0.1.0"
+
+[ontology]
+source = "ontology/negknowledge.ttl"
+format = "turtle"
+base_iri = "https://chatmangpt.com/ontology/negknowledge#"
+
+[generation]
+output_dir = "."
+
+[[generation.rules]]
+name = "negknowledge_table"
+template = "templates/negknowledge_table.njk"
+output_file = "generated/negknowledge_from_ontology.rs"
+query = """
+PREFIX neg: <https://chatmangpt.com/ontology/negknowledge#>
+SELECT ?id ?attempt ?source ?outcome ?reason
+WHERE {
+  ?entry a neg:NegativeResult ;
+         neg:id ?id ;
+         neg:attempt ?attempt ;
+         neg:source ?source ;
+         neg:outcome ?outcome ;
+         neg:reason ?reason .
+}
+ORDER BY ?id
+"""
