@@ -640,6 +640,163 @@ fn main() {
             }
         };
 
+        // ── Strategy T: TF-IDF cosine similarity to positive training centroid ────────
+        // Order-AGNOSTIC bag-of-words signal — structurally orthogonal to HDC / edit-distance / F/G/H.
+        let cls_tfidf: Vec<bool> = {
+            let training = load_training_logs(&stem, &reader);
+            // Use ALL training positives (_00 has all positive traces in PDC 2025)
+            let pos_train_docs: Vec<Vec<String>> = training
+                .iter()
+                .flat_map(|(l, _)| l.traces.iter().map(trace_to_seq))
+                .collect();
+            let test_docs: Vec<Vec<String>> = log.traces.iter().map(trace_to_seq).collect();
+
+            if pos_train_docs.is_empty() {
+                vec![false; log.traces.len()]
+            } else {
+                // Build vocabulary from union of positive training + test docs
+                let mut all_docs: Vec<Vec<String>> = pos_train_docs.clone();
+                all_docs.extend(test_docs.clone());
+                let vocab = dteam::ml::nlp::build_vocabulary(&all_docs);
+                if vocab.is_empty() {
+                    vec![false; log.traces.len()]
+                } else {
+                    // TF-IDF over the combined corpus (stable IDF denominator)
+                    let tfidf_all = dteam::ml::nlp::tf_idf(&all_docs, &vocab);
+                    let n_pos = pos_train_docs.len();
+
+                    // Centroid of positive training traces
+                    let v_dim = vocab.len();
+                    let mut centroid = vec![0.0f64; v_dim];
+                    for row in tfidf_all.iter().take(n_pos) {
+                        for (j, &v) in row.iter().enumerate() {
+                            centroid[j] += v;
+                        }
+                    }
+                    if n_pos > 0 {
+                        for v in centroid.iter_mut() {
+                            *v /= n_pos as f64;
+                        }
+                    }
+                    let cent_norm = centroid
+                        .iter()
+                        .map(|x| x * x)
+                        .sum::<f64>()
+                        .sqrt()
+                        .max(1e-12);
+
+                    // Cosine similarity of each test trace to centroid
+                    let mut sims: Vec<(usize, f64)> = (0..log.traces.len())
+                        .map(|i| {
+                            let row = &tfidf_all[n_pos + i];
+                            let dot: f64 =
+                                row.iter().zip(centroid.iter()).map(|(a, b)| a * b).sum();
+                            let row_norm = row.iter().map(|x| x * x).sum::<f64>().sqrt().max(1e-12);
+                            (i, dot / (row_norm * cent_norm))
+                        })
+                        .collect();
+                    sims.sort_by(|a, b| {
+                        b.1.partial_cmp(&a.1)
+                            .unwrap_or(std::cmp::Ordering::Equal)
+                            .then(a.0.cmp(&b.0))
+                    });
+                    let mut out = vec![false; log.traces.len()];
+                    for &(i, _) in sims.iter().take(500) {
+                        out[i] = true;
+                    }
+                    out
+                }
+            }
+        };
+
+        // ── Strategy N: N-gram (bigram) perplexity signal ────────────────────────
+        // Local adjacent-activity statistics — different granularity than F/G/H.
+        let cls_ngram: Vec<bool> = {
+            let training = load_training_logs(&stem, &reader);
+            let pos_train_docs: Vec<Vec<String>> = training
+                .iter()
+                .flat_map(|(l, _)| l.traces.iter().map(trace_to_seq))
+                .collect();
+            if pos_train_docs.is_empty() {
+                vec![false; log.traces.len()]
+            } else {
+                let model = dteam::ml::nlp::NgramModel::fit(&pos_train_docs, 2);
+                let test_docs: Vec<Vec<String>> = log.traces.iter().map(trace_to_seq).collect();
+                // Lower perplexity = more "positive-like"; rank ascending, take top-500
+                let mut scored: Vec<(usize, f64)> = test_docs
+                    .iter()
+                    .enumerate()
+                    .map(|(i, d)| (i, model.perplexity(d)))
+                    .collect();
+                scored.sort_by(|a, b| {
+                    a.1.partial_cmp(&b.1)
+                        .unwrap_or(std::cmp::Ordering::Equal)
+                        .then(a.0.cmp(&b.0))
+                });
+                let mut out = vec![false; log.traces.len()];
+                for &(i, _) in scored.iter().take(500) {
+                    out[i] = true;
+                }
+                out
+            }
+        };
+
+        // ── Strategy P: PageRank-weighted trace score ────────────────────────────
+        // Graph-theoretic activity centrality — completely orthogonal to sequence-based signals.
+        let cls_pagerank: Vec<bool> = {
+            let training = load_training_logs(&stem, &reader);
+            let pos_train_docs: Vec<Vec<String>> = training
+                .iter()
+                .flat_map(|(l, _)| l.traces.iter().map(trace_to_seq))
+                .collect();
+            if pos_train_docs.is_empty() {
+                vec![false; log.traces.len()]
+            } else {
+                // Build directed graph: nodes = activities, edges = observed transitions.
+                // `add_node` dedupes and returns existing idx for repeat calls.
+                let mut graph = dteam::ml::network_analysis::Graph::new();
+                let mut name_to_idx: FxHashMap<String, usize> = FxHashMap::default();
+                for doc in &pos_train_docs {
+                    for w in doc {
+                        let idx = graph.add_node(w);
+                        name_to_idx.entry(w.clone()).or_insert(idx);
+                    }
+                    for pair in doc.windows(2) {
+                        graph.add_edge(&pair[0], &pair[1]);
+                    }
+                }
+                let pr = dteam::ml::network_analysis::page_rank(&graph, 0.85, 100, 1e-6);
+                let pr_by_name: FxHashMap<String, f64> = name_to_idx
+                    .into_iter()
+                    .filter_map(|(name, idx)| pr.get(&idx).copied().map(|v| (name, v)))
+                    .collect();
+
+                // Score each test trace by sum of its activities' PageRank
+                let test_docs: Vec<Vec<String>> = log.traces.iter().map(trace_to_seq).collect();
+                let mut scored: Vec<(usize, f64)> = test_docs
+                    .iter()
+                    .enumerate()
+                    .map(|(i, d)| {
+                        let s: f64 = d
+                            .iter()
+                            .map(|w| pr_by_name.get(w).copied().unwrap_or(0.0))
+                            .sum();
+                        (i, s)
+                    })
+                    .collect();
+                scored.sort_by(|a, b| {
+                    b.1.partial_cmp(&a.1)
+                        .unwrap_or(std::cmp::Ordering::Equal)
+                        .then(a.0.cmp(&b.0))
+                });
+                let mut out = vec![false; log.traces.len()];
+                for &(i, _) in scored.iter().take(500) {
+                    out[i] = true;
+                }
+                out
+            }
+        };
+
         // ── Strategy RL-AutoML: search RL hyperparameters for better Petri net ────────
         // Config-driven: cfg.automl.enabled / .strategy ("random"|"grid") / .budget / .seed
         let cls_rl_automl: Vec<bool> = if cfg.automl.enabled && model_path.exists() {
@@ -840,6 +997,10 @@ fn main() {
             ("SupTrained_vote", &cls_sup_trained, 20_000),
             ("AutoML_hyper", &cls_automl_hyper, 45_000),
             ("RL_AutoML", &cls_rl_automl, 25_000),
+            // Data-Science-from-Scratch signals — structurally orthogonal
+            ("TF_IDF", &cls_tfidf, 100_000),
+            ("NGram", &cls_ngram, 30_000),
+            ("PageRank", &cls_pagerank, 50_000),
         ];
         let candidates: Vec<SignalProfile> = hdit_candidate_names_preds
             .iter()
@@ -1091,6 +1252,9 @@ fn main() {
             acc.hdc += (cls_hdc[i] == gt_lbl) as usize;
             acc.automl += (cls_automl[i] == gt_lbl) as usize;
             acc.rl_automl += (cls_rl_automl[i] == gt_lbl) as usize;
+            acc.tfidf += (cls_tfidf[i] == gt_lbl) as usize;
+            acc.ngram += (cls_ngram[i] == gt_lbl) as usize;
+            acc.pagerank += (cls_pagerank[i] == gt_lbl) as usize;
             acc.combinator += (cls_combinator[i] == gt_lbl) as usize;
             acc.sup_trained += (cls_sup_trained[i] == gt_lbl) as usize;
             acc.automl_hyper += (cls_automl_hyper[i] == gt_lbl) as usize;
@@ -1200,6 +1364,19 @@ fn main() {
     info!(
         "  HDC hypervector prototype:        {:.2}%",
         acc.hdc as f64 / t * 100.0
+    );
+    info!("── Data-Science-from-Scratch signals (TPOT2 orthogonality) ─────────────");
+    info!(
+        "  T (TF-IDF cosine vs centroid):    {:.2}%",
+        acc.tfidf as f64 / t * 100.0
+    );
+    info!(
+        "  N (N-gram bigram perplexity):     {:.2}%",
+        acc.ngram as f64 / t * 100.0
+    );
+    info!(
+        "  P (PageRank activity centrality): {:.2}%",
+        acc.pagerank as f64 / t * 100.0
     );
     info!("── Strategy T: Training-data supervised transfer ───────────────────────────");
     info!(
@@ -1587,6 +1764,9 @@ struct Acc {
     hdc: usize,
     automl: usize,
     rl_automl: usize,
+    tfidf: usize,
+    ngram: usize,
+    pagerank: usize,
     fgh: usize,
     fg_or: usize,
     fg_and: usize,
