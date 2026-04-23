@@ -530,6 +530,7 @@ pub mod dteam {
                     beta,
                     lambda,
                     self.ontology.as_ref(),
+                    None,
                 );
                 let execution_time_ns = start_time.elapsed().as_nanos() as u64;
 

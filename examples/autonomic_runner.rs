@@ -5,6 +5,11 @@ use std::time::{Duration, SystemTime};
 
 fn main() {
     env_logger::init();
+
+    info!("📂 Running PDC 2025 training context...");
+    dteam::automation::automate_discovery(".");
+    info!("✅ PDC 2025 training complete.\n");
+
     let mut kernel = DefaultKernel::new();
     info!("🚀 Starting dteam Autonomic Runner...");
     debug!("Initial System State: {}\n", kernel.infer());

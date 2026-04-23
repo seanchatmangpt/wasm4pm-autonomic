@@ -4,7 +4,9 @@ use crate::utils::dense_kernel::{fnv1a_64, DenseIndex, NodeKind, PackedKeyTable}
 use serde::{Deserialize, Serialize};
 use std::hash::{Hash, Hasher};
 
+pub mod bitmask_replay;
 pub mod case_centric;
+pub mod trace_generator;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TokenReplayDeviation {

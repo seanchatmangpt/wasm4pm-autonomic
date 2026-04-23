@@ -99,6 +99,9 @@ description = "Start the autonomic live loop simulation."
 command = "cargo"
 args = ["run", "--example", "autonomic_runner"]
 
+[tasks.run.env]
+RUST_LOG = "info"
+
 [tasks.doc]
 description = "Generate the whitepaper PDF using pdflatex."
 script_runner = "@shell"

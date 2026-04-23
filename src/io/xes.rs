@@ -162,6 +162,28 @@ impl XESReader {
                                 attribute: "value".to_string(),
                             });
                         }
+                    } else if name.as_ref() == b"boolean" {
+                        let mut attr_key = None;
+                        let mut attr_value = None;
+                        for attr_res in e.attributes() {
+                            let attr = attr_res?;
+                            match attr.key.as_ref() {
+                                b"key" => attr_key = Some(attr.value.to_vec()),
+                                b"value" => attr_value = Some(attr.value.to_vec()),
+                                _ => {}
+                            }
+                        }
+                        if let (Some(k), Some(v)) = (attr_key, attr_value) {
+                            let key = std::str::from_utf8(&k).unwrap_or("");
+                            let val_str = std::str::from_utf8(&v).unwrap_or("false");
+                            let val = val_str.eq_ignore_ascii_case("true");
+                            if let Some(ref mut trace) = current_trace {
+                                trace.attributes.push(crate::models::Attribute {
+                                    key: key.to_string(),
+                                    value: AttributeValue::Boolean(val),
+                                });
+                            }
+                        }
                     }
                 }
                 Ok(XmlEvent::End(e)) => {
