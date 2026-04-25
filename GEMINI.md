@@ -283,3 +283,8 @@ Registered in **`Cargo.toml`**: `reinforcement_bench`, `real_data_bench`, `algor
 4. If touching conformance or nets: run adversarial tests and a focused **`cargo bench`** group when performance claims change.
 5. Update **`AGENTS.md`** if public layout, config schema, or primary commands change.
 6. For `examples/` or `benches/`, run `cargo check --examples` / `cargo check --benches` if CI does not cover them yet.
+
+<!-- SPECKIT START -->
+For additional context about technologies to be used, project structure,
+shell commands, and other important information, read the current plan
+<!-- SPECKIT END -->
