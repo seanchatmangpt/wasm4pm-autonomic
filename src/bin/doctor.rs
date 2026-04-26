@@ -369,6 +369,7 @@ fn fmt_us(us: u64) -> String {
 enum DoctorKind {
     Automl,
     RalphPlan,
+    RalphAndon,
 }
 
 struct CliArgs {
@@ -377,6 +378,8 @@ struct CliArgs {
     json: bool,
     plans_dir: Option<PathBuf>,
     kind: DoctorKind,
+    andon: Option<String>,
+    analyses_dir: Option<PathBuf>,
 }
 
 fn parse_args() -> CliArgs {
@@ -386,6 +389,8 @@ fn parse_args() -> CliArgs {
         json: false,
         plans_dir: None,
         kind: DoctorKind::Automl,
+        andon: None,
+        analyses_dir: None,
     };
     for raw in std::env::args().skip(1) {
         if raw == "--json" {
@@ -396,12 +401,17 @@ fn parse_args() -> CliArgs {
             args.plan = Some(PathBuf::from(val));
         } else if let Some(val) = raw.strip_prefix("--plans-dir=") {
             args.plans_dir = Some(PathBuf::from(val));
+        } else if let Some(val) = raw.strip_prefix("--andon=") {
+            args.andon = Some(val.to_string());
+        } else if let Some(val) = raw.strip_prefix("--analyses-dir=") {
+            args.analyses_dir = Some(PathBuf::from(val));
         } else if let Some(val) = raw.strip_prefix("--kind=") {
             args.kind = match val {
                 "ralph-plan" | "ralph_plan" => DoctorKind::RalphPlan,
+                "ralph-andon" | "ralph_andon" => DoctorKind::RalphAndon,
                 "automl" | "" => DoctorKind::Automl,
                 other => {
-                    eprintln!("doctor: unknown --kind={} (allowed: automl, ralph-plan)", other);
+                    eprintln!("doctor: unknown --kind={} (allowed: automl, ralph-plan, ralph-andon)", other);
                     std::process::exit(2);
                 }
             };
@@ -1268,10 +1278,216 @@ fn build_ralph_pathologies(report: &RalphPlanReport) -> Vec<Value> {
     out
 }
 
+// ── RalphAndon mode (5-Whys auto-escalation) ─────────────────────────────────
+//
+// Reads an andon event JSON (schema speckit.portfolio.andon.event.v1) from a
+// path or `-` (stdin), produces a deterministic heuristic 5-Whys analysis, and
+// writes it to <analyses-dir>/<andon-id>.5whys.json.
+//
+// Exit codes:
+//   0 — healthy verdict
+//   1 — soft fail (SLOW / SATURATED / REDUNDANT / STALE)
+//   2 — LYING
+
+fn andon_verdict_for_class(class: &str, tier: &str) -> &'static str {
+    // Hard-classified verdicts driven by the andon taxonomy. Anything that
+    // attacks truth or lifecycle integrity → LYING. Performance/diversity
+    // pathologies → soft buckets. Everything else → healthy fallthrough.
+    match class {
+        "DOCTOR_LYING"
+        | "CHAIN_BROKEN"
+        | "EXECUTOR_RECEIPT_DEFECT"
+        | "CONSTITUTION_VIOLATION"
+        | "CONSTITUTION_MISSING"
+        | "CAUSAL_INCONSISTENT"
+        | "LIFECYCLE_UNSOUND"
+        | "STOP_LINE_BREACH"
+        | "CAPABILITY_MISSING" => "LYING",
+        "HEIJUNKA_STARVED" | "RATE_LIMIT_EXHAUSTED" | "DRIVER_TIMEOUT" => "SLOW",
+        "SEQUENCING_DEFECT" | "CONFORMANCE_DRIFT" => "REDUNDANT",
+        "TASKS_EMPTY" | "PLAN_MISSING" | "TASKS_MISSING" | "SPEC_MISSING"
+        | "SPECKIT_SPEC_MISSING" | "SPECKIT_NOT_INITIALIZED" => "SATURATED",
+        "RECEIPT_UNVERIFIED" | "DOCTOR_DEGRADED" => "STALE",
+        _ => match tier {
+            "red" => "LYING",
+            "orange" => "STALE",
+            "yellow" => "REDUNDANT",
+            _ => "healthy",
+        },
+    }
+}
+
+fn five_whys_for(class: &str, tier: &str, scope: &str, halts: &str) -> (Vec<(String, String)>, String) {
+    // Deterministic 5-Whys: each (q,a) pair is keyed off the andon class so
+    // identical events always produce identical analyses (no LLM nondeterminism).
+    let q1 = format!("Why was the andon '{}' raised?", class);
+    let a1 = format!(
+        "A {} signal escalated within scope {} (halts={}).",
+        tier, scope, halts
+    );
+    let q2 = "Why did the producing operator allow that signal to escalate?".to_string();
+    let a2 = match class {
+        "CHAIN_BROKEN" | "EXECUTOR_RECEIPT_DEFECT" | "CAUSAL_INCONSISTENT" => {
+            "A receipt or chain link failed integrity checks at append time.".to_string()
+        }
+        "DOCTOR_LYING" | "LIFECYCLE_UNSOUND" => {
+            "A doctor invariant detected an artifact whose declared state contradicts evidence.".to_string()
+        }
+        "CONSTITUTION_MISSING" | "CONSTITUTION_VIOLATION" => {
+            "The cell's constitution is absent or contradicted by an executed obligation.".to_string()
+        }
+        "HEIJUNKA_STARVED" => {
+            "The heijunka queue produced no eligible obligation within the polling window.".to_string()
+        }
+        "RATE_LIMIT_EXHAUSTED" | "DRIVER_TIMEOUT" => {
+            "The chosen driver exceeded its budget envelope before producing an artifact.".to_string()
+        }
+        _ => format!(
+            "Class {} signals a defect in the {} subsystem that the operator did not preempt.",
+            class, scope
+        ),
+    };
+    let q3 = "Why was the underlying defect not caught upstream?".to_string();
+    let a3 = match scope {
+        "CHAIN" | "RECEIPT" => "Chain-append validation lacks a pre-flight conformance check for this class.".to_string(),
+        "EXECUTOR" => "Executor receipts are not gated through the doctor before chain-append.".to_string(),
+        "DOCTOR" => "Doctor self-checks did not include a fixture for this pathology.".to_string(),
+        "CONSTITUTION" => "Constitution presence/parity is not asserted at obligation-dequeue time.".to_string(),
+        "SPECKIT" | "TASK" => "Spec Kit phase artifacts are not required by an upstream gate.".to_string(),
+        "HEIJUNKA" => "Heijunka has no starvation alarm before the queue empties.".to_string(),
+        "AGENT" => "Agent capability/auth is not probed before obligation assignment.".to_string(),
+        _ => "No upstream proof gate exists for this pathology.".to_string(),
+    };
+    let q4 = "Why does that gap exist in the manufacturing pipeline?".to_string();
+    let a4 = match halts {
+        "portfolio" => "The pathology is portfolio-fatal but escalation is reactive, not preventive.".to_string(),
+        "cell" => "Cell-scoped fail-fast logic does not pre-empt this class before work starts.".to_string(),
+        _ => "The class is currently treated as informational rather than gated.".to_string(),
+    };
+    let q5 = "Why has the gap not been engineered out yet?".to_string();
+    let a5 = format!(
+        "No obligation in the heijunka queue has been seeded to add a preventive check for {}.",
+        class
+    );
+    let root_cause = format!(
+        "Missing preventive proof-gate for andon class '{}' in scope '{}' (tier={}, halts={}).",
+        class, scope, tier, halts
+    );
+    (
+        vec![(q1, a1), (q2, a2), (q3, a3), (q4, a4), (q5, a5)],
+        root_cause,
+    )
+}
+
+fn run_ralph_andon_mode(
+    andon_src: Option<&str>,
+    analyses_dir: Option<&Path>,
+    json_mode: bool,
+) -> ExitCode {
+    // Read input from path or stdin ('-' or absent).
+    let raw = match andon_src {
+        Some(s) if s != "-" => match std::fs::read_to_string(s) {
+            Ok(c) => c,
+            Err(e) => {
+                eprintln!("ralph-andon: cannot read andon file {}: {}", s, e);
+                return ExitCode::from(2);
+            }
+        },
+        _ => {
+            use std::io::Read;
+            let mut buf = String::new();
+            if let Err(e) = std::io::stdin().read_to_string(&mut buf) {
+                eprintln!("ralph-andon: cannot read stdin: {}", e);
+                return ExitCode::from(2);
+            }
+            buf
+        }
+    };
+
+    let v: Value = match serde_json::from_str(&raw) {
+        Ok(v) => v,
+        Err(e) => {
+            eprintln!("ralph-andon: parse error: {}", e);
+            return ExitCode::from(2);
+        }
+    };
+
+    let schema = v.get("schema").and_then(|x| x.as_str()).unwrap_or("");
+    if !schema.is_empty() && schema != "speckit.portfolio.andon.event.v1" {
+        eprintln!(
+            "ralph-andon: unexpected schema '{}' (want speckit.portfolio.andon.event.v1)",
+            schema
+        );
+        return ExitCode::from(2);
+    }
+
+    let id = v
+        .get("id")
+        .and_then(|x| x.as_str())
+        .unwrap_or("andon-unknown")
+        .to_string();
+    let class = v.get("class").and_then(|x| x.as_str()).unwrap_or("").to_string();
+    let tier = v.get("tier").and_then(|x| x.as_str()).unwrap_or("yellow").to_string();
+    let scope = v.get("scope").and_then(|x| x.as_str()).unwrap_or("CELL").to_string();
+    let halts = v.get("halts").and_then(|x| x.as_str()).unwrap_or("none").to_string();
+
+    let (whys, root_cause) = five_whys_for(&class, &tier, &scope, &halts);
+    let verdict = andon_verdict_for_class(&class, &tier);
+
+    let analysis = serde_json::json!({
+        "schema": "speckit.portfolio.andon.5whys.v1",
+        "andon_id": id,
+        "andon_class": class,
+        "andon_tier": tier,
+        "andon_scope": scope,
+        "andon_halts": halts,
+        "whys": whys.iter().map(|(q, a)| serde_json::json!({"q": q, "a": a})).collect::<Vec<_>>(),
+        "root_cause": root_cause,
+        "verdict": verdict,
+    });
+
+    // Write to analyses-dir/<andon-id>.5whys.json (default: ./analyses).
+    let dir = analyses_dir.map(PathBuf::from).unwrap_or_else(|| PathBuf::from("analyses"));
+    if let Err(e) = std::fs::create_dir_all(&dir) {
+        eprintln!("ralph-andon: cannot create analyses dir {}: {}", dir.display(), e);
+        return ExitCode::from(2);
+    }
+    let out_path = dir.join(format!("{}.5whys.json", id));
+    let serialized = serde_json::to_string_pretty(&analysis).unwrap();
+    if let Err(e) = std::fs::write(&out_path, &serialized) {
+        eprintln!("ralph-andon: cannot write {}: {}", out_path.display(), e);
+        return ExitCode::from(2);
+    }
+
+    if json_mode {
+        println!("{}", serialized);
+    } else {
+        println!(
+            "ralph-andon: id={} class={} verdict={} → {}",
+            id, class, verdict, out_path.display()
+        );
+    }
+
+    match verdict {
+        "LYING" => ExitCode::from(2),
+        "healthy" => ExitCode::from(0),
+        _ => ExitCode::from(1),
+    }
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 fn main() -> ExitCode {
     let args = parse_args();
+
+    // ── ralph-andon mode (5-Whys auto-escalation) ─────────────────────────────
+    if args.kind == DoctorKind::RalphAndon {
+        return run_ralph_andon_mode(
+            args.andon.as_deref(),
+            args.analyses_dir.as_deref(),
+            args.json,
+        );
+    }
 
     // ── ralph-plan mode (distinct artifact family from AutomlPlan) ────────────
     if args.kind == DoctorKind::RalphPlan {

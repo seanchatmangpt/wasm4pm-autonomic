@@ -12,3 +12,12 @@
 /plans/
 /ideas/
 /IDEAS.md
+
+# Portfolio proof artifacts — receipts, envelopes, and closure docs are evidence
+!.portfolio/
+!.portfolio/receipts/
+!.portfolio/receipts/*.json
+!.portfolio/obligations/
+!.portfolio/obligations/*.md
+# Run inputs (plan corpora) stay ignored — only signed outputs matter
+.portfolio/runs/

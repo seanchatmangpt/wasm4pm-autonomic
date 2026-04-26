@@ -159,22 +159,9 @@ Notable public items:
 ## 10. Test suites inside the library crate
 
 - **`jtbd_tests` / `jtbd_counterfactual_tests`**: Scenario-driven **`Vision2030Kernel`** runs; assert health bounds, manifest prefixes (`VISION_2030_MANIFEST`), deterministic `hash=` substrings, drift/reward feedback, governance cases.
-<<<<<<< HEAD
 - **`reinforcement_tests`**: Convergence and serialization roundtrips for tabular agents. Now includes **`proptest`** for KTier marking admissibility.
-- **`proptest_kernel_verification`**: Property-based tests for μ-kernel determinism, bitset logic, and Engine KTier enforcement.
-=======
-- **`proptest_kernel_verification`**: μ-kernel property tests; verifies $Var(\tau) = 0$ determinism, `KTier` capacity boundaries, MDL formula correctness, and cryptographic manifest integrity.
-- **`reinforcement_tests`**: Convergence and serialization roundtrips for tabular agents.
-<<<<<<< HEAD
-<<<<<<< HEAD
->>>>>>> wreckit/cryptographic-execution-provenance-enhance-executionmanifest-with-full-h-l-π-h-n-hashing
-=======
-- **`proptest_kernel_verification`**: Property-based tests for μ-kernel determinism across multiple `KTier` settings (K64-K4096).
+- **`proptest_kernel_verification`**: Property-based tests for μ-kernel determinism, bitset logic, and Engine KTier enforcement. Verifies $Var(\tau) = 0$ determinism, `KTier` capacity boundaries, MDL formula correctness, and cryptographic manifest integrity.
 - **`provenance_mdl_verification`**: Integration tests for `ExecutionManifest` compliance and MDL minimality Φ(N) verification.
->>>>>>> wreckit/k-tier-scalability-optimize-bitset-alignment-for-k-1024-and-beyond
-=======
-- **`proptest_kernel_verification`**: Property-based tests for the branchless μ-kernel and K-Tier state updates.
->>>>>>> wreckit/branchless-state-equation-calculus-eliminate-conditional-logic-in-petrinet-verification
 - **`io/xes_tests`**, **`conformance/case_centric/adversarial_tests`**, **`automation`**, **`dteam::orchestration`**, **`autonomic::kernel`**, **`skeptic_harness`**: narrower unit tests.
 
 Run everything: **`cargo test --lib`**.
@@ -259,3 +246,17 @@ See `docs/explanation/deployment_tiers.md` and `docs/how-to/run-doctor.md` for u
 4. If touching conformance or nets: run adversarial tests and a focused **`cargo bench`** group when performance claims change.
 5. Update **`AGENTS.md`** if public layout, config schema, or primary commands change.
 6. For `examples/` or `benches/`, run `cargo check --examples` / `cargo check --benches` if CI does not cover them yet.
+
+---
+
+## 17. Envelope CLI surface (ggen — external crate)
+
+Receipt signing and chain verification for dteam-produced artifacts is handled by the `ggen` binary (crate: `ggen-cli`), not by any binary in this workspace. The schema discriminator is `chatmangpt.receipt.envelope.v1`. Producer kinds registered from dteam are `doctor-verdict-automl` and `doctor-verdict-ralph-plan`; future kinds include `ucausal-receipt` and `conformance-result`.
+
+| Verb | Purpose |
+|------|---------|
+| `ggen envelope sign` | Wrap a payload file in a signed ReceiptEnvelope |
+| `ggen envelope verify` | Verify Ed25519 signature on a single envelope |
+| `ggen envelope chain_verify` | Verify BLAKE3 chain integrity across a directory of envelopes |
+
+The envelope layer is a pointer-and-proof layer only. It never re-serializes or merges producer payloads. See `.portfolio/obligations/obl-receipt-format-unifier-001.closure.md` for the full design record.

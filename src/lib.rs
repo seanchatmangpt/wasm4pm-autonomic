@@ -1,6 +1,7 @@
 pub mod conformance;
 pub mod io;
 pub mod jtbd_counterfactual_tests;
+pub mod ocel;
 pub mod jtbd_tests;
 pub mod models;
 pub mod ontology_proptests;

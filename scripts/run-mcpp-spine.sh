@@ -4,11 +4,13 @@
 # Alt kind:      ralph-plan (Stage 1 = ralph run → emit RalphPlan corpus)
 #
 # Stage 2: dteam doctor verification (--json [--kind=K])
-# Stage 3: ggen receipt sign + chain
-# Verify : ggen receipt verify + chain-verify
+# Stage 3: ggen receipt sign + chain  (legacy receipt chain)
+# Stage 3b: ggen envelope sign        (ReceiptEnvelope unifier chain)
+# Verify : ggen receipt verify + chain_verify
+#          ggen envelope verify + chain_verify (envelope chain)
 #
 # Spine succeeds on any doctor verdict (pass/healthy/soft_fail/fatal).
-# Spine fails only if a stage breaks plumbing or the receipt is invalid.
+# Spine fails only if a stage breaks plumbing or the receipt/envelope is invalid.
 
 set -euo pipefail
 
@@ -49,6 +51,8 @@ VERDICT_FILE="${RUN_DIR}/doctor-verdict.json"
 UNSIGNED_RECEIPT="${RUN_DIR}/unsigned-receipt.json"
 SIGNED_RECEIPT="${RECEIPT_DIR}/${OBLIGATION}.receipt.json"
 CHAIN_FILE="${RECEIPT_DIR}/mcpp.chain.json"
+ENVELOPE_CHAIN_FILE="${RECEIPT_DIR}/mcpp.envelope.chain.json"
+OBL_ID="obl-receipt-format-unifier-001"
 
 log() { echo "[spine] $*" >&2; }
 fail() { echo "[spine] FAIL: $*" >&2; exit 1; }
@@ -163,16 +167,68 @@ CHAIN_OK=$(grep -oE '"is_valid":[[:space:]]*(true|false)' "${RUN_DIR}/chain-veri
 [ "${CHAIN_OK}" = "true" ] || fail "chain-verify failed (is_valid=${CHAIN_OK:-<missing>})"
 log "  chain-verify: ok"
 
+# ── Stage 3b: envelope sign (ReceiptEnvelope unifier chain) ───────────────
+log "Stage 3b: ggen envelope sign → chain"
+
+ENVELOPE_TS=$(date -u +"%s")
+ENVELOPE_ID="recenv-${KIND}-${ENVELOPE_TS}"
+ENVELOPE_FILE="${RECEIPT_DIR}/${OBL_ID}.${KIND}.envelope.json"
+
+"${GGEN_BIN}" envelope sign \
+  --payload_path "${VERDICT_FILE}" \
+  --payload_schema chatmangpt.doctor.verdict.v1 \
+  --producer_system dteam \
+  --producer_kind doctor-verdict \
+  --operation_id "${OBL_ID}" \
+  --envelope_id "${ENVELOPE_ID}" \
+  --private_key "${PRIV_KEY}" \
+  --public_key_ref "${PUB_KEY}" \
+  --chain_file "${ENVELOPE_CHAIN_FILE}" \
+  --output "${ENVELOPE_FILE}" \
+  > "${RUN_DIR}/envelope-sign-summary.json" \
+  || fail "envelope sign failed"
+
+log "  signed envelope: ${ENVELOPE_FILE}"
+log "  envelope chain:  ${ENVELOPE_CHAIN_FILE}"
+
+# ── Verify envelope round-trip ─────────────────────────────────────────────
+log "Verify: ggen envelope verify"
+"${GGEN_BIN}" envelope verify \
+  --envelope_file "${ENVELOPE_FILE}" \
+  --public_key "${PUB_KEY}" \
+  > "${RUN_DIR}/envelope-verify-summary.json" \
+  || fail "envelope verify failed"
+
+ENV_VERIFY_OK=$(grep -oE '"is_valid":[[:space:]]*(true|false)' "${RUN_DIR}/envelope-verify-summary.json" | head -1 | grep -oE 'true|false')
+[ "${ENV_VERIFY_OK}" = "true" ] || fail "envelope verify failed (is_valid=${ENV_VERIFY_OK:-<missing>})"
+log "  envelope verify: ok"
+
+log "Verify: ggen envelope chain_verify"
+"${GGEN_BIN}" envelope chain_verify \
+  --chain_file "${ENVELOPE_CHAIN_FILE}" \
+  --public_key "${PUB_KEY}" \
+  > "${RUN_DIR}/envelope-chain-verify-summary.json" \
+  || fail "envelope chain_verify failed"
+
+ENV_CHAIN_OK=$(grep -oE '"is_valid":[[:space:]]*(true|false)' "${RUN_DIR}/envelope-chain-verify-summary.json" | head -1 | grep -oE 'true|false')
+[ "${ENV_CHAIN_OK}" = "true" ] || fail "envelope chain_verify failed (is_valid=${ENV_CHAIN_OK:-<missing>})"
+log "  envelope chain-verify: ok"
+
 # ── Done ──────────────────────────────────────────────────────────────────
 echo
 log "SPINE COMPLETE"
-log "  obligation:       ${OBLIGATION}"
-log "  doctor verdict:   ${VERDICT}"
-log "  signed receipt:   ${SIGNED_RECEIPT}"
-log "  chain file:       ${CHAIN_FILE}"
-log "  sign summary:     ${RUN_DIR}/sign-summary.json"
-log "  verify summary:   ${RUN_DIR}/verify-summary.json"
-log "  chain summary:    ${RUN_DIR}/chain-verify-summary.json"
+log "  obligation:             ${OBLIGATION}"
+log "  doctor verdict:         ${VERDICT}"
+log "  signed receipt:         ${SIGNED_RECEIPT}"
+log "  chain file:             ${CHAIN_FILE}"
+log "  sign summary:           ${RUN_DIR}/sign-summary.json"
+log "  verify summary:         ${RUN_DIR}/verify-summary.json"
+log "  chain summary:          ${RUN_DIR}/chain-verify-summary.json"
+log "  signed envelope:        ${ENVELOPE_FILE}"
+log "  envelope chain file:    ${ENVELOPE_CHAIN_FILE}"
+log "  envelope sign summary:  ${RUN_DIR}/envelope-sign-summary.json"
+log "  envelope verify:        ${RUN_DIR}/envelope-verify-summary.json"
+log "  envelope chain summary: ${RUN_DIR}/envelope-chain-verify-summary.json"
 echo
 
 # Print final receipt-verify JSON to stdout for downstream consumers.

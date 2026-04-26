@@ -261,6 +261,124 @@ fn emit_ralph_plan(
     Ok(())
 }
 
+/// `ralph portfolio-tick` — single-shot portfolio indexing pulse.
+///
+/// Loads `registry.yaml`, optionally narrows to a single cell, runs
+/// `PortfolioIndexer.scan()` against that cell's path (or the registry root if
+/// `--cell` is omitted), asks `WorkSelector` for the next admissible unit, and
+/// writes a receipt JSON to `--emit-receipt`. Exits 0 on success.
+fn run_portfolio_tick(args: &[String]) -> anyhow::Result<()> {
+    fn flag<'a>(args: &'a [String], name: &str) -> Option<&'a str> {
+        let pos = args.iter().position(|a| a == name)?;
+        args.get(pos + 1).map(|s| s.as_str())
+    }
+
+    let registry = flag(args, "--registry")
+        .ok_or_else(|| anyhow::anyhow!("--registry <path> is required"))?;
+    let cell = flag(args, "--cell");
+    let phase = flag(args, "--phase").unwrap_or("observe");
+    let emit_receipt = flag(args, "--emit-receipt")
+        .ok_or_else(|| anyhow::anyhow!("--emit-receipt <path> is required"))?;
+
+    let registry_path = PathBuf::from(registry);
+    if !registry_path.exists() {
+        anyhow::bail!("registry not found: {}", registry_path.display());
+    }
+    let registry_text = fs::read_to_string(&registry_path)?;
+
+    // Minimal YAML scrape: find `- id: <cell>` block and its `path:` line.
+    // Avoids pulling in serde_yaml just for one lookup.
+    let cell_path: PathBuf = match cell {
+        Some(name) => {
+            let mut found: Option<PathBuf> = None;
+            let lines: Vec<&str> = registry_text.lines().collect();
+            for (i, line) in lines.iter().enumerate() {
+                let trimmed = line.trim_start();
+                if let Some(rest) = trimmed.strip_prefix("- id:") {
+                    if rest.trim().trim_matches(|c: char| c == '"' || c == '\'') == name {
+                        // scan forward until next `- id:` or end for `path:`
+                        for next in lines.iter().skip(i + 1) {
+                            let nt = next.trim_start();
+                            if nt.starts_with("- id:") {
+                                break;
+                            }
+                            if let Some(pv) = nt.strip_prefix("path:") {
+                                let p = pv.trim().trim_matches(|c: char| c == '"' || c == '\'');
+                                found = Some(PathBuf::from(p));
+                                break;
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+            found.ok_or_else(|| {
+                anyhow::anyhow!("cell '{}' not found in registry {}", name, registry_path.display())
+            })?
+        }
+        None => registry_path
+            .parent()
+            .map(|p| p.to_path_buf())
+            .unwrap_or_else(|| PathBuf::from(".")),
+    };
+
+    let indexer = PortfolioIndexer::new();
+    let state = indexer.scan(&cell_path)?;
+
+    let selector = WorkSelector::new();
+    let next_unit = selector.select_next(&state)?;
+
+    let timestamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)?
+        .as_secs();
+
+    let receipt = json!({
+        "schema": "ralph.portfolio_tick.v1",
+        "cell": cell.unwrap_or("<all>"),
+        "phase": phase,
+        "registry": registry_path.display().to_string(),
+        "cell_path": cell_path.display().to_string(),
+        "active_projects": state.active_projects,
+        "known_artifacts": state
+            .known_artifacts
+            .iter()
+            .map(|p| p.display().to_string())
+            .collect::<Vec<_>>(),
+        "next_unit": next_unit,
+        "emitted_at": timestamp,
+        "verdict": "pass",
+    });
+
+    let receipt_path = PathBuf::from(emit_receipt);
+    if let Some(parent) = receipt_path.parent() {
+        if !parent.as_os_str().is_empty() {
+            fs::create_dir_all(parent)?;
+        }
+    }
+    fs::write(&receipt_path, serde_json::to_string_pretty(&receipt)?)?;
+
+    // ReceiptEmitter is reused for the legacy text-receipt sidecar so the
+    // subcommand exercises the same emission path the orchestrator uses.
+    let emitter = ReceiptEmitter::new();
+    let sidecar_dir = receipt_path
+        .parent()
+        .map(|p| p.to_path_buf())
+        .unwrap_or_else(|| PathBuf::from("."));
+    let _ = emitter.emit(
+        &sidecar_dir,
+        &format!("portfolio-tick:{}", cell.unwrap_or("<all>")),
+        "PortfolioTickOk",
+    );
+
+    info!(
+        "portfolio-tick complete: cell={} phase={} receipt={}",
+        cell.unwrap_or("<all>"),
+        phase,
+        receipt_path.display()
+    );
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let provider = init_telemetry().ok();
@@ -268,6 +386,16 @@ async fn main() -> anyhow::Result<()> {
 
     if cfg!(debug_assertions) {
         info!("--- Ralph Wiggum Loop: Rust Parallel Orchestrator ---");
+    }
+
+    // Subcommand dispatch (manual argv parse, matches existing style).
+    let raw_args: Vec<String> = std::env::args().collect();
+    if raw_args.iter().any(|a| a == "portfolio-tick") {
+        let result = run_portfolio_tick(&raw_args);
+        if let Some(p) = provider {
+            let _ = p.force_flush();
+        }
+        return result;
     }
 
     let root_dir = Path::new(".");
