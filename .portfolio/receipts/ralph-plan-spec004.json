@@ -1,0 +1,37 @@
+{
+  "schema": "chatmangpt.ralph.plan.v1",
+  "run_id": "ralph-path-b-spec004-2026-04-26T22:57:41Z",
+  "target": "mcpp",
+  "idea_hash": "5ce382c7dcbb69a26bf68d3db9c91bc6c7540ff6c69e6aba2d5b0d1ead8a502d",
+  "spec_hash": "514137cbc83742b94410d1a585cf556ed9c09c4ded257aeae5576b8003a7d328",
+  "phase": "implement",
+  "phase_sequence": ["specify", "plan", "tasks", "implement"],
+  "completed_phases": ["specify", "plan", "tasks", "implement"],
+  "blocked_phases": [],
+  "skipped_phases": [],
+  "artifacts": [
+    {"kind": "specify", "path": "/Users/sac/speckit-ralph/.specify/specs/004-mcpp-receipted-capability-composition/spec.md", "hash": "514137cbc83742b94410d1a585cf556ed9c09c4ded257aeae5576b8003a7d328"},
+    {"kind": "plan",    "path": "/Users/sac/speckit-ralph/.specify/specs/004-mcpp-receipted-capability-composition/plan.md",  "hash": "48b0e0b76b9c3b1ebbda63d95146d7827e7923b3ec094dd8b3bf865649b85e82"},
+    {"kind": "tasks",   "path": "/Users/sac/speckit-ralph/.specify/specs/004-mcpp-receipted-capability-composition/tasks.md", "hash": "96b904ea51a7c2b2db633c752b1273b7307dd3b806e7be8e16f270a99f3a9183"}
+  ],
+  "gates": [
+    {"name": "constitution_present", "status": "pass"},
+    {"name": "spec_complete",        "status": "pass"},
+    {"name": "plan_complete",        "status": "pass"},
+    {"name": "tasks_complete",       "status": "pass"}
+  ],
+  "accounting": {
+    "phases_expected": 4,
+    "phases_completed": 4,
+    "phases_blocked": 0,
+    "phases_skipped": 0,
+    "phases_pending": 0,
+    "balanced": true
+  },
+  "verdict": "Pass",
+  "feature_name": "004-mcpp-receipted-capability-composition",
+  "spec_dir": "/Users/sac/speckit-ralph/.specify/specs/004-mcpp-receipted-capability-composition",
+  "issued_at": "2026-04-26T22:57:41Z",
+  "issued_by": "operator-path-b",
+  "note": "Manual receipt (Path B) — conforming to RalphPlan schema with capitalized verdict. Replace with ralph-loop output (Path A) for full authority."
+}
