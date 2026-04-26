@@ -4,6 +4,10 @@ use dteam::agentic::ralph::{
     SpecKitPhase, SpecKitRunner, SpeckitController, WorkSelector, WorkspaceManager,
 };
 use dteam::models::{Attribute, AttributeValue, Event, EventLog, Trace};
+use dteam::ralph_plan::{
+    sha256_file, sha256_hex, Accounting, Artifact as RpArtifact, Gate, GateStatus, RalphPlan,
+    Verdict, SCHEMA_VERSION,
+};
 use serde_json::json;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -112,6 +116,151 @@ echo '{"decision": "allow"}'
     Ok(())
 }
 
+/// Build and write a RalphPlan for one processed idea.
+///
+/// In `--test` mode ralph writes mock `research.md` / `plan.md` / `implement.md`
+/// files into `working_dir`; we hash whichever exist and treat their presence as
+/// completion of the corresponding Spec Kit phase. In real mode, presence of
+/// these artifacts plus the existing `ReceiptEmitter` success implies completion
+/// of `implement` (the only phase ralph runs through `SpeckitController` today).
+fn emit_ralph_plan(
+    plans_out: &Path,
+    run_id: &str,
+    id: &str,
+    idea: &str,
+    working_dir: &Path,
+    is_test: bool,
+) -> anyhow::Result<()> {
+    fs::create_dir_all(plans_out)?;
+
+    // Canonical Spec Kit phase sequence.
+    let phase_sequence: Vec<&str> = vec!["specify", "plan", "tasks", "implement"];
+
+    // Map each phase to the artifact ralph writes for it.
+    let phase_artifact = [
+        ("specify", working_dir.join("research.md")),
+        ("plan", working_dir.join("plan.md")),
+        ("tasks", working_dir.join("tasks.md")),
+        ("implement", working_dir.join("implement.md")),
+    ];
+
+    let mut completed_phases: Vec<String> = Vec::new();
+    let mut blocked_phases: Vec<String> = Vec::new();
+    let mut skipped_phases: Vec<String> = Vec::new();
+    let mut artifacts: Vec<RpArtifact> = Vec::new();
+    let mut gates: Vec<Gate> = Vec::new();
+
+    for (phase, path) in &phase_artifact {
+        match sha256_file(path) {
+            Some(hash) => {
+                completed_phases.push((*phase).into());
+                artifacts.push(RpArtifact {
+                    kind: (*phase).into(),
+                    path: path.display().to_string(),
+                    hash,
+                });
+                gates.push(Gate {
+                    name: format!("{}_artifact_present", phase),
+                    status: GateStatus::Pass,
+                    failure_class: None,
+                });
+            }
+            None => {
+                if is_test {
+                    // In test mode an absent artifact for a phase means that phase was skipped.
+                    skipped_phases.push((*phase).into());
+                    gates.push(Gate {
+                        name: format!("{}_artifact_present", phase),
+                        status: GateStatus::Skip,
+                        failure_class: None,
+                    });
+                } else {
+                    blocked_phases.push((*phase).into());
+                    gates.push(Gate {
+                        name: format!("{}_artifact_present", phase),
+                        status: GateStatus::Fail,
+                        failure_class: Some("MISSING_ARTIFACT".into()),
+                    });
+                }
+            }
+        }
+    }
+
+    let phases_expected = phase_sequence.len() as u32;
+    let phases_completed = completed_phases.len() as u32;
+    let phases_blocked = blocked_phases.len() as u32;
+    let phases_skipped = skipped_phases.len() as u32;
+    let phases_pending =
+        phases_expected - phases_completed - phases_blocked - phases_skipped;
+    let balanced = phases_completed + phases_blocked + phases_skipped + phases_pending
+        == phases_expected;
+
+    // Determine highest-reached phase: last entry in `completed_phases` according to sequence order.
+    let phase = phase_sequence
+        .iter()
+        .rev()
+        .find(|p| completed_phases.iter().any(|c| c.as_str() == **p))
+        .map(|s| (*s).to_string())
+        .unwrap_or_else(|| "specify".to_string());
+
+    // Verdict policy:
+    //   Pass     — every phase completed, no blocked/pending, no failed gates
+    //   SoftFail — gates failing OR phases blocked OR phases pending (still structurally honest)
+    //   Fatal    — reserved for catastrophic; not selected by emitter (validator may upgrade)
+    let any_fail = gates.iter().any(|g| g.status == GateStatus::Fail);
+    // Pass requires every phase actually completed: no fails, no blocks, no pending, no skips.
+    let verdict = if !any_fail
+        && phases_blocked == 0
+        && phases_pending == 0
+        && phases_skipped == 0
+    {
+        Verdict::Pass
+    } else {
+        Verdict::SoftFail
+    };
+
+    // Optional hashes.
+    let constitution_hash =
+        sha256_file(Path::new(".specify/memory/constitution.md"));
+    let spec_hash = sha256_file(&working_dir.join("research.md"));
+
+    let plan = RalphPlan {
+        schema: SCHEMA_VERSION.into(),
+        run_id: run_id.into(),
+        target: id.into(),
+        idea_hash: sha256_hex(idea.as_bytes()),
+        constitution_hash,
+        spec_hash,
+        phase,
+        phase_sequence: phase_sequence.iter().map(|s| (*s).into()).collect(),
+        completed_phases,
+        blocked_phases,
+        skipped_phases,
+        artifacts,
+        gates,
+        accounting: Accounting {
+            phases_expected,
+            phases_completed,
+            phases_blocked,
+            phases_skipped,
+            phases_pending,
+            balanced,
+        },
+        verdict,
+    };
+
+    // Validate before writing — refuse to emit a plan that fails its own invariants.
+    plan.validate()
+        .map_err(|e| anyhow::anyhow!("RalphPlan failed self-validation: {}", e))?;
+
+    let out_path = plans_out.join(format!("ralph_{}.json", id));
+    let json = serde_json::to_string_pretty(&plan)?;
+    fs::write(&out_path, json)?;
+    info!("RalphPlan written: {}", out_path.display());
+
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let provider = init_telemetry().ok();
@@ -165,9 +314,25 @@ async fn main() -> anyhow::Result<()> {
         }
     }
 
+    // RalphPlan emission: emit one JSON per processed idea into this directory.
+    let mut plans_out = PathBuf::from("artifacts/ralph/ralph_plans");
+    if let Some(pos) = args.iter().position(|a| a == "--plans-out") {
+        if let Some(val) = args.get(pos + 1) {
+            plans_out = PathBuf::from(val);
+        }
+    }
+    let _ = fs::create_dir_all(&plans_out);
+
+    let run_id = format!(
+        "ralph-{}",
+        chrono::Utc::now().format("%Y%m%dT%H%M%SZ")
+    );
+
     if is_test && cfg!(debug_assertions) {
         info!("!! TEST MODE ENABLED: Skipping LLM calls and using mock responses.");
     }
+    info!("RalphPlan emission dir: {}", plans_out.display());
+    info!("Ralph run id: {}", run_id);
 
     let ideas_path = Path::new("IDEAS.md");
     if !ideas_path.exists() {
@@ -197,10 +362,14 @@ async fn main() -> anyhow::Result<()> {
 
     let meta_log_clone = Arc::clone(&meta_log);
     let merge_lock_clone = Arc::clone(&merge_lock);
+    let plans_out_arc = Arc::new(plans_out.clone());
+    let run_id_arc = Arc::new(run_id.clone());
 
     let process_fn = move |id: String, idea: String| {
         let meta_log = Arc::clone(&meta_log_clone);
         let merge_lock = Arc::clone(&merge_lock_clone);
+        let plans_out = Arc::clone(&plans_out_arc);
+        let run_id = Arc::clone(&run_id_arc);
 
         async move {
             tokio::task::spawn_blocking(move || {
@@ -305,6 +474,18 @@ async fn main() -> anyhow::Result<()> {
                 let receipt_emitter = ReceiptEmitter::new();
                 if let Err(e) = receipt_emitter.emit(&working_dir, &idea, "HashVerified") {
                     error!("Failed to emit receipt: {}", e);
+                }
+
+                // ── Emit RalphPlan ─────────────────────────────────────────────
+                if let Err(e) = emit_ralph_plan(
+                    &plans_out,
+                    &run_id,
+                    &id,
+                    &idea,
+                    &working_dir,
+                    is_test,
+                ) {
+                    error!("Failed to emit RalphPlan: {}", e);
                 }
 
                 meta_log.lock().unwrap().add_trace(trace);

@@ -112,6 +112,7 @@ pub mod ml;
 pub mod ocpm;
 pub mod powl;
 pub mod probabilistic;
+pub mod ralph_plan;
 pub mod simd;
 
 // Re-export autonomic for easier access

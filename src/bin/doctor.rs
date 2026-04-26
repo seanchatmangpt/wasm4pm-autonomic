@@ -365,11 +365,18 @@ fn fmt_us(us: u64) -> String {
 
 // ── CLI arg parsing ───────────────────────────────────────────────────────────
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum DoctorKind {
+    Automl,
+    RalphPlan,
+}
+
 struct CliArgs {
     target: Option<String>,
     plan: Option<PathBuf>,
     json: bool,
     plans_dir: Option<PathBuf>,
+    kind: DoctorKind,
 }
 
 fn parse_args() -> CliArgs {
@@ -378,6 +385,7 @@ fn parse_args() -> CliArgs {
         plan: None,
         json: false,
         plans_dir: None,
+        kind: DoctorKind::Automl,
     };
     for raw in std::env::args().skip(1) {
         if raw == "--json" {
@@ -388,6 +396,15 @@ fn parse_args() -> CliArgs {
             args.plan = Some(PathBuf::from(val));
         } else if let Some(val) = raw.strip_prefix("--plans-dir=") {
             args.plans_dir = Some(PathBuf::from(val));
+        } else if let Some(val) = raw.strip_prefix("--kind=") {
+            args.kind = match val {
+                "ralph-plan" | "ralph_plan" => DoctorKind::RalphPlan,
+                "automl" | "" => DoctorKind::Automl,
+                other => {
+                    eprintln!("doctor: unknown --kind={} (allowed: automl, ralph-plan)", other);
+                    std::process::exit(2);
+                }
+            };
         }
     }
     args
@@ -1009,10 +1026,260 @@ fn output_json(
     println!("{}", serde_json::to_string_pretty(&out).unwrap());
 }
 
+// ── RalphPlan mode ────────────────────────────────────────────────────────────
+//
+// Distinct from AutomlPlan diagnosis: RalphPlan accounts for Spec Kit phase
+// execution per processed idea. Pathologies classified here include schema
+// mismatch, accounting unbalance, missing artifact for a completed phase, and
+// false completion (a phase marked complete with a failing gate).
+
+#[derive(Default)]
+struct RalphPlanReport {
+    plans_read: usize,
+    schema_mismatch: Vec<String>,
+    unbalanced: Vec<String>,
+    false_completion: Vec<String>,
+    missing_artifact: Vec<String>,
+    blocked: Vec<String>,
+    skipped: Vec<String>,
+    soft_fail_count: usize,
+    pass_count: usize,
+    fatal_count: usize,
+}
+
+fn run_ralph_plan_mode(plans_dir: &Path, json_mode: bool) -> ExitCode {
+    use dteam::ralph_plan::{GateStatus, RalphPlan, Verdict};
+
+    if !plans_dir.exists() {
+        if json_mode {
+            let out = serde_json::json!({
+                "kind": "ralph-plan",
+                "error": format!("plans directory not found: {}", plans_dir.display()),
+                "verdict": "fatal"
+            });
+            println!("{}", serde_json::to_string_pretty(&out).unwrap());
+        } else {
+            eprintln!("ralph-plan plans directory not found: {}", plans_dir.display());
+        }
+        return ExitCode::from(1);
+    }
+
+    let mut report = RalphPlanReport::default();
+    let entries: Vec<PathBuf> = match std::fs::read_dir(plans_dir) {
+        Ok(rd) => rd
+            .filter_map(|e| e.ok().map(|e| e.path()))
+            .filter(|p| p.extension().map(|x| x == "json").unwrap_or(false))
+            .collect(),
+        Err(_) => Vec::new(),
+    };
+
+    for path in &entries {
+        let content = match std::fs::read_to_string(path) {
+            Ok(c) => c,
+            Err(_) => {
+                report
+                    .schema_mismatch
+                    .push(format!("{}: read error", path.display()));
+                continue;
+            }
+        };
+        let plan: RalphPlan = match serde_json::from_str(&content) {
+            Ok(p) => p,
+            Err(e) => {
+                report
+                    .schema_mismatch
+                    .push(format!("{}: parse error: {}", path.display(), e));
+                continue;
+            }
+        };
+        report.plans_read += 1;
+
+        // Anti-lie validator (catches schema/version, accounting, verdict consistency).
+        if let Err(e) = plan.validate() {
+            // Classify by error variant: schema/accounting → fatal, others → soft_fail bucket.
+            let msg = format!("{}: {}", path.display(), e);
+            match e {
+                dteam::ralph_plan::ValidationError::BadSchemaVersion { .. } => {
+                    report.schema_mismatch.push(msg);
+                }
+                dteam::ralph_plan::ValidationError::AccountingUnbalanced { .. }
+                | dteam::ralph_plan::ValidationError::PhaseSequenceLenMismatch { .. } => {
+                    report.unbalanced.push(msg);
+                }
+                _ => {
+                    report.false_completion.push(msg);
+                }
+            }
+            continue;
+        }
+
+        // Phase-level pathologies that aren't structural lies but indicate operational pathologies.
+        for completed in &plan.completed_phases {
+            // Every completed phase must have at least one artifact whose `kind` matches.
+            let has_artifact = plan.artifacts.iter().any(|a| &a.kind == completed);
+            if !has_artifact {
+                report.missing_artifact.push(format!(
+                    "{}: phase '{}' marked completed without producing artifact",
+                    path.display(),
+                    completed
+                ));
+            }
+        }
+        for completed in &plan.completed_phases {
+            // No phase may be completed if a gate referencing it failed.
+            let failed = plan
+                .gates
+                .iter()
+                .any(|g| g.status == GateStatus::Fail && g.name.starts_with(completed));
+            if failed {
+                report.false_completion.push(format!(
+                    "{}: phase '{}' marked completed but gate failed",
+                    path.display(),
+                    completed
+                ));
+            }
+        }
+        if !plan.blocked_phases.is_empty() {
+            report.blocked.push(format!(
+                "{}: {} blocked phase(s)",
+                path.display(),
+                plan.blocked_phases.len()
+            ));
+        }
+        if !plan.skipped_phases.is_empty() {
+            report.skipped.push(format!(
+                "{}: {} skipped phase(s) ({})",
+                path.display(),
+                plan.skipped_phases.len(),
+                plan.skipped_phases.join(",")
+            ));
+        }
+        match plan.verdict {
+            Verdict::Pass => report.pass_count += 1,
+            Verdict::SoftFail => report.soft_fail_count += 1,
+            Verdict::Fatal => report.fatal_count += 1,
+        }
+    }
+
+    // Top-level verdict synthesis.
+    let any_fatal = !report.schema_mismatch.is_empty()
+        || !report.unbalanced.is_empty()
+        || !report.false_completion.is_empty()
+        || report.fatal_count > 0;
+    let any_soft = !report.missing_artifact.is_empty()
+        || !report.blocked.is_empty()
+        || !report.skipped.is_empty()
+        || report.soft_fail_count > 0;
+    let verdict = if any_fatal {
+        "fatal"
+    } else if any_soft {
+        "soft_fail"
+    } else {
+        "pass"
+    };
+
+    if json_mode {
+        let pathologies = build_ralph_pathologies(&report);
+        let out = serde_json::json!({
+            "kind": "ralph-plan",
+            "plans_read": report.plans_read,
+            "pathologies": pathologies,
+            "counts": {
+                "pass": report.pass_count,
+                "soft_fail": report.soft_fail_count,
+                "fatal": report.fatal_count,
+            },
+            "verdict": verdict,
+        });
+        println!("{}", serde_json::to_string_pretty(&out).unwrap());
+    } else {
+        println!("ralph-plan doctor: {} plans, verdict={}", report.plans_read, verdict);
+    }
+
+    match verdict {
+        "fatal" => ExitCode::from(2),
+        "soft_fail" => ExitCode::from(1),
+        _ => ExitCode::from(0),
+    }
+}
+
+fn build_ralph_pathologies(report: &RalphPlanReport) -> Vec<Value> {
+    let mut out: Vec<Value> = Vec::new();
+    if !report.schema_mismatch.is_empty() {
+        out.push(serde_json::json!({
+            "name": "SCHEMA_MISMATCH",
+            "severity": "fatal",
+            "count": report.schema_mismatch.len(),
+            "message": format!("{} plan(s) failed schema validation", report.schema_mismatch.len()),
+            "repair": "Fix RalphPlan schema version or regenerate plans.",
+            "examples": report.schema_mismatch.iter().take(3).cloned().collect::<Vec<_>>()
+        }));
+    }
+    if !report.unbalanced.is_empty() {
+        out.push(serde_json::json!({
+            "name": "UNBALANCED",
+            "severity": "fatal",
+            "count": report.unbalanced.len(),
+            "message": format!("{} plan(s) have unbalanced phase accounting", report.unbalanced.len()),
+            "repair": "completed + blocked + skipped + pending must equal phases_expected.",
+            "examples": report.unbalanced.iter().take(3).cloned().collect::<Vec<_>>()
+        }));
+    }
+    if !report.false_completion.is_empty() {
+        out.push(serde_json::json!({
+            "name": "FALSE_COMPLETION",
+            "severity": "fatal",
+            "count": report.false_completion.len(),
+            "message": format!("{} false-completion violation(s)", report.false_completion.len()),
+            "repair": "A phase cannot be marked completed if its gate failed; verdict must reflect gates.",
+            "examples": report.false_completion.iter().take(3).cloned().collect::<Vec<_>>()
+        }));
+    }
+    if !report.missing_artifact.is_empty() {
+        out.push(serde_json::json!({
+            "name": "MISSING_PRODUCING_ARTIFACT",
+            "severity": "warn",
+            "count": report.missing_artifact.len(),
+            "message": format!("{} completed phase(s) without an artifact", report.missing_artifact.len()),
+            "repair": "Every completed phase must record at least one artifact in `artifacts`.",
+            "examples": report.missing_artifact.iter().take(3).cloned().collect::<Vec<_>>()
+        }));
+    }
+    if !report.blocked.is_empty() {
+        out.push(serde_json::json!({
+            "name": "BLOCKED_PHASES",
+            "severity": "warn",
+            "count": report.blocked.len(),
+            "message": format!("{} plan(s) report blocked phases", report.blocked.len()),
+            "repair": "Resolve upstream gate failures or reclassify.",
+            "examples": report.blocked.iter().take(3).cloned().collect::<Vec<_>>()
+        }));
+    }
+    if !report.skipped.is_empty() {
+        out.push(serde_json::json!({
+            "name": "SKIPPED_PHASES",
+            "severity": "warn",
+            "count": report.skipped.len(),
+            "message": format!("{} plan(s) report skipped phases", report.skipped.len()),
+            "repair": "Either run the skipped phases or downgrade the canonical phase_sequence to match scope.",
+            "examples": report.skipped.iter().take(3).cloned().collect::<Vec<_>>()
+        }));
+    }
+    out
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 fn main() -> ExitCode {
     let args = parse_args();
+
+    // ── ralph-plan mode (distinct artifact family from AutomlPlan) ────────────
+    if args.kind == DoctorKind::RalphPlan {
+        let working_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+        let default_plans_dir = working_dir.join("artifacts/ralph/ralph_plans");
+        let plans_dir = args.plans_dir.as_deref().unwrap_or(&default_plans_dir);
+        return run_ralph_plan_mode(plans_dir, args.json);
+    }
 
     // ── Single-plan deep-dive mode ────────────────────────────────────────────
     if let Some(plan_path) = &args.plan {
