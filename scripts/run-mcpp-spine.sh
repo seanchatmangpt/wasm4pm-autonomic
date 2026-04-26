@@ -214,6 +214,18 @@ ENV_CHAIN_OK=$(grep -oE '"is_valid":[[:space:]]*(true|false)' "${RUN_DIR}/envelo
 [ "${ENV_CHAIN_OK}" = "true" ] || fail "envelope chain_verify failed (is_valid=${ENV_CHAIN_OK:-<missing>})"
 log "  envelope chain-verify: ok"
 
+# --- Stage 4: pictl conformance (wasm4pm) ---
+if [ -n "${LOG_PATH:-}" ] && [ -f "${LOG_PATH:-}" ]; then
+  log "Stage 4: pictl conformance → envelope"
+  bash scripts/pictl-conformance-envelope.sh \
+    "$LOG_PATH" \
+    "$OBL_ID" \
+    "recenv-pictl-${KIND}-$(date -u +%s)" \
+    || fail "Stage 4: pictl conformance envelope failed"
+else
+  log "Stage 4: SKIP — set LOG_PATH=<path.xes> to enable"
+fi
+
 # ── Done ──────────────────────────────────────────────────────────────────
 echo
 log "SPINE COMPLETE"
