@@ -37,14 +37,18 @@ const SR_SCHEMA_VERSION: &str = "chatmangpt.sr.result.v1";
 // ── Received types ────────────────────────────────────────────────────────
 
 /// Simplified ggen receipt structure (we only care about signature/hash).
+///
+/// Actual ggen receipts (produced by ggen-receipt crate) emit `input_hashes`
+/// and `output_hashes` as JSON arrays of hex strings, not objects.
+/// Example: `"input_hashes": ["d2e2072244b332bf..."]`
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GgenReceipt {
     pub operation_id: String,
     pub timestamp: String,
     #[serde(default)]
-    pub input_hashes: std::collections::HashMap<String, String>,
+    pub input_hashes: Vec<String>,
     #[serde(default)]
-    pub output_hashes: std::collections::HashMap<String, String>,
+    pub output_hashes: Vec<String>,
     pub signature: String,
     #[serde(default)]
     pub previous_receipt_hash: Option<String>,
@@ -130,11 +134,16 @@ pub struct SRNext {
 
 // ── Compute SHA-256 hash ──────────────────────────────────────────────────
 
+/// Compute SHA-256 of `data` and return as an algorithm-tagged hex string.
+///
+/// Format: `sha256:<64-hex-chars>`
+/// This prefix is required by the receipt discipline so consumers can
+/// identify the algorithm without out-of-band knowledge.
 fn sha256_hex(data: &[u8]) -> String {
     use sha2::{Digest, Sha256};
     let mut hasher = Sha256::new();
     hasher.update(data);
-    format!("{:x}", hasher.finalize())
+    format!("sha256:{:x}", hasher.finalize())
 }
 
 fn hash_file(path: &Path) -> Result<String> {
@@ -483,11 +492,14 @@ fn print_result(result: &SRResult, json_output: bool) {
             println!("  • {} ... {}", gate.name, gate_status);
 
             if let Some(hash) = &gate.receipt_hash {
-                println!("    Receipt hash: {}", &hash[..16]);
+                // Display at most 23 chars (prefix "sha256:" + 16 hex chars)
+                let display = &hash[..hash.len().min(23)];
+                println!("    Receipt hash: {}…", display);
             }
             if let Some(hashes) = &gate.artifact_hashes {
                 for (k, v) in hashes {
-                    println!("    {}: {}", k, &v[..16]);
+                    let display = &v[..v.len().min(23)];
+                    println!("    {}: {}…", k, display);
                 }
             }
         }
