@@ -38,7 +38,7 @@ In test mode (`--test`), absent artifacts are classified as `skipped` (not `bloc
 ### obl-ostar-json-contract-001
 **Gap:** ostar-proto has no declared evidence schema. There is no `chatmangpt.ostar.evidence.v1` JSON Schema defining what ostar emits as proof of closure for a manufacturing stage. Without this, `ggen envelope sign` cannot assign a meaningful `payload_schema`, and the envelope chain cannot distinguish ostar evidence from any other artifact.
 
-Current state: ostar appears to operate as a TypeScript monorepo with process-mining algorithms compiled to WASM. There is no `ostar-proto` package or evidence emission surface visible in `~/ostar/`.
+Current state: ostar appears to operate as a TypeScript monorepo with process-mining algorithms compiled to WASM. There is no `ostar-proto` package or evidence emission surface visible in `~/chatmangpt/ostar/`.
 
 **What closes it:**
 1. Define `chatmangpt.ostar.evidence.v1` — a JSON Schema 2020-12 document covering at minimum: `schema`, `stage_id`, `operation_id`, `verdict` (`pass|soft_fail|fatal`), `metrics` (fitness, precision, simplicity, generalization), `artifacts[]` (paths + hashes).
