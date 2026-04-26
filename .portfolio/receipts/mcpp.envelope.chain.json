@@ -46,6 +46,30 @@
         "previous_envelope_hash": "blake3:9ae6cff4f65e11d670a31fa267fce8b859416c0eaf93febe67cd111015da17ef",
         "own_hash": "blake3:03b6501f7c199914aa9e13867f5edec4b389ed4cad78f7130c5c919e71d4caed"
       }
+    },
+    {
+      "schema": "chatmangpt.receipt.envelope.v1",
+      "envelope_id": "recenv-ostar-unifier-001",
+      "operation_id": "obl-mcpp-full-six-stage-run-001",
+      "timestamp": "2026-04-26T22:58:44.062627Z",
+      "producer": {
+        "system": "ostar",
+        "kind": "ostar-stage-evidence"
+      },
+      "payload": {
+        "schema": "chatmangpt.ostar.evidence.v1",
+        "hash": "blake3:f7010c337827049454fdb100afcfc7255a65819275098e1a3c7e089d3fd76546",
+        "path": ".portfolio/runs/obl-receipt-format-unifier-001/ostar-evidence.json"
+      },
+      "signature": {
+        "algorithm": "Ed25519",
+        "public_key_ref": "/Users/sac/.config/ggen/portfolio.ed25519.pub",
+        "value": "7ad3b096235ace1e74ab151288183d68c271e99298d75ce538d691ee322db4d42e46cce4329a90f45f1505930b09e5ea0ade742fb907bcc90453876e257be709"
+      },
+      "chain": {
+        "previous_envelope_hash": "blake3:03b6501f7c199914aa9e13867f5edec4b389ed4cad78f7130c5c919e71d4caed",
+        "own_hash": "blake3:533b971e7037e8875868973e9c56d2480cd2d439ed3b60c2d261c27dd9eace54"
+      }
     }
   ]
 }

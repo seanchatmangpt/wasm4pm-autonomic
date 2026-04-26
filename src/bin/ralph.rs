@@ -52,6 +52,31 @@ fn init_telemetry() -> anyhow::Result<SdkTracerProvider> {
     Ok(provider)
 }
 
+struct PhaseEntry {
+    phase: String,
+    artifact_path: std::path::PathBuf,
+    artifact_hash: String,
+}
+
+struct PhaseJournal {
+    entries: Vec<PhaseEntry>,
+}
+
+impl PhaseJournal {
+    fn new() -> Self {
+        Self {
+            entries: Vec::new(),
+        }
+    }
+    fn record(&mut self, phase: &str, path: std::path::PathBuf, hash: String) {
+        self.entries.push(PhaseEntry {
+            phase: phase.into(),
+            artifact_path: path,
+            artifact_hash: hash,
+        });
+    }
+}
+
 fn inject_supervisor(working_dir: &Path) -> anyhow::Result<()> {
     let gemini_dir = working_dir.join(".gemini");
     let hooks_dir = gemini_dir.join("hooks");
@@ -118,46 +143,37 @@ echo '{"decision": "allow"}'
 
 /// Build and write a RalphPlan for one processed idea.
 ///
-/// In `--test` mode ralph writes mock `research.md` / `plan.md` / `implement.md`
-/// files into `working_dir`; we hash whichever exist and treat their presence as
-/// completion of the corresponding Spec Kit phase. In real mode, presence of
-/// these artifacts plus the existing `ReceiptEmitter` success implies completion
-/// of `implement` (the only phase ralph runs through `SpeckitController` today).
+/// Phase completion is derived from the `PhaseJournal` — an observed record of
+/// which phases completed and which artifacts were written during this run.
+/// This replaces the previous disk-scan approach and eliminates the `is_test`
+/// branch entirely; in test mode the journal is pre-populated before calling.
 fn emit_ralph_plan(
     plans_out: &Path,
     run_id: &str,
     id: &str,
     idea: &str,
-    working_dir: &Path,
-    is_test: bool,
+    journal: &PhaseJournal,
+    constitution_hash: Option<String>,
 ) -> anyhow::Result<()> {
     fs::create_dir_all(plans_out)?;
 
     // Canonical Spec Kit phase sequence.
     let phase_sequence: Vec<&str> = vec!["specify", "plan", "tasks", "implement"];
 
-    // Map each phase to the artifact ralph writes for it.
-    let phase_artifact = [
-        ("specify", working_dir.join("research.md")),
-        ("plan", working_dir.join("plan.md")),
-        ("tasks", working_dir.join("tasks.md")),
-        ("implement", working_dir.join("implement.md")),
-    ];
-
     let mut completed_phases: Vec<String> = Vec::new();
     let mut blocked_phases: Vec<String> = Vec::new();
-    let mut skipped_phases: Vec<String> = Vec::new();
+    let skipped_phases: Vec<String> = Vec::new();
     let mut artifacts: Vec<RpArtifact> = Vec::new();
     let mut gates: Vec<Gate> = Vec::new();
 
-    for (phase, path) in &phase_artifact {
-        match sha256_file(path) {
-            Some(hash) => {
-                completed_phases.push((*phase).into());
+    for phase in &["specify", "plan", "tasks", "implement"] {
+        match journal.entries.iter().find(|e| e.phase.as_str() == *phase) {
+            Some(entry) => {
+                completed_phases.push((*phase).to_string());
                 artifacts.push(RpArtifact {
-                    kind: (*phase).into(),
-                    path: path.display().to_string(),
-                    hash,
+                    kind: (*phase).to_string(),
+                    path: entry.artifact_path.display().to_string(),
+                    hash: entry.artifact_hash.clone(),
                 });
                 gates.push(Gate {
                     name: format!("{}_artifact_present", phase),
@@ -166,22 +182,12 @@ fn emit_ralph_plan(
                 });
             }
             None => {
-                if is_test {
-                    // In test mode an absent artifact for a phase means that phase was skipped.
-                    skipped_phases.push((*phase).into());
-                    gates.push(Gate {
-                        name: format!("{}_artifact_present", phase),
-                        status: GateStatus::Skip,
-                        failure_class: None,
-                    });
-                } else {
-                    blocked_phases.push((*phase).into());
-                    gates.push(Gate {
-                        name: format!("{}_artifact_present", phase),
-                        status: GateStatus::Fail,
-                        failure_class: Some("MISSING_ARTIFACT".into()),
-                    });
-                }
+                blocked_phases.push((*phase).to_string());
+                gates.push(Gate {
+                    name: format!("{}_artifact_present", phase),
+                    status: GateStatus::Fail,
+                    failure_class: Some("MISSING_ARTIFACT".into()),
+                });
             }
         }
     }
@@ -219,10 +225,12 @@ fn emit_ralph_plan(
         Verdict::SoftFail
     };
 
-    // Optional hashes.
-    let constitution_hash =
-        sha256_file(Path::new(".specify/memory/constitution.md"));
-    let spec_hash = sha256_file(&working_dir.join("research.md"));
+    // spec_hash: look up the specify artifact hash from the journal.
+    let spec_hash = journal
+        .entries
+        .iter()
+        .find(|e| e.phase == "specify")
+        .map(|e| e.artifact_hash.clone());
 
     let plan = RalphPlan {
         schema: SCHEMA_VERSION.into(),
@@ -486,18 +494,24 @@ async fn main() -> anyhow::Result<()> {
     let meta_log = Arc::new(Mutex::new(EventLog::default()));
     let merge_lock = Arc::new(Mutex::new(()));
 
+    // Capture constitution hash once at run start so it reflects startup state.
+    let constitution_hash = sha256_file(Path::new(".specify/memory/constitution.md"));
+    let constitution_hash = Arc::new(constitution_hash);
+
     let engine = ExecutionEngine::new(max_concurrency);
 
     let meta_log_clone = Arc::clone(&meta_log);
     let merge_lock_clone = Arc::clone(&merge_lock);
     let plans_out_arc = Arc::new(plans_out.clone());
     let run_id_arc = Arc::new(run_id.clone());
+    let constitution_hash_arc = Arc::clone(&constitution_hash);
 
     let process_fn = move |id: String, idea: String| {
         let meta_log = Arc::clone(&meta_log_clone);
         let merge_lock = Arc::clone(&merge_lock_clone);
         let plans_out = Arc::clone(&plans_out_arc);
         let run_id = Arc::clone(&run_id_arc);
+        let constitution_hash = Arc::clone(&constitution_hash_arc);
 
         async move {
             tokio::task::spawn_blocking(move || {
@@ -550,17 +564,49 @@ async fn main() -> anyhow::Result<()> {
                 let _phase_span =
                     info_span!("run_phase", phase = %phase_name, idea = %idea).entered();
 
+                let journal: Arc<Mutex<PhaseJournal>> =
+                    Arc::new(Mutex::new(PhaseJournal::new()));
+
                 if is_test {
-                    let _ = std::fs::write(working_dir.join("research.md"), "MOCK");
-                    let _ = std::fs::write(working_dir.join("plan.md"), "MOCK");
-                    let _ = std::fs::write(working_dir.join("implement.md"), "MOCK");
+                    for (phase, filename) in [
+                        ("specify", "research.md"),
+                        ("plan", "plan.md"),
+                        ("tasks", "tasks.md"),
+                        ("implement", "implement.md"),
+                    ] {
+                        let path = working_dir.join(filename);
+                        let _ = std::fs::write(&path, "MOCK");
+                        if let Some(hash) = sha256_file(&path) {
+                            journal.lock().unwrap().record(phase, path, hash);
+                        }
+                    }
                 } else {
+                    // Stamp any already-present upstream artifacts before invoking implement.
+                    for (phase, filename) in [
+                        ("specify", "research.md"),
+                        ("plan", "plan.md"),
+                        ("tasks", "tasks.md"),
+                    ] {
+                        let path = working_dir.join(filename);
+                        if let Some(hash) = sha256_file(&path) {
+                            journal.lock().unwrap().record(phase, path, hash);
+                        }
+                    }
+
                     match controller.invoke(invocation) {
                         Ok(receipt) => {
                             if !receipt.success {
                                 error!("Phase {} failed: {}", phase_name, receipt.output);
                                 let _ = workspace.cleanup_worktree(&worktree_path);
                                 return Ok(());
+                            }
+                            // Stamp implement phase after confirmed success.
+                            let artifact_path = working_dir.join("implement.md");
+                            if let Some(hash) = sha256_file(&artifact_path) {
+                                journal
+                                    .lock()
+                                    .unwrap()
+                                    .record("implement", artifact_path, hash);
                             }
                         }
                         Err(e) => {
@@ -610,8 +656,8 @@ async fn main() -> anyhow::Result<()> {
                     &run_id,
                     &id,
                     &idea,
-                    &working_dir,
-                    is_test,
+                    &journal.lock().unwrap(),
+                    (*constitution_hash).clone(),
                 ) {
                     error!("Failed to emit RalphPlan: {}", e);
                 }
