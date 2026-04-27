@@ -38,7 +38,7 @@ pub fn compile_plan_to_motion(plan: &AutomlPlan) -> Result<Motion, String> {
             Tier::Warm => (FieldLane::Prereq, Intensity::Feel), // Warm external calls
         };
 
-        let node_k = k.push(Powl8Node::Aef(lane, intensity))
+        let node_k = k.push(Powl8Node::Activity(lane, intensity))
             .ok_or("Failed to push")?;
         
         let node_g = g.push(Powl64Node::Place(GlobeCell::new(10, i as u16, 0)))
@@ -63,20 +63,20 @@ pub fn compile_plan_to_motion(plan: &AutomlPlan) -> Result<Motion, String> {
             let mut current_par_g = signal_nodes_g[0];
             
             for i in 1..signal_nodes_k.len() {
-                current_par_k = k.push(Powl8Node::Par(current_par_k, signal_nodes_k[i]))
+                current_par_k = k.push(Powl8Node::OperatorParallel(current_par_k, signal_nodes_k[i]))
                     .ok_or("Failed to push")?;
                 current_par_g = g.push(Powl64Node::Concur(current_par_g, signal_nodes_g[i]))
                     .ok_or("Failed to push")?;
             }
 
             // Create the fusion operator atom
-            let fusion_k = k.push(Powl8Node::Aef(FieldLane::Causality, Intensity::Run))
+            let fusion_k = k.push(Powl8Node::Activity(FieldLane::Causality, Intensity::Run))
                 .ok_or("Failed to push")?;
             let fusion_g = g.push(Powl64Node::Place(GlobeCell::new(11, 0, 0)))
                 .ok_or("Failed to push")?;
 
             // Sequence the parallel evaluation into the fusion operator
-            let seq_k = k.push(Powl8Node::Seq(current_par_k, fusion_k))
+            let seq_k = k.push(Powl8Node::OperatorSequence(current_par_k, fusion_k))
                 .ok_or("Failed to push")?;
             let seq_g = g.push(Powl64Node::Geodesic(current_par_g, fusion_g))
                 .ok_or("Failed to push")?;
@@ -94,10 +94,10 @@ pub fn compile_plan_to_motion(plan: &AutomlPlan) -> Result<Motion, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ml::hdit_automl::{run_hdit_automl, SignalProfile};
+    use crate::ml::hdit_automl::run_hdit_automl;
     use crate::ml::classic_ai_signals::{mycin_automl_signal, strips_automl_signal};
-    use unibit_ai_classic::mycin::exec::fact;
-    use unibit_ai_classic::strips::exec::{CLEAR_A, ON_TABLE_A, ARM_EMPTY};
+    use crate::ml::mycin::{fact, org};
+    use crate::ml::strips::{CLEAR_A, ON_TABLE_A, ARM_EMPTY, HOLDING_A, CLEAR_B, ON_TABLE_B};
     use oxigraph::store::Store;
     use unibit_graph::construct8_to_oxigraph;
 
@@ -105,22 +105,22 @@ mod tests {
     fn test_mape_k_loop_automl_to_construct8_to_oxigraph() {
         // 1. MONITOR & ANALYZE (Evaluate Trace Data against Heuristics)
         let anchor = vec![true, false, true, false];
-        
+
         let patients = vec![
-            fact::GRAM_POS | fact::AEROBIC | fact::FEVER | fact::RIGORS,
+            fact::GRAM_POS | fact::COCCUS | fact::AEROBIC | fact::FEVER | fact::RIGORS,
             fact::GRAM_NEG | fact::ANAEROBIC,
-            fact::GRAM_POS | fact::AEROBIC | fact::FEVER | fact::RIGORS,
-            fact::GRAM_POS | fact::AEROBIC | fact::BURN,
+            fact::GRAM_POS | fact::COCCUS | fact::AEROBIC | fact::FEVER | fact::RIGORS,
+            fact::GRAM_POS | fact::COCCUS | fact::AEROBIC | fact::BURN,
         ];
-        let mycin_sig = mycin_automl_signal("mycin_strep", &patients, &anchor);
+        let mycin_sig = mycin_automl_signal("mycin_strep", &patients, org::STREP, &anchor);
 
         let blocks = vec![
-            CLEAR_A | ON_TABLE_A | ARM_EMPTY,
+            CLEAR_A | ON_TABLE_A | ARM_EMPTY | CLEAR_B | ON_TABLE_B,
             0,
-            CLEAR_A | ON_TABLE_A | ARM_EMPTY,
+            CLEAR_A | ON_TABLE_A | ARM_EMPTY | CLEAR_B | ON_TABLE_B,
             0,
         ];
-        let strips_sig = strips_automl_signal("strips_pickup", &blocks, &anchor);
+        let strips_sig = strips_automl_signal("strips_pickup", &blocks, HOLDING_A, &anchor);
 
         let candidates = vec![mycin_sig, strips_sig];
 

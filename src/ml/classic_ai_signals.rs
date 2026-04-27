@@ -1,145 +1,111 @@
-//! Classical AI heuristics mapped to HDIT AutoML signals.
-//! 
-//! This module cross-pollinates the new classical AI implementations
-//! (from `unibit-ai-classic` such as MYCIN, ELIZA, STRIPS) into the 
-//! `dteam` AutoML loop. It exposes these classical expert systems as 
-//! highly optimized, T0/T1 branchless signal generators for the 
-//! `hdit_automl` pipeline.
+//! Classical AI signal generators for HDIT AutoML.
+//!
+//! This module is a thin re-export and integration layer. The actual algorithms
+//! live in their own modules (`crate::ml::eliza`, `mycin`, `strips`, `shrdlu`,
+//! `hearsay`). All five run at nanosecond scale on the hot path, making them
+//! suitable as T0 tier signals.
+//!
+//! # Why not unibit?
+//!
+//! dteam is the stable production path. unibit-ai-classic encodes these systems
+//! as POWL8/POWL64 Motion packets — useful for formal verification, but unibit
+//! is nightly. dteam provides faithful, idiomatic Rust implementations that:
+//!
+//! - run inline as execution physics, not advisory cognition
+//! - integrate directly with HDIT AutoML's signal pipeline
+//! - have no unibit-* dependency
 
-use crate::ml::hdit_automl::SignalProfile;
-use unibit_kernel::{UCell, UReceipt};
-
-/// Generate an AutoML signal profile based on the MYCIN backward-chaining
-/// expert system logic.
-///
-/// Traces are evaluated through `mycin::exec::infer` to determine if
-/// the inference cycle successfully derives a target conclusion (e.g., STREP).
-pub fn mycin_automl_signal(
-    name: &str,
-    trace_facts: &[u64], // Simulated facts for each trace
-    anchor: &[bool],
-) -> SignalProfile {
-    use unibit_ai_classic::mycin::exec::{infer, org};
-
-    let mut predictions = Vec::with_capacity(trace_facts.len());
-    let mut total_timing_ns = 0u64;
-
-    for &facts in trace_facts {
-        // We simulate running the T0 kernel loop and measure logical timing
-        let initial = UCell(facts);
-        let (final_state, fired_rules, _) = infer(initial, UReceipt::default());
-        let is_strep = (final_state.0 & org::STREP) != 0;
-        predictions.push(is_strep);
-        total_timing_ns += 20 + (fired_rules as u64 * 5);
-    }
-
-    let timing_us = (total_timing_ns / 1000).max(1);
-    SignalProfile::new(name, predictions, anchor, timing_us)
-}
-
-/// Generate an AutoML signal profile based on the GPS/STRIPS planning logic.
-///
-/// Traces are evaluated to determine if a specific goal (e.g., picking up block A)
-/// is achievable from the given initial state.
-pub fn strips_automl_signal(
-    name: &str,
-    trace_states: &[u64],
-    anchor: &[bool],
-) -> SignalProfile {
-    use unibit_ai_classic::strips::exec::{pickup_a, HOLDING_A};
-
-    let mut predictions = Vec::with_capacity(trace_states.len());
-    let mut total_timing_ns = 0u64;
-
-    for &state in trace_states {
-        let initial = UCell(state);
-        // Try to execute PICKUP(A)
-        let success = match pickup_a(initial, UReceipt::default()) {
-            Some((final_state, _)) => (final_state.0 & HOLDING_A) != 0,
-            None => false,
-        };
-        predictions.push(success);
-        total_timing_ns += 15; // static cost for branchless ops
-    }
-
-    let timing_us = (total_timing_ns / 1000).max(1);
-    SignalProfile::new(name, predictions, anchor, timing_us)
-}
-
-/// Generate an AutoML signal profile based on the ELIZA pattern matching logic.
-///
-/// Traces are evaluated to determine if a specific template (e.g., DREAM)
-/// is triggered by the given input keywords.
-pub fn eliza_automl_signal(
-    name: &str,
-    trace_keywords: &[u64],
-    anchor: &[bool],
-) -> SignalProfile {
-    use unibit_ai_classic::eliza::exec::{eliza_turn, DOCTOR, tmpl};
-
-    let mut predictions = Vec::with_capacity(trace_keywords.len());
-    let mut total_timing_ns = 0u64;
-
-    for &keywords in trace_keywords {
-        let result = eliza_turn(keywords, &DOCTOR, UReceipt::default());
-        predictions.push(result.matched && result.template_index == tmpl::DREAM);
-        total_timing_ns += 10;
-    }
-
-    let timing_us = (total_timing_ns / 1000).max(1);
-    SignalProfile::new(name, predictions, anchor, timing_us)
-}
+pub use crate::ml::eliza::eliza_automl_signal;
+pub use crate::ml::hearsay::hearsay_automl_signal;
+pub use crate::ml::mycin::mycin_automl_signal;
+pub use crate::ml::shrdlu::shrdlu_automl_signal;
+pub use crate::ml::strips::strips_automl_signal;
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use unibit_ai_classic::mycin::exec::fact;
-    use unibit_ai_classic::strips::exec::{CLEAR_A, ON_TABLE_A, ARM_EMPTY, HOLDING_A, CLEAR_B};
-    use unibit_ai_classic::eliza::exec::{keyword_bit, kw};
+    use crate::ml::eliza::{kw, keyword_bit};
     use crate::ml::hdit_automl::{run_hdit_automl, Tier};
+    use crate::ml::mycin::{fact, org};
+    use crate::ml::shrdlu::{self, Cmd};
+    use crate::ml::strips;
 
     #[test]
-    fn test_cross_pollinate_automl_with_all_classic_systems() {
+    fn cross_pollinate_all_five_classical_systems_into_automl() {
         let anchor = vec![true, false, true, false];
 
-        // MYCIN traces
-        let patients = vec![
-            fact::GRAM_POS | fact::AEROBIC | fact::FEVER | fact::RIGORS, // true
-            fact::GRAM_NEG | fact::ANAEROBIC, // false
-            fact::GRAM_POS | fact::AEROBIC | fact::FEVER | fact::RIGORS, // true
-            fact::GRAM_POS | fact::AEROBIC | fact::BURN, // false
+        // ELIZA: dream keyword present in slots 0, 2 (matches anchor)
+        let eliza_inputs = vec![
+            keyword_bit(kw::DREAM),
+            keyword_bit(kw::YOU),       // YOU has no rule → no match → false
+            keyword_bit(kw::DREAM),
+            0,                          // no keywords → no match → false
         ];
-        let mycin_sig = mycin_automl_signal("mycin_strep", &patients, &anchor);
+        let eliza_sig = eliza_automl_signal("eliza_dream", &eliza_inputs, &anchor);
 
-        // STRIPS traces
-        let blocks = vec![
-            CLEAR_A | ON_TABLE_A | ARM_EMPTY, // pickup_a succeeds -> true
-            HOLDING_A | CLEAR_B, // pickup_a fails -> false
-            CLEAR_A | ON_TABLE_A | ARM_EMPTY, // pickup_a succeeds -> true
-            ON_TABLE_A | ARM_EMPTY, // pickup_a fails (not clear) -> false
+        // MYCIN: STREP diagnosis present in slots 0, 2
+        let mycin_patients = vec![
+            fact::GRAM_POS | fact::COCCUS | fact::AEROBIC | fact::FEVER | fact::RIGORS,
+            fact::GRAM_NEG | fact::ANAEROBIC,
+            fact::GRAM_POS | fact::AEROBIC | fact::FEVER | fact::RIGORS,
+            fact::FEVER,
         ];
-        let strips_sig = strips_automl_signal("strips_pickup", &blocks, &anchor);
+        let mycin_sig = mycin_automl_signal("mycin_strep", &mycin_patients, org::STREP, &anchor);
 
-        // ELIZA traces
-        let chats = vec![
-            keyword_bit(kw::DREAM), // matches DREAM template -> true
-            keyword_bit(kw::MOTHER), // matches FAMILY template -> false
-            keyword_bit(kw::DREAM), // matches DREAM template -> true
-            keyword_bit(kw::SORRY), // matches NOAPOL template -> false
+        // STRIPS: HOLDING_A reachable from slot 0 (initial state) and slot 2
+        let strips_states = vec![
+            strips::CLEAR_A | strips::ON_TABLE_A | strips::ARM_EMPTY | strips::CLEAR_B | strips::ON_TABLE_B,
+            strips::HOLDING_B, // arm not empty, can't pickup A immediately
+            strips::CLEAR_A | strips::ON_TABLE_A | strips::ARM_EMPTY | strips::CLEAR_C | strips::ON_TABLE_C,
+            0, // empty state, no preconditions met
         ];
-        let eliza_sig = eliza_automl_signal("eliza_dream", &chats, &anchor);
+        let strips_sig = strips_automl_signal("strips_pickup_A", &strips_states, strips::HOLDING_A, &anchor);
 
-        let candidates = vec![mycin_sig, strips_sig, eliza_sig];
+        // SHRDLU: PickUp(A) succeeds in slots 0, 2
+        let shrdlu_states = vec![
+            shrdlu::initial_state(),
+            shrdlu::holding(1), // arm not empty
+            shrdlu::initial_state(),
+            shrdlu::holding(2),
+        ];
+        let shrdlu_sig = shrdlu_automl_signal("shrdlu_pickup_A", &shrdlu_states, Cmd::PickUp(0), &anchor);
 
-        // The HDIT AutoML loop evaluates all classical AI heuristics and selects
-        // an optimal combination (or just one if it's perfectly correlated).
+        // Hearsay-II: all reach sentence (signal won't differentiate, used for completeness)
+        let hearsay_inputs = vec![0xCAFE_u64, 0x0_u64, 0xBABE_u64, 0x0_u64];
+        let _hearsay_sig = hearsay_automl_signal("hearsay", &hearsay_inputs, &anchor);
+
+        // Verify each signal correctly predicts against anchor
+        assert_eq!(eliza_sig.accuracy_vs_anchor, 1.0, "ELIZA should match anchor");
+        assert_eq!(mycin_sig.accuracy_vs_anchor, 1.0, "MYCIN should match anchor");
+        assert_eq!(strips_sig.accuracy_vs_anchor, 1.0, "STRIPS should match anchor");
+        assert_eq!(shrdlu_sig.accuracy_vs_anchor, 1.0, "SHRDLU should match anchor");
+
+        // All four perfect signals must be T0 tier (nanosecond execution)
+        assert_eq!(eliza_sig.tier, Tier::T0, "ELIZA must be T0");
+        assert_eq!(mycin_sig.tier, Tier::T0, "MYCIN must be T0");
+        assert_eq!(strips_sig.tier, Tier::T0, "STRIPS must be T0");
+        assert_eq!(shrdlu_sig.tier, Tier::T0, "SHRDLU must be T0");
+
+        // Run AutoML with all four perfect signals
+        let candidates = vec![eliza_sig, mycin_sig, strips_sig, shrdlu_sig];
         let plan = run_hdit_automl(candidates, &anchor, 2);
+        assert!(!plan.selected.is_empty(), "AutoML must select at least one signal");
+        assert_eq!(plan.plan_accuracy, 1.0, "perfect signals → perfect plan");
+    }
 
-        // All of them correlate perfectly with the anchor, so it will pick the first one
-        // and reject the others due to high correlation.
-        assert!(!plan.selected.is_empty());
-        let tier = plan.tiers.iter().find(|(name, _)| name == &plan.selected[0]).unwrap().1;
-        assert_eq!(tier, Tier::T0, "Classical AI systems must be T0 tier");
-        assert_eq!(plan.plan_accuracy, 1.0);
+    #[test]
+    fn all_signals_are_nanosecond_tier() {
+        use crate::ml::hdit_automl::Tier;
+        let anchor = vec![true; 50];
+
+        let eliza_sig = eliza_automl_signal("e", &[keyword_bit(kw::DREAM); 50], &anchor);
+        let mycin_sig = mycin_automl_signal("m", &[fact::GRAM_NEG | fact::ANAEROBIC; 50], org::BACTEROIDES, &anchor);
+        let strips_sig = strips_automl_signal("s", &[strips::HOLDING_A; 50], strips::HOLDING_A, &anchor);
+        let shrdlu_sig = shrdlu_automl_signal("sh", &[shrdlu::initial_state(); 50], Cmd::PickUp(0), &anchor);
+
+        assert_eq!(eliza_sig.tier, Tier::T0);
+        assert_eq!(mycin_sig.tier, Tier::T0);
+        assert_eq!(strips_sig.tier, Tier::T0);
+        assert_eq!(shrdlu_sig.tier, Tier::T0);
     }
 }

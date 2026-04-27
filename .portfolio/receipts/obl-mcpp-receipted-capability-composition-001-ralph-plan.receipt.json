@@ -1,0 +1,50 @@
+{
+  "schema": "chatmangpt.ralph.plan.v1",
+  "feature_name": "004-mcpp-receipted-capability-composition",
+  "obligation": "obl-mcpp-receipted-capability-composition-001",
+  "verdict": "Pass",
+  "issued_at": "2026-04-26T22:56:54Z",
+  "issued_by": "ralph-loop:agent-path-a",
+  "task_summary": {
+    "total": 13,
+    "complete": 4,
+    "skip_receipted": 9,
+    "fail": 0,
+    "incomplete": 0
+  },
+  "tasks_disposition": {
+    "T001": "complete",
+    "T002": "skip:receipted",
+    "T003": "skip:receipted",
+    "T004": "skip:receipted",
+    "T005": "skip:receipted",
+    "T006": "skip:receipted",
+    "T007": "skip:receipted",
+    "T008": "skip:receipted",
+    "T009": "skip:receipted",
+    "T010": "skip:receipted",
+    "T011": "complete",
+    "T012": "complete",
+    "T013": "complete"
+  },
+  "input_hashes": {
+    "tasks.md": "96b904ea51a7c2b2db633c752b1273b7307dd3b806e7be8e16f270a99f3a9183",
+    "spec.md": "514137cbc83742b94410d1a585cf556ed9c09c4ded257aeae5576b8003a7d328"
+  },
+  "output_hashes": {
+    "obligation-completion-manifest.json": "209907705ae9b4b6f40232e4f901458e787d4a594bc410ccbfc2bf3f9435c676"
+  },
+  "step_receipts_verified": [
+    "step-01-marketplace-sync.json",
+    "step-02-pack-resolution.json",
+    "step-03-policy-gate.json",
+    "step-04-batch-install.json",
+    "step-05-composition-receipt.json",
+    "step-06-sr-capability-verify.json",
+    "step-07-ostar-gate.json",
+    "step-08-unibit-kinetic.json",
+    "step-09-conformance.json",
+    "step-10-mcpp-completion.json"
+  ],
+  "notes": "All 10 step receipts present. T002-T010 marked skip:receipted (receipts already written in prior session). T001,T011-T013 fully executed. No tasks incomplete. Verdict: Pass."
+}

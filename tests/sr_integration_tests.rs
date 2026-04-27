@@ -103,6 +103,7 @@ fn ggen_receipt_deserializes_vec_format_correctly() {
     );
     assert_eq!(receipt.output_hashes.len(), 3, "output_hashes must have 3 entries");
     assert!(!receipt.signature.is_empty(), "signature must be non-empty");
+    assert!(!receipt.timestamp.is_empty(), "timestamp must be non-empty");
     assert!(receipt.previous_receipt_hash.is_none());
 }
 

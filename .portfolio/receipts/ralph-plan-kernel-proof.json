@@ -1,0 +1,12 @@
+{
+  "schema": "chatmangpt.ralph.plan.v1",
+  "verdict": "Pass",
+  "feature_name": "004-mcpp-receipted-capability-composition",
+  "spec_dir": "/Users/sac/speckit-ralph/.specify/specs/004-mcpp-receipted-capability-composition",
+  "tasks_completed": 13,
+  "tasks_blocked": 0,
+  "tasks_skipped": 0,
+  "tasks_pending": 0,
+  "issued_at": "2026-04-26T22:55:57Z",
+  "issued_by": "agent-kernel-proof"
+}

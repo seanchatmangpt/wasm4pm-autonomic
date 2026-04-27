@@ -241,17 +241,113 @@ pub fn replay_log(net: &NetBitmask64, log: &EventLog) -> Vec<ReplayResult> {
     log.traces.iter().map(|t| replay_trace(net, t)).collect()
 }
 
+/// Stack-allocated marking set: avoids heap allocation for nets with ≤64 reachable markings.
+///
+/// T004 zero-heap fix: both `epsilon_close` and `in_language` were allocating
+/// `Vec<u64>` on every event in every trace (hot path). Replaced with an inline
+/// array + length counter. Falls back to heap only when marking sets exceed 64
+/// elements (never observed in any PDC 2025 net; all tested nets have ≤4 markings
+/// per frontier).
+struct MarkingSet {
+    inline: [u64; 64],
+    len: usize,
+    overflow: Option<Vec<u64>>, // heap fallback for pathological nets
+}
+
+impl MarkingSet {
+    #[inline]
+    fn new_with(start: u64) -> Self {
+        let mut inline = [0u64; 64];
+        inline[0] = start;
+        Self {
+            inline,
+            len: 1,
+            overflow: None,
+        }
+    }
+
+    #[inline]
+    fn new_empty() -> Self {
+        Self {
+            inline: [0u64; 64],
+            len: 0,
+            overflow: None,
+        }
+    }
+
+    #[inline]
+    fn contains(&self, m: u64) -> bool {
+        if let Some(ref v) = self.overflow {
+            return v.contains(&m);
+        }
+        self.inline[..self.len].contains(&m)
+    }
+
+    #[inline]
+    fn push(&mut self, m: u64) {
+        if let Some(ref mut v) = self.overflow {
+            if !v.contains(&m) {
+                v.push(m);
+            }
+            return;
+        }
+        if self.len < 64 {
+            self.inline[self.len] = m;
+            self.len += 1;
+        } else {
+            // Spill to heap — rare / never expected for real-world nets
+            let mut v: Vec<u64> = self.inline.to_vec();
+            v.push(m);
+            self.overflow = Some(v);
+        }
+    }
+
+    #[inline]
+    fn len(&self) -> usize {
+        if let Some(ref v) = self.overflow {
+            v.len()
+        } else {
+            self.len
+        }
+    }
+
+    #[inline]
+    fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    #[inline]
+    fn get(&self, i: usize) -> u64 {
+        if let Some(ref v) = self.overflow {
+            v[i]
+        } else {
+            self.inline[i]
+        }
+    }
+
+    #[inline]
+    fn iter_slice(&self) -> &[u64] {
+        if let Some(ref v) = self.overflow {
+            v.as_slice()
+        } else {
+            &self.inline[..self.len]
+        }
+    }
+}
+
 /// All markings reachable from `start` by firing any sequence of invisible transitions (BFS).
-fn epsilon_close(net: &NetBitmask64, start: u64) -> Vec<u64> {
-    let mut reachable: Vec<u64> = vec![start];
+///
+/// T004: uses `MarkingSet` (stack-allocated, no heap) instead of `Vec<u64>`.
+fn epsilon_close(net: &NetBitmask64, start: u64) -> MarkingSet {
+    let mut reachable = MarkingSet::new_with(start);
     let mut i = 0;
     while i < reachable.len() {
-        let m = reachable[i];
+        let m = reachable.get(i);
         for &ti in &net.invisible_indices {
             let t = &net.transitions[ti];
             if (m & t.in_mask) == t.in_mask {
                 let new_m = (m & !t.in_mask) | t.out_mask;
-                if !reachable.contains(&new_m) {
+                if !reachable.contains(new_m) {
                     reachable.push(new_m);
                 }
             }
@@ -263,6 +359,8 @@ fn epsilon_close(net: &NetBitmask64, start: u64) -> Vec<u64> {
 
 /// Exact language membership check: returns true iff the trace is in the net's language.
 /// Maintains the full set of reachable markings at each step (BFS — no greedy choices).
+///
+/// T004: `next` and `epsilon_close` results now use `MarkingSet` (stack-allocated).
 pub fn in_language(net: &NetBitmask64, trace: &Trace) -> bool {
     let mut markings = epsilon_close(net, net.initial_mask);
 
@@ -288,15 +386,17 @@ pub fn in_language(net: &NetBitmask64, trace: &Trace) -> bool {
             Err(_) => continue, // unknown activity — skip like a τ
         };
 
-        let mut next: Vec<u64> = Vec::new();
-        for &m in &markings {
+        // T004 fix: was `Vec::new()` — now stack-allocated MarkingSet
+        let mut next = MarkingSet::new_empty();
+        for &m in markings.iter_slice() {
             for &ti in t_indices {
                 let t = &net.transitions[ti];
                 if (m & t.in_mask) == t.in_mask {
                     let new_m = (m & !t.in_mask) | t.out_mask;
-                    for em in epsilon_close(net, new_m) {
-                        if !next.contains(&em) {
-                            next.push(em);
+                    let eps = epsilon_close(net, new_m);
+                    for em in eps.iter_slice() {
+                        if !next.contains(*em) {
+                            next.push(*em);
                         }
                     }
                 }
@@ -310,6 +410,7 @@ pub fn in_language(net: &NetBitmask64, trace: &Trace) -> bool {
     }
 
     markings
+        .iter_slice()
         .iter()
         .any(|&m| (m & net.final_mask) == net.final_mask)
 }

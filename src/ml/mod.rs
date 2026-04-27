@@ -1,6 +1,7 @@
 pub mod automl;
 pub mod automl_eval;
 pub mod decision_stump;
+pub mod eliza;
 pub mod decision_tree;
 pub mod deep_learning;
 pub mod gaussian_naive_bayes;
@@ -10,6 +11,10 @@ pub mod hdc;
 pub mod hdit_automl;
 pub mod compiler;
 pub mod classic_ai_signals;
+pub mod hearsay;
+pub mod mycin;
+pub mod shrdlu;
+pub mod strips;
 pub mod hierarchical_clustering;
 pub mod kmeans;
 pub mod knn;

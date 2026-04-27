@@ -1,4 +1,5 @@
 pub mod conformance;
+pub mod discovery;
 pub mod io;
 pub mod jtbd_counterfactual_tests;
 pub mod ocel;

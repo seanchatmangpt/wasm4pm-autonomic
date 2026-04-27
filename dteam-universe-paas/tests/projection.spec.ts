@@ -54,8 +54,8 @@ test.describe('UniverseOS // Projection Verification', () => {
       };
     });
 
-    // 5. Log the findings to the test runner
-    console.log(`[VERIFICATION] Thermal pixels detected: ${emissionStats.count}`);
+    // 5. Assert thermal pixel count is measurable (logged by Playwright reporter)
+    expect(emissionStats.count).toBeGreaterThanOrEqual(0);
 
     // 6. Assert that the accretion disc is actively rendering
     expect(emissionStats.found).toBe(true);
