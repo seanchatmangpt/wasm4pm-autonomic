@@ -5,7 +5,23 @@ Parameters
 Licensor:           dteam
 Change Date:        April 18, 2029
 Licensed Work:      The dteam project (Digital Team), including all source code and documentation.
-Additional Use Grant: None. 
+Additional Use Grant:
+
+You may use the Licensed Work, at no charge, for the following purposes: evaluation,
+research, academic study, education, personal projects, non-production experimentation,
+internal tool development, prototyping, and production use by individuals or organizations
+whose total annual revenue does not exceed USD 1,000,000 and who are not offering the
+Licensed Work or any substantially similar system as a hosted, managed, commercial, or
+platform service to third parties.
+
+You may not, without a separate commercial license, use the Licensed Work to:
+(a) provide a competing hosted or managed service based on artifact-resident cognitive
+decision execution;
+(b) embed the Licensed Work in a commercial product offered to third parties;
+(c) resell, sublicense, or otherwise monetize access to the Licensed Work or its outputs
+as a service; or
+(d) use the Licensed Work in any offering whose primary purpose is to provide AI inference
+as a platform, cloud service, or managed API to external customers. 
 Change License:     Apache License, Version 2.0
     
 Terms
