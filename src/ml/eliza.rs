@@ -5,17 +5,55 @@
 //!
 //! # Architecture: Symbolic Cognition as Execution Physics
 //!
-//! Classical ELIZA was string-manipulation cognition. At nanosecond scale, it becomes a
-//! branchless table lookup over a u64 keyword bitmask. The full inference cycle —
-//! tokenize, match, decompose, reassemble — collapses to:
+//! Classical ELIZA was string-manipulation cognition: pattern match keywords, extract,
+//! reassemble via templates. At nanosecond scale, it becomes a branchless table lookup
+//! over a u64 keyword bitmask. The full inference cycle collapses to:
 //!
-//! 1. **Hot path** (`turn_fast`): u64 → u64, ~5 ns per inference, branchless
-//! 2. **Warm path** (`turn`): bitmask + reassembly index, ~50 ns
+//! 1. **Hot path** (`turn_fast`): u64 → u8, ~5 ns per inference, branchless
+//! 2. **Warm path** (`turn`): bitmask + state tracking, ~50 ns
 //! 3. **Cold path** (`respond`): full text I/O, ~10 µs (only for human-facing)
 //!
 //! The hot path is what enables ELIZA to be called inline on every state transition,
 //! every workflow edge, every graph delta — not as advisory cognition, but as runtime
 //! infrastructure.
+//!
+//! # Design Principle
+//!
+//! ELIZA encodes the DOCTOR script (Weizenbaum's default persona) as a rank-ordered
+//! rule table. Keywords are encoded as u64 bits; templates as u8 indices. No strings,
+//! no allocations, no control flow on the hot path.
+//!
+//! # Layers
+//!
+//! - **Keyword encoding**: `keyword_bit(i)` for i in 0..16, packed into low 16 bits
+//! - **Rule table**: `DOCTOR[11]` ordered by priority (rank)
+//! - **Inference**: Linear scan, branchless conditional moves for rule selection
+//! - **Reassembly**: Template indices map to pattern-response pairs (cold path only)
+//!
+//! # Example
+//!
+//! ```rust
+//! use dteam::ml::eliza::{turn_fast, keyword_bit, kw, DOCTOR};
+//!
+//! // Keywords: "I dream about my mother"
+//! let input = keyword_bit(kw::I)
+//!           | keyword_bit(kw::DREAM)
+//!           | keyword_bit(kw::MOTHER);
+//!
+//! // Inference: which template matches best?
+//! let template = turn_fast(input, &DOCTOR);
+//! // DREAM rule (rank 2) matches, returns template index for DREAM
+//! assert_ne!(template, 0xFF);
+//! ```
+//!
+//! # Performance
+//!
+//! - **turn_fast**: 5 ns (branchless, cache-friendly, no alloc)
+//! - **turn**: 50 ns (adds state tracking and rule metadata)
+//! - **respond**: 10 µs (string reassembly, human-facing only)
+//!
+//! The 200× span from hot to cold path demonstrates the latency collapse thesis:
+//! the same job's performance depends entirely on which path executes.
 
 use crate::ml::hdit_automl::SignalProfile;
 
@@ -153,6 +191,21 @@ pub const DOCTOR: [ElizaRule; 11] = [
 /// - Returns u8 in a register
 ///
 /// At rank-sorted DOCTOR scale (11 rules), this is ~5 ns on a modern CPU.
+///
+/// # Example
+///
+/// ```rust
+/// use dteam::ml::eliza::{turn_fast, keyword_bit, kw, DOCTOR};
+///
+/// // User input contains DREAM and MOTHER keywords
+/// let input = keyword_bit(kw::DREAM) | keyword_bit(kw::MOTHER);
+///
+/// // Run DOCTOR rules
+/// let template_idx = turn_fast(input, &DOCTOR);
+///
+/// // DREAM has higher priority (rank 2) than MOTHER (rank 3), so DREAM wins
+/// assert_ne!(template_idx, 0xFF); // Some template matched
+/// ```
 #[inline(always)]
 #[must_use]
 pub fn turn_fast(input_mask: u64, rules: &[ElizaRule]) -> u8 {
@@ -509,6 +562,26 @@ mod tests {
         let sig = eliza_automl_signal("eliza", &masks, &anchor);
         assert_eq!(sig.predictions, vec![true, false, true]);
         assert_eq!(sig.accuracy_vs_anchor, 1.0);
+    }
+
+    #[test]
+    fn turn_fast_is_deterministic_across_invocations() {
+        let mask = keyword_bit(kw::DREAM) | keyword_bit(kw::I);
+        let a = turn_fast(mask, &DOCTOR);
+        let b = turn_fast(mask, &DOCTOR);
+        let c = turn_fast(mask, &DOCTOR);
+        assert_eq!(a, b);
+        assert_eq!(b, c);
+    }
+
+    #[test]
+    fn session_responses_are_deterministic_for_same_seed() {
+        // Two fresh sessions on the same input sequence produce identical outputs
+        let mut s1 = ElizaSession::new();
+        let mut s2 = ElizaSession::new();
+        for input in &["I had a dream", "My mother is here", "I am sorry"] {
+            assert_eq!(s1.respond(input), s2.respond(input));
+        }
     }
 
     #[test]

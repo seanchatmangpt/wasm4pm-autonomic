@@ -5,28 +5,57 @@
 //!
 //! # Architecture: Diagnosis as Execution Physics
 //!
-//! Classical MYCIN was an interactive consultation system answering one patient at a time.
-//! At nanosecond scale, MYCIN becomes a state-transition function: facts (u64 bitmask) →
-//! organism conclusions (u64 bitmask), with certainty factors (i16 fixed-point) attached.
+//! Classical MYCIN was an interactive consultation system answering one patient at a time
+//! via IF-THEN rules with certainty factors (CFs) combining evidence. At nanosecond scale,
+//! MYCIN becomes a state-transition function: facts (u64 bitmask) → organism conclusions
+//! (u64 bitmask), with CFs (i16 fixed-point) attached.
 //!
-//! ## Certainty Factor (CF) Arithmetic
+//! # Certainty Factor (CF) Arithmetic
 //!
 //! CFs live in `[-1.0, +1.0]`. We store as `i16` in `[-1000, +1000]` for cache-line packing
-//! and exact arithmetic at hot-path scale.
+//! and exact arithmetic at hot-path scale. Three cases:
 //!
-//! - `combine_cf(cf1, cf2)`:
-//!   - Both positive: `cf1 + cf2 * (1 - cf1)`
-//!   - Both negative: `cf1 + cf2 * (1 + cf1)`
-//!   - Mixed signs: `(cf1 + cf2) / (1 - min(|cf1|, |cf2|))`
+//! - **Both positive**: `cf1 + cf2 * (1 - cf1)` (cumulative increase in belief)
+//! - **Both negative**: `cf1 + cf2 * (1 + cf1)` (cumulative decrease in belief)
+//! - **Mixed signs**: `(cf1 + cf2) / (1 - min(|cf1|, |cf2|))` (conflict resolution)
+//!
+//! Also:
 //! - `premise_cf(conditions)`: `min` of all condition CFs (Shortliffe's MIN rule)
-//! - `apply_rule_cf(premise, rule_cf)`: `premise * rule_cf`
+//! - `apply_rule_cf(premise, rule_cf)`: `premise * rule_cf` (rule strength modulation)
 //!
-//! ## Hot Path
+//! # Layers
 //!
-//! `infer_fast(facts) -> u64`: ~20 ns; returns the OR of all derived conclusions
-//! (binary firing, no CF, branchless rule scan)
+//! - **Hot path** `infer_fast(facts) -> u64`: ~20 ns, binary firing (rule match yes/no)
+//! - **Warm path** `infer(facts)`: ~200 ns, full CF accumulation per organism
+//! - **Cold path** `diagnose(facts)`: ~500 ns, human-readable explanation
 //!
-//! `infer(facts) -> (conclusions, cf_table)`: ~200 ns; full CF accounting
+//! # Example
+//!
+//! ```rust
+//! use dteam::ml::mycin::{infer_fast, infer, fact, RULES};
+//!
+//! // Patient: GRAM_POS coccus with fever and rigors
+//! let facts = fact::GRAM_POS | fact::COCCUS | fact::FEVER | fact::RIGORS;
+//!
+//! // Run diagnostic rules (fast path — binary match/no-match)
+//! let diagnoses = infer_fast(facts, &RULES);
+//! // diagnoses is a u64 bitmask of matched organisms
+//!
+//! // Full inference with certainty factors
+//! let result = infer(facts, &RULES);
+//! // result.conclusions: OR of all matched organism bits
+//! // result.cf: per-organism certainty factors (i16 fixed-point)
+//! // result.rules_fired: count of rules that matched
+//! ```
+//!
+//! # Performance
+//!
+//! - **infer_fast**: 20 ns (branchless rule scan, binary decisions)
+//! - **infer**: 200 ns (CF arithmetic per diagnosis)
+//! - **diagnose**: 500 ns (string output, human-facing)
+//!
+//! The cache-line packing (each rule is 32 bytes) and fixed-point CF math
+//! (no floating-point) keep hot paths aligned and deterministic.
 
 use crate::ml::hdit_automl::SignalProfile;
 
@@ -476,6 +505,19 @@ mod tests {
         let sig = mycin_automl_signal("mycin_strep", &patients, org::STREP, &anchor);
         assert_eq!(sig.predictions, vec![true, false, true]);
         assert_eq!(sig.accuracy_vs_anchor, 1.0);
+    }
+
+    #[test]
+    fn infer_is_deterministic_across_invocations() {
+        // i16 fixed-point CF arithmetic: no floating-point drift, fully reproducible
+        let facts = fact::GRAM_POS | fact::COCCUS | fact::AEROBIC | fact::FEVER | fact::RIGORS;
+        let r1 = infer(facts, &RULES);
+        let r2 = infer(facts, &RULES);
+        let r3 = infer(facts, &RULES);
+        assert_eq!(r1.conclusions, r2.conclusions);
+        assert_eq!(r2.conclusions, r3.conclusions);
+        assert_eq!(r1.cf, r2.cf);
+        assert_eq!(r1.fired, r2.fired);
     }
 
     #[test]

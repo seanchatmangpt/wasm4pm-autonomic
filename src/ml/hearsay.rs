@@ -6,18 +6,58 @@
 //!
 //! # Architecture: Faculty Coordination as Execution Physics
 //!
-//! Classical Hearsay-II was a real-time speech recognizer. The architectural
+//! Classical Hearsay-II (1976) was a real-time speech recognizer. The architectural
 //! contribution that survives — and matters at nanosecond scale — is the
 //! **blackboard pattern**: independent knowledge sources (KSs) post hypotheses
-//! at multiple abstraction levels; a scheduler picks the highest-rated KS to fire.
+//! at multiple abstraction levels; an agenda scheduler picks the highest-rated KS to fire.
 //!
-//! At nanosecond scale, this becomes:
-//! - **Blackboard**: 6 levels × `Vec<Hypothesis>`, each Hypothesis is 24 bytes
+//! At nanosecond scale, this pattern becomes:
+//! - **Blackboard**: 6 levels × `Vec<Hypothesis>`, each Hypothesis is 24 bytes (cache-line aligned)
 //! - **KS**: function pointer + level routing + rating function
-//! - **Agenda**: rating-sorted vec, branchless pop-max
-//! - **Cycle**: ~100 ns per KS firing (vs. classical ~1 second)
+//! - **Agenda**: rating-sorted Vec, O(n) pop-max but sparse
+//! - **Cycle**: ~100 ns per KS firing (vs. classical ~1 second per utterance)
 //!
-//! Six levels: ACOUSTIC (0) → PHONEME (1) → SYLLABLE (2) → WORD (3) → PHRASE (4) → SENTENCE (5)
+//! # Abstraction Hierarchy
+//!
+//! ```text
+//! ACOUSTIC (0)
+//!   ↓ (phoneme recognition KSs)
+//! PHONEME (1)
+//!   ↓ (syllable-pattern KSs)
+//! SYLLABLE (2)
+//!   ↓ (morpheme KSs)
+//! WORD (3)
+//!   ↓ (phrase-structure KSs)
+//! PHRASE (4)
+//!   ↓ (syntax/semantics KSs)
+//! SENTENCE (5) [output level]
+//! ```
+//!
+//! Each level represents a hypothesis about the utterance at that abstraction.
+//! The scheduler fires KSs in order of rating, and produces a coherent interpretation
+//! (a SENTENCE-level hypothesis) by composing lower-level findings.
+//!
+//! # Example
+//!
+//! ```rust
+//! use dteam::ml::hearsay::{Blackboard, Hypothesis, run, DEFAULT_KS, ACOUSTIC};
+//!
+//! let mut bb = Blackboard::new();
+//! // Post initial acoustic hypothesis (e.g., phoneme scores)
+//! bb.post(Hypothesis::new(ACOUSTIC, 0xCAFE, 0.9, 0, 10));
+//! // Run default KS chain for up to 32 cycles
+//! let _ = run(&mut bb, &DEFAULT_KS, 32);
+//! // Check the best hypothesis at SENTENCE level
+//! if let Some(sentence) = bb.best_at(5) {
+//!     println!("Recognized: CF={}", sentence.cf);
+//! }
+//! ```
+//!
+//! # Determinism
+//!
+//! The blackboard uses BTreeSet for state memoization (deterministic ordering).
+//! Hypothesis CFs are f32, but rating-based selection uses only comparison (not arithmetic),
+//! so ordering is stable and deterministic.
 
 use crate::ml::hdit_automl::SignalProfile;
 
@@ -386,6 +426,25 @@ mod tests {
     #[test]
     fn ks_count_default_is_five() {
         assert_eq!(DEFAULT_KS.len(), 5);
+    }
+
+    #[test]
+    fn run_is_deterministic_across_invocations() {
+        // Agenda::pop_best uses first-occurrence-wins on rating ties + linear scan over
+        // a Vec populated in fixed order from bb.at(level) → fully reproducible.
+        let make = || {
+            let mut bb = Blackboard::new();
+            bb.post(Hypothesis::new(ACOUSTIC, 0xCAFEBABE, 0.9, 0, 10));
+            let r = run(&mut bb, &DEFAULT_KS, 32);
+            (r, bb.count())
+        };
+        let (r1, c1) = make();
+        let (r2, c2) = make();
+        let (r3, c3) = make();
+        assert_eq!(r1, r2);
+        assert_eq!(r2, r3);
+        assert_eq!(c1, c2);
+        assert_eq!(c2, c3);
     }
 
     #[test]

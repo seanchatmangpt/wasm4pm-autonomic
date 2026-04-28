@@ -12,16 +12,50 @@
 //! - **Goal test** (`is_goal`): single AND, ~1 ns
 //! - **Bounded planner** (`plan`): iterative deepening, depth bounded by `MAX_DEPTH`
 //!
-//! ## 3-block world bit layout
+//! The 3-block world (A, B, C) encodes all state as 16 bits. With branchless operators
+//! and BTreeSet-based memo (deterministic), planning time is predictable.
 //!
-//! Bits 0-2: `CLEAR_A`, `CLEAR_B`, `CLEAR_C`
-//! Bits 3-5: `ON_TABLE_A`, `ON_TABLE_B`, `ON_TABLE_C`
-//! Bits 6-11: `ON_x_y` for each ordered pair
-//! Bits 12-14: `HOLDING_A`, `HOLDING_B`, `HOLDING_C`
-//! Bit 15: `ARM_EMPTY`
+//! # State Encoding
+//!
+//! ```text
+//! Bits 0-2:   CLEAR_A, CLEAR_B, CLEAR_C (block is clear of others)
+//! Bits 3-5:   ON_TABLE_A/B/C (block is on table)
+//! Bits 6-11:  ON_x_y (block x is on block y)
+//! Bits 12-14: HOLDING_A/B/C (arm is holding block)
+//! Bit 15:     ARM_EMPTY (arm is empty)
+//! ```
+//!
+//! # Operators
+//!
+//! STRIPS defines 18 operators covering all combinations of pick/put actions:
+//! - **PickUp(x)**: ARM_EMPTY & CLEAR_x & ON_TABLE_x → HOLDING_x
+//! - **PutDown(x)**: HOLDING_x → ARM_EMPTY & ON_TABLE_x & CLEAR_x
+//! - **Stack(x, y)**: HOLDING_x & CLEAR_y → ON_x_y & CLEAR_x & ARM_EMPTY
+//! - **Unstack(x, y)**: ON_x_y & CLEAR_x & ARM_EMPTY → HOLDING_x & CLEAR_y
+//!
+//! # Example
+//!
+//! ```rust
+//! use dteam::ml::strips::{plan_default, INITIAL_STATE, HOLDING_A};
+//!
+//! // Goal: hold block A (ARM_EMPTY is set in INITIAL_STATE)
+//! let goal = HOLDING_A;
+//!
+//! // Plan from initial state with default max_depth=10
+//! if let Some(actions) = plan_default(INITIAL_STATE, goal) {
+//!     // actions is a Vec<usize> of operator indices
+//!     assert!(!actions.is_empty());
+//!     // Executing the plan transforms state → goal
+//! }
+//! ```
+//!
+//! # Determinism
+//!
+//! STRIPS uses BTreeSet for state memoization (deterministic ordering, no RandomState).
+//! This ensures identical plans across invocations on the same (state, goal) pair.
 
 use crate::ml::hdit_automl::SignalProfile;
-use std::collections::HashSet;
+use std::collections::BTreeSet;
 
 // =============================================================================
 // BIT LAYOUT — full A/B/C symmetry
@@ -148,7 +182,7 @@ pub fn plan(initial: State, goal: State, max_depth: usize) -> Option<Vec<usize>>
         return Some(Vec::new());
     }
     for depth in 1..=max_depth {
-        let mut visited = HashSet::new();
+        let mut visited: BTreeSet<State> = BTreeSet::new();
         visited.insert(initial);
         let mut path = Vec::new();
         if dfs(initial, goal, depth, &mut visited, &mut path) {
@@ -158,7 +192,7 @@ pub fn plan(initial: State, goal: State, max_depth: usize) -> Option<Vec<usize>>
     None
 }
 
-fn dfs(state: State, goal: State, depth: usize, visited: &mut HashSet<State>, path: &mut Vec<usize>) -> bool {
+fn dfs(state: State, goal: State, depth: usize, visited: &mut BTreeSet<State>, path: &mut Vec<usize>) -> bool {
     if is_goal(state, goal) {
         return true;
     }
@@ -349,6 +383,18 @@ mod tests {
         assert!(p.is_some());
         let plan_indices = p.unwrap();
         assert!(plan_indices.len() >= 3);
+    }
+
+    #[test]
+    fn plan_is_deterministic_across_invocations() {
+        // BTreeSet visited-state memo ensures the same plan is produced every run.
+        let init = ON_A_B | CLEAR_A | ON_TABLE_B | CLEAR_C | ON_TABLE_C | ARM_EMPTY;
+        let goal = ON_B_C;
+        let p1 = plan(init, goal, 5).unwrap();
+        let p2 = plan(init, goal, 5).unwrap();
+        let p3 = plan(init, goal, 5).unwrap();
+        assert_eq!(p1, p2);
+        assert_eq!(p2, p3);
     }
 
     #[test]

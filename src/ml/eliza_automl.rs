@@ -1,11 +1,57 @@
-//! ELIZA AutoML Equivalent — Learned Intent Classifier.
+//! ELIZA AutoML Equivalent — Learned Intent Classifier via Naive Bayes.
 //!
 //! While `crate::ml::eliza` provides hand-crafted keyword pattern matching, this
 //! module provides the *learned* equivalent: given training data of (keyword
-//! bitmask, label) pairs, learn the intent classification via Naive Bayes.
+//! bitmask, label) pairs, learn intent classification via Naive Bayes.
 //!
-//! Performs the **same JOB** as classical ELIZA: classify input intent.
-//! The substrate-bifurcation thesis: the same job admits multiple realizations.
+//! # Substrate Bifurcation
+//!
+//! Classical ELIZA (Weizenbaum 1966) is *symbolic cognition*: IF keyword THEN template.
+//! This module is *learned cognition*: given (keywords, intent) pairs, induce a
+//! probability model over intent given keywords.
+//!
+//! Both perform the **same JOB** — classify dialogue intent — but via different physics:
+//! - **Classical**: Pattern matching, O(1) inference, hand-tuned, brittle
+//! - **AutoML**: Frequency-based induction, O(1) inference, data-driven, generalizable
+//!
+//! # Feature Extraction
+//!
+//! Input is a u64 keyword bitmask (one bit per keyword in `crate::ml::eliza::kw`).
+//! Output is a 16-dimensional binary feature vector: `[1.0 if bit i set, else 0.0]`.
+//!
+//! # Architecture
+//!
+//! ```text
+//! Keywords (u64 mask) → 16-dim binary vector → Naive Bayes → Intent (bool)
+//! ```
+//!
+//! # Example
+//!
+//! ```rust
+//! use dteam::ml::eliza_automl;
+//! use dteam::ml::eliza::{keyword_bit, kw};
+//!
+//! // Train: pairs of (keyword mask, intent label)
+//! let train_masks = vec![
+//!     keyword_bit(kw::DREAM) | keyword_bit(kw::I),     // positive intent
+//!     keyword_bit(kw::DREAM),                            // positive intent
+//!     keyword_bit(kw::SORRY),                            // negative intent
+//!     keyword_bit(kw::FATHER),                           // negative intent
+//! ];
+//! let labels = vec![true, true, false, false];
+//!
+//! // Test: does "dream" classify as positive?
+//! let test_masks = vec![keyword_bit(kw::DREAM)];
+//! let predictions = eliza_automl::classify(&train_masks, &labels, &test_masks);
+//!
+//! assert_eq!(predictions.len(), 1);
+//! // predictions[0] will likely be true (dream is indicative of positive intent)
+//! ```
+//!
+//! # Determinism
+//!
+//! This module is fully deterministic: identical inputs produce byte-identical outputs
+//! across invocations. No randomization, no floating-point drift (i16 arithmetic fixed-point).
 
 use crate::ml::hdit_automl::SignalProfile;
 use crate::ml::naive_bayes;
@@ -16,6 +62,21 @@ pub const N_KEYWORD_FEATURES: usize = 16;
 /// Convert a u64 keyword mask to a binary feature vector of length 16.
 ///
 /// Each feature is 1.0 if the corresponding keyword bit is set, 0.0 otherwise.
+///
+/// # Example
+///
+/// ```rust
+/// use dteam::ml::eliza_automl;
+/// use dteam::ml::eliza::{keyword_bit, kw};
+///
+/// let mask = keyword_bit(kw::DREAM) | keyword_bit(kw::MOTHER);
+/// let features = eliza_automl::bitmask_to_features(mask);
+///
+/// assert_eq!(features.len(), 16);
+/// assert_eq!(features[kw::DREAM as usize], 1.0);
+/// assert_eq!(features[kw::MOTHER as usize], 1.0);
+/// assert_eq!(features[kw::SORRY as usize], 0.0);
+/// ```
 #[inline]
 #[must_use]
 pub fn bitmask_to_features(mask: u64) -> Vec<f64> {
@@ -99,6 +160,18 @@ mod tests {
         let anchor = vec![true, false, false];
         let sig = eliza_automl_signal("eliza_nb", &inputs, &anchor);
         assert_eq!(sig.predictions.len(), 3);
+    }
+
+    #[test]
+    fn classify_is_deterministic_across_invocations() {
+        let train = vec![keyword_bit(kw::DREAM), keyword_bit(kw::SORRY), keyword_bit(kw::I), 0];
+        let labels = vec![true, false, true, false];
+        let test = vec![keyword_bit(kw::DREAM), 0];
+        let p1 = classify(&train, &labels, &test);
+        let p2 = classify(&train, &labels, &test);
+        let p3 = classify(&train, &labels, &test);
+        assert_eq!(p1, p2);
+        assert_eq!(p2, p3);
     }
 
     #[test]

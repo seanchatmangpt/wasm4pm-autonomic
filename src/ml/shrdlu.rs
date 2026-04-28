@@ -5,15 +5,55 @@
 //!
 //! # Architecture: Spatial Reasoning as Execution Physics
 //!
-//! Classical SHRDLU was a slow, dialogue-driven scene editor with deep ATN parsing.
-//! At nanosecond scale, SHRDLU becomes:
+//! Classical SHRDLU (1968–1970) was a dialogue-driven scene editor, written in LISP,
+//! that parsed English into actions and reasoned about a simulated block world.
+//! Response latency: seconds per utterance.
 //!
+//! This implementation scales it to execution physics:
 //! - **State**: u64 bit-packed 5-object world (extends STRIPS to A,B,C,D,E)
-//! - **Apply**: ~5 ns per primitive operator (branchless)
-//! - **Plan**: bounded goal-clearing recursion, ~500 ns for 3-step plans
-//! - **Parse**: keyword-driven, ~1 µs (only on cold path human input)
+//! - **Apply**: ~5 ns per primitive operator (branchless bit masking)
+//! - **Plan**: bounded goal-clearing recursion, ~500 ns for typical 3-step plans
+//! - **Parse**: keyword-driven, ~1 µs (human-interface cold path only)
 //!
-//! This is the spatial-reasoning primitive that production systems can call inline.
+//! This is the spatial-reasoning primitive that production systems and workflow engines
+//! call inline on every state transition.
+//!
+//! # State Encoding
+//!
+//! ```text
+//! Bits 0-4:     clear(x) — block x has nothing on top
+//! Bits 5-9:     on_table(x) — block x is on the table
+//! Bits 10-14:   holding(x) — arm is holding block x
+//! Bit 15:       arm_empty — arm is free
+//! Bits 16-40:   on(x,y) — block x is on block y (5×5 sparse matrix)
+//! ```
+//!
+//! # Planner
+//!
+//! SHRDLU uses a goal-clearing recursive planner:
+//! 1. For each unsatisfied goal, find an applicable operator
+//! 2. Apply the operator (clearing any conflicting goals)
+//! 3. Recurse on the new goal set
+//! 4. Bounded by MAX_DEPTH (typically 10)
+//!
+//! # Example
+//!
+//! ```rust
+//! use dteam::ml::shrdlu::{eval, initial_state};
+//!
+//! let mut state = initial_state();
+//! // SHRDLU accepts natural-language-ish commands
+//! // (cold path, but demonstrates the spatial model)
+//! let response = eval("put block A on the table", &mut state);
+//! // Returns REPL-style feedback; updates state in place
+//! ```
+//!
+//! # Performance
+//!
+//! - **initial_state**: O(1)
+//! - **apply**: 5 ns (branchless precondition + bit mask ops)
+//! - **plan**: 500 ns (goal-clearing recursion, bounded depth)
+//! - **eval**: 1 µs (parsing + planning + REPL format)
 
 use crate::ml::hdit_automl::SignalProfile;
 
@@ -599,6 +639,27 @@ mod tests {
         let mut s = initial_state();
         let r = eval("xyz qrs", &mut s);
         assert!(r.contains("don't understand"));
+    }
+
+    #[test]
+    fn plan_is_deterministic_across_invocations() {
+        // Recursive goal-clearing iterates 0..N_OBJECTS in fixed order,
+        // and `Cmd::apply` is pure; therefore the plan must be reproducible.
+        let s = on(1, 0)
+            | clear(1)
+            | ARM_EMPTY
+            | on_table(0)
+            | clear(2)
+            | on_table(2)
+            | clear(3)
+            | on_table(3)
+            | clear(4)
+            | on_table(4);
+        let p1 = plan_cmd(s, Cmd::PickUp(0));
+        let p2 = plan_cmd(s, Cmd::PickUp(0));
+        let p3 = plan_cmd(s, Cmd::PickUp(0));
+        assert_eq!(p1, p2);
+        assert_eq!(p2, p3);
     }
 
     #[test]
