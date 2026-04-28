@@ -96,7 +96,10 @@ fn hdc_quick_accuracy() {
         let preds = hdc::classify(&classifier, &test_seqs, 1);
         assert_eq!(preds.len(), test.len());
         assert_eq!(preds.iter().filter(|&&x| x).count(), 1);
-        println!("HDC Smoke Test passed: {} predictions correct (1 out of 2 expected)", preds.iter().filter(|&&x| x).count());
+        println!(
+            "HDC Smoke Test passed: {} predictions correct (1 out of 2 expected)",
+            preds.iter().filter(|&&x| x).count()
+        );
     }
 
     let reader = XESReader::new();

@@ -58,7 +58,8 @@ impl<S: WorkflowState, A: WorkflowAction> DoubleQLearning<S, A> {
     pub fn select_action(&self, state: S) -> A {
         if self.rng.borrow_mut().f32() < self.exploration_rate {
             let idx = self.rng.borrow_mut().usize(..A::ACTION_COUNT);
-            A::from_index(idx).unwrap()
+            A::from_index(idx)
+                .expect("valid action index — out-of-bounds is a caller contract violation")
         } else {
             self.greedy_action(state)
         }
@@ -76,7 +77,8 @@ impl<S: WorkflowState, A: WorkflowAction> DoubleQLearning<S, A> {
             merged[i] = va[i] + vb[i];
         }
 
-        A::from_index(greedy_index(&merged[..A::ACTION_COUNT])).unwrap()
+        A::from_index(greedy_index(&merged[..A::ACTION_COUNT]))
+            .expect("valid action index — out-of-bounds is a caller contract violation")
     }
 
     #[allow(dead_code)]
@@ -102,9 +104,13 @@ impl<S: WorkflowState, A: WorkflowAction> DoubleQLearning<S, A> {
                     .unwrap_or(0.0)
             };
 
-            let current = qa.get_mut(h_state).unwrap()[action_idx];
+            let current = qa
+                .get_mut(h_state)
+                .expect("state previously ensured to exist")[action_idx];
             let target = reward + self.discount_factor * next_q;
-            qa.get_mut(h_state).unwrap()[action_idx] += self.learning_rate * (target - current);
+            qa.get_mut(h_state)
+                .expect("state previously ensured to exist")[action_idx] +=
+                self.learning_rate * (target - current);
         } else {
             let next_vals = get_q_values::<S, A>(&*qb, &next_state);
             let best_next_idx = greedy_index(next_vals);
@@ -116,9 +122,13 @@ impl<S: WorkflowState, A: WorkflowAction> DoubleQLearning<S, A> {
                     .unwrap_or(0.0)
             };
 
-            let current = qb.get_mut(h_state).unwrap()[action_idx];
+            let current = qb
+                .get_mut(h_state)
+                .expect("state previously ensured to exist")[action_idx];
             let target = reward + self.discount_factor * next_q;
-            qb.get_mut(h_state).unwrap()[action_idx] += self.learning_rate * (target - current);
+            qb.get_mut(h_state)
+                .expect("state previously ensured to exist")[action_idx] +=
+                self.learning_rate * (target - current);
         }
     }
 

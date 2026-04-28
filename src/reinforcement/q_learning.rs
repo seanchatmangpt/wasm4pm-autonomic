@@ -69,7 +69,8 @@ impl<S: WorkflowState, A: WorkflowAction> QLearning<S, A> {
     pub fn select_action(&self, state: S) -> A {
         if !self.deterministic && self.rng.borrow_mut().f32() < self.exploration_rate {
             let idx = self.rng.borrow_mut().usize(..A::ACTION_COUNT);
-            A::from_index(idx).unwrap()
+            A::from_index(idx)
+                .expect("valid action index — out-of-bounds is a caller contract violation")
         } else {
             self.best_action(state)
         }
@@ -78,7 +79,8 @@ impl<S: WorkflowState, A: WorkflowAction> QLearning<S, A> {
     fn best_action(&self, state: S) -> A {
         let q_table = self.q_table.borrow();
         let q_values = get_q_values::<S, A>(&*q_table, &state);
-        A::from_index(greedy_index(q_values)).unwrap()
+        A::from_index(greedy_index(q_values))
+            .expect("valid action index — out-of-bounds is a caller contract violation")
     }
 
     #[allow(dead_code)]
@@ -94,9 +96,12 @@ impl<S: WorkflowState, A: WorkflowAction> QLearning<S, A> {
 
         let action_idx = action.to_index();
         let h = hash_state(&state);
-        let current_q = q_table.get(h).unwrap()[action_idx];
+        let current_q = q_table.get(h).expect("state previously ensured to exist")[action_idx];
         let target = reward + self.discount_factor * next_val;
-        q_table.get_mut(h).unwrap()[action_idx] += self.learning_rate * (target - current_q);
+        q_table
+            .get_mut(h)
+            .expect("state previously ensured to exist")[action_idx] +=
+            self.learning_rate * (target - current_q);
 
         *self.total_reward.borrow_mut() += reward;
     }
