@@ -3,6 +3,12 @@
 //! **Reference:** Winograd, T. (1971). *Procedures as a Representation for Data in a
 //! Computer Program for Understanding Natural Language.* MIT AI Tech Report 235.
 //!
+//! # Compiled Cognition
+//!
+//! This module contributes `S_symbolic` to Compiled Cognition. Paired with
+//! `shrdlu_automl.rs` (`L_learned`), these two halves compose into the full
+//! spatial reasoning primitive of `C_compiled = S ⊕ L ⊕ D ⊕ P`.
+//!
 //! # Architecture: Spatial Reasoning as Execution Physics
 //!
 //! Classical SHRDLU (1968–1970) was a dialogue-driven scene editor, written in LISP,

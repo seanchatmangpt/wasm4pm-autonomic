@@ -5,6 +5,12 @@
 //! of (state, command-feasible?) pairs, learn feasibility classification via
 //! logistic regression on structured-state features.
 //!
+//! # Compiled Cognition
+//!
+//! This module contributes `L_learned` to Compiled Cognition. Paired with
+//! `shrdlu.rs` (`S_symbolic`), these two halves compose into the full
+//! spatial reasoning primitive of `C_compiled = S ⊕ L ⊕ D ⊕ P`.
+//!
 //! # Substrate Bifurcation
 //!
 //! Classical SHRDLU (Winograd 1971) is *symbolic reasoning*: preconditions as logical

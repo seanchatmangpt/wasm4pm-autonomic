@@ -3,6 +3,12 @@
 //! **Reference:** Fikes, R.E. & Nilsson, N.J. (1971). "STRIPS: A New Approach to the
 //! Application of Theorem Proving to Problem Solving." *Artificial Intelligence*, 2, 189–208.
 //!
+//! # Compiled Cognition
+//!
+//! This module contributes `S_symbolic` to Compiled Cognition. Paired with
+//! `strips_automl.rs` (`L_learned`), these two halves compose into the full
+//! goal reachability primitive of `C_compiled = S ⊕ L ⊕ D ⊕ P`.
+//!
 //! # Architecture: Planning as Execution Physics
 //!
 //! Classical STRIPS was a search algorithm that took seconds to plan even small worlds.

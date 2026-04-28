@@ -5,6 +5,12 @@
 //! per-source scores at each hypothesis level, fuse them into a final
 //! decision via Borda-count rank fusion.
 //!
+//! # Compiled Cognition
+//!
+//! This module contributes `L_learned` to Compiled Cognition. Paired with
+//! `hearsay.rs` (`S_symbolic`), these two halves compose into the full
+//! multi-source fusion primitive of `C_compiled = S ⊕ L ⊕ D ⊕ P`.
+//!
 //! # Substrate Bifurcation
 //!
 //! Classical Hearsay-II (Erman et al. 1980) is *orchestrated consensus*: knowledge

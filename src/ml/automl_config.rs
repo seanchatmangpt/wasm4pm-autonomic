@@ -22,6 +22,7 @@
 //!
 //! ```rust
 //! use dteam::ml::automl_config;
+//! use dteam::ml::automl_config::ELIZA_MODEL;
 //!
 //! // All models are pre-loaded as consts; no training overhead
 //! let intent_model = automl_config::ELIZA_MODEL;

@@ -5,6 +5,12 @@
 //! of (patient fact bitmask, diagnosis label) pairs, learn diagnosis via
 //! decision tree induction (ID3-style entropy splits).
 //!
+//! # Compiled Cognition
+//!
+//! This module contributes `L_learned` to Compiled Cognition. Paired with
+//! `mycin.rs` (`S_symbolic`), these two halves compose into the full
+//! organism diagnosis primitive of `C_compiled = S ⊕ L ⊕ D ⊕ P`.
+//!
 //! # Substrate Bifurcation
 //!
 //! Classical MYCIN (Shortliffe et al. 1974–76) is *expert knowledge*: hand-crafted

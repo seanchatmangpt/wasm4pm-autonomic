@@ -4,6 +4,12 @@
 //! "The Hearsay-II Speech-Understanding System: Integrating Knowledge to Resolve
 //! Uncertainty." *Computing Surveys*, 12(2), 213–253.
 //!
+//! # Compiled Cognition
+//!
+//! This module contributes `S_symbolic` to Compiled Cognition. Paired with
+//! `hearsay_automl.rs` (`L_learned`), these two halves compose into the full
+//! multi-source fusion primitive of `C_compiled = S ⊕ L ⊕ D ⊕ P`.
+//!
 //! # Architecture: Faculty Coordination as Execution Physics
 //!
 //! Classical Hearsay-II (1976) was a real-time speech recognizer. The architectural

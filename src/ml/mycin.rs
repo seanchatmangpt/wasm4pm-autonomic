@@ -3,6 +3,12 @@
 //! **Reference:** Shortliffe, E.H. (1976). *Computer-Based Medical Consultations: MYCIN.*
 //! New York: Elsevier. Also: Buchanan & Shortliffe (1984), *Rule-Based Expert Systems.*
 //!
+//! # Compiled Cognition
+//!
+//! This module contributes `S_symbolic` to Compiled Cognition. Paired with
+//! `mycin_automl.rs` (`L_learned`), these two halves compose into the full
+//! organism diagnosis primitive of `C_compiled = S ⊕ L ⊕ D ⊕ P`.
+//!
 //! # Architecture: Diagnosis as Execution Physics
 //!
 //! Classical MYCIN was an interactive consultation system answering one patient at a time

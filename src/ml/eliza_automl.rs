@@ -4,6 +4,12 @@
 //! module provides the *learned* equivalent: given training data of (keyword
 //! bitmask, label) pairs, learn intent classification via Naive Bayes.
 //!
+//! # Compiled Cognition
+//!
+//! This module contributes `L_learned` to Compiled Cognition. Paired with
+//! `eliza.rs` (`S_symbolic`), these two halves compose into the full
+//! intent classification primitive of `C_compiled = S ⊕ L ⊕ D ⊕ P`.
+//!
 //! # Substrate Bifurcation
 //!
 //! Classical ELIZA (Weizenbaum 1966) is *symbolic cognition*: IF keyword THEN template.

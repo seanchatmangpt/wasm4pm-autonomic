@@ -4,6 +4,12 @@
 //! provides the *learned* equivalent: given training data of (initial state,
 //! reachable?) pairs, learn a goal-reachability predictor via gradient boosting.
 //!
+//! # Compiled Cognition
+//!
+//! This module contributes `L_learned` to Compiled Cognition. Paired with
+//! `strips.rs` (`S_symbolic`), these two halves compose into the full
+//! goal reachability primitive of `C_compiled = S ⊕ L ⊕ D ⊕ P`.
+//!
 //! # Substrate Bifurcation
 //!
 //! Classical STRIPS (Fikes & Nilsson 1971) is *algorithmic search*: given a goal,

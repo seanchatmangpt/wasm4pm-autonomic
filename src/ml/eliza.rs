@@ -3,6 +3,12 @@
 //! **Reference:** Weizenbaum, J. (1966). "ELIZA—A Computer Program for the Study of Natural
 //! Language Communication between Man and Machine." *Communications of the ACM*, 9(1), 36–45.
 //!
+//! # Compiled Cognition
+//!
+//! This module contributes `S_symbolic` to Compiled Cognition. Paired with
+//! `eliza_automl.rs` (`L_learned`), these two halves compose into the full
+//! intent classification primitive of `C_compiled = S ⊕ L ⊕ D ⊕ P`.
+//!
 //! # Architecture: Symbolic Cognition as Execution Physics
 //!
 //! Classical ELIZA was string-manipulation cognition: pattern match keywords, extract,
