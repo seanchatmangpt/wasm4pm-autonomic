@@ -172,7 +172,8 @@ fn handle_discover_powl(cmd: &Value) -> Result<String> {
     let log: EventLog =
         serde_json::from_value(log_value).context("Failed to parse 'log' as EventLog")?;
 
-    let powl_model = discover_powl(&log.traces).context("POWL discovery failed")?;
+    let powl_model =
+        discover_powl(&log.traces).map_err(|e| anyhow!("POWL discovery failed: {}", e))?;
     let net = powl_to_wf_net(&powl_model.root);
 
     Ok(json!({
