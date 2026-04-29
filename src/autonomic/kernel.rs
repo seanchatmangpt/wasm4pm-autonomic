@@ -133,21 +133,33 @@ impl AutonomicKernel for DefaultKernel {
         action.risk_profile <= threshold
     }
 
-    fn execute(&mut self, _action: AutonomicAction) -> AutonomicResult {
+    fn execute(&mut self, action: AutonomicAction) -> AutonomicResult {
         // Implementation of branchless reachability guards
         // M' = (M & !I) | O: Enforces that unsafe states (I) are never reached.
 
         // In a real-world scenario, 'I' would be derived from structural workflow analysis.
         // For this baseline, we verify structural Soundness before execution.
-        let is_admissible = true; // Placeholder for structural net check
+        let threshold = match self.config.autonomic.guards.risk_threshold.as_str() {
+            "Low" => ActionRisk::Low,
+            "Medium" => ActionRisk::Medium,
+            "High" => ActionRisk::High,
+            _ => ActionRisk::Critical,
+        };
+        let is_admissible =
+            self.state.conformance_score >= 0.75 && action.risk_profile <= threshold;
+
+        let t_start = std::time::Instant::now();
 
         // Use select_u64 for branchless selection
         let success = crate::utils::bitset::select_u64(is_admissible as u64, 1, 0) == 1;
 
+        let execution_latency_ms = t_start.elapsed().as_millis() as u64;
+        let manifest_hash = crate::utils::dense_kernel::fnv1a_64(action.parameters.as_bytes());
+
         AutonomicResult {
             success,
-            execution_latency_ms: 10,
-            manifest_hash: 0xDEADBEEF,
+            execution_latency_ms,
+            manifest_hash,
         }
     }
 
@@ -211,7 +223,16 @@ mod tests {
 
         // 6. Manifest
         let manifest = kernel.manifest(&result);
-        assert!(manifest.contains("DEADBEEF"));
+        assert!(
+            manifest.starts_with("MANIFEST: success="),
+            "manifest format changed: {}",
+            manifest
+        );
+        assert!(
+            manifest.contains("Integrity:"),
+            "manifest missing integrity field: {}",
+            manifest
+        );
 
         // 7. Adapt
         kernel.adapt(AutonomicFeedback {

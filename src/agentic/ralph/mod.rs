@@ -5,7 +5,6 @@ pub mod ontology;
 pub mod patterns;
 pub mod phase;
 pub mod receipt;
-pub mod router;
 pub mod scorer;
 pub mod selector;
 pub mod verifier;
@@ -16,11 +15,10 @@ pub use execution::ExecutionEngine;
 pub use indexer::{PortfolioIndexer, PortfolioState};
 pub use ontology::OntologyClosureEngine;
 pub use phase::{
-    AgentKind, PhaseReceipt, PhaseRunner, RalphMode, SpecKitInvocation, SpecKitPhase,
-    SpecKitRunner, SpecifyPhaseRunner, SpeckitController,
+    AgentKind, PhaseReceipt, RalphMode, SpecKitInvocation, SpecKitPhase, SpecKitRunner,
+    SpeckitController,
 };
 pub use receipt::ReceiptEmitter;
-pub use router::{AgentRouter, KeywordRouter};
 pub use scorer::MaturityScorer;
 pub use selector::WorkSelector;
 pub use verifier::{CargoVerifier, DoDVerifier};

@@ -3,11 +3,22 @@ name = "dteam"
 version = "1.3.0"
 edition = "2021"
 license = "BUSL-1.1"
+authors = ["Sean Chatman <xpointsh@gmail.com>"]
 description = "Deterministic Process Intelligence Engine (dteam) - Digital Team"
+repository = "https://github.com/dteam-ai/dteam"
+homepage = "https://dteam.ai"
 
 [workspace]
 
 [dependencies]
+unibit-globe = { path = "../unibit/crates/unibit-globe" }
+unibit-lane = { path = "../unibit/crates/unibit-lane" }
+
+unibit-powl = { path = "../unibit/crates/unibit-powl" }
+unibit-graph = { path = "../unibit/crates/unibit-graph" }
+
+unibit-kernel = { path = "../unibit/crates/unibit-kernel" }
+
 log = "0.4"
 env_logger = "0.11"
 bcinr = "26.4.18"
@@ -16,7 +27,7 @@ fastrand = "2.1"
 itertools = "0.12"
 rayon = "1.10"
 serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
+serde_json = { version = "1.0", features = ["arbitrary_precision"] }
 toml = "0.8"
 anyhow = "1.0"
 tracing = "0.1"
@@ -29,10 +40,14 @@ tokio = { version = "1.52", features = ["full"] }
 quick-xml = { version = "0.37", features = ["serialize"] }
 uuid = { version = "1.0", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
+sha2 = "0.10"
+hex = "0.4"
+blake3 = "1.5"
+blake2 = "0.10"
+ed25519-dalek = { version = "2", default-features = false, features = ["std"] }
 wasm-bindgen = "0.2"
 serde-wasm-bindgen = "0.6"
 hashbrown = "0.14"
-wasm4pm = { path = "/Users/sac/chatmangpt/wasm4pm/wasm4pm", default-features = false, features = ["powl", "streaming_basic", "hand_rolled_stats"] }
 
 [features]
 default = ["token-based-replay"]
@@ -42,6 +57,8 @@ token-based-replay = []
 trace-generator = []
 
 [dev-dependencies]
+oxigraph = "0.4"
+
 env_logger = "0.11"
 criterion = "0.5"
 tempfile = "3"
@@ -89,6 +106,18 @@ path = "src/bin/plan_schema.rs"
 [[bin]]
 name = "plan_report"
 path = "src/bin/plan_report.rs"
+
+[[bin]]
+name = "sr"
+path = "src/bin/sr.rs"
+
+[[bin]]
+name = "conformance"
+path = "src/bin/conformance.rs"
+
+[[bin]]
+name = "fortune500_playground"
+path = "src/bin/fortune500_playground.rs"
 
 [[bench]]
 name = "reinforcement_bench"
@@ -172,4 +201,16 @@ harness = false
 
 [[bench]]
 name = "pdc_pipeline_bench"
+harness = false
+
+[[bench]]
+name = "symbolic_learned_bench"
+harness = false
+
+[[bench]]
+name = "bitmask_replay_bench"
+harness = false
+
+[[bench]]
+name = "bpn_measurement_bench"
 harness = false

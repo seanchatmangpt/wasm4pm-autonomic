@@ -59,11 +59,13 @@ impl<S: WorkflowState, A: WorkflowAction> ReinforceAgent<S, A> {
             }
             acc += *p;
             if u <= acc {
-                return A::from_index(idx).unwrap();
+                return A::from_index(idx)
+                    .expect("valid action index — out-of-bounds is a caller contract violation");
             }
         }
 
-        A::from_index(A::ACTION_COUNT - 1).unwrap()
+        A::from_index(A::ACTION_COUNT - 1)
+            .expect("valid action index — out-of-bounds is a caller contract violation")
     }
 
     #[allow(dead_code)]
@@ -90,7 +92,7 @@ impl<S: WorkflowState, A: WorkflowAction> ReinforceAgent<S, A> {
             let g_t = returns[t];
 
             let h = hash_state(state);
-            let weights = theta.get_mut(h).unwrap();
+            let weights = theta.get_mut(h).expect("state previously ensured to exist");
             for j in 0..A::ACTION_COUNT {
                 let grad = if j == a_idx {
                     1.0 - probs[j]

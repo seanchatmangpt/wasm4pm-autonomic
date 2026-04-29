@@ -1,0 +1,13 @@
+{
+  "operation_id": "obl-mcpp-e2e-receipted-run-001-ralph-plan",
+  "timestamp": "2026-04-26T02:20:10Z",
+  "input_hashes": [
+    "f45a7a3ebe4d66b14744668f3f11d388d4976062ca12255ce66414422390025e",
+    "c12b8c9041e123f8bb4d0918dc459aab67bb44bef2c361a72cf0f3bffea01b2a"
+  ],
+  "output_hashes": [
+    "28dc444c09bc26e36fb323e42bd077d5c0bfc23e0596dcbd7e387190a56611e3"
+  ],
+  "signature": "12e71309fd99fb7e2f6e4230422797493bacf28e8deb157f5f08bd5a62a471e0db7eff8e39e6a52cac95e4ef01b35d9fa7237c9940682ad56fa9b0f883ec1509",
+  "previous_receipt_hash": "96eb352c7377f725c900fac75d34d6561b1ea03e98d93b89122a2ce01a4ce5c8"
+}

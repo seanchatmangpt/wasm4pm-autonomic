@@ -418,7 +418,11 @@ impl<K, V> PackedKeyTable<K, V> {
                 self.entries.push((hash, key, value));
                 return;
             }
+            // SAFETY: `entry_idx` is guaranteed to be a valid index in `self.entries`
+            // because it was only ever inserted as `self.entries.len()` during insertion time,
+            // and is only accessed if it's not EMPTY_INDEX.
             if unsafe { self.entries.get_unchecked(entry_idx as usize).0 } == hash {
+                // SAFETY: Same invariant as above; `entry_idx` is a valid entry index.
                 unsafe { *self.entries.get_unchecked_mut(entry_idx as usize) = (hash, key, value) };
                 return;
             }
@@ -434,10 +438,14 @@ impl<K, V> PackedKeyTable<K, V> {
         let mask = (self.indices.len() - 1) as u64;
         let mut idx = (hash & mask) as usize;
         loop {
+            // SAFETY: `idx` is guaranteed to be in bounds because
+            // `idx = hash & mask` and `mask = indices.len() - 1`, so `idx < indices.len()`.
             let entry_idx = unsafe { *self.indices.get_unchecked(idx) };
             if entry_idx == EMPTY_INDEX {
                 return None;
             }
+            // SAFETY: `entry_idx` is guaranteed to be a valid index in `self.entries`
+            // because it was only ever inserted as `self.entries.len()` at insertion time.
             let entry = unsafe { self.entries.get_unchecked(entry_idx as usize) };
             if entry.0 == hash {
                 return Some(&entry.2);
@@ -454,11 +462,16 @@ impl<K, V> PackedKeyTable<K, V> {
         let mask = (self.indices.len() - 1) as u64;
         let mut idx = (hash & mask) as usize;
         loop {
+            // SAFETY: `idx` is guaranteed to be in bounds because
+            // `idx = hash & mask` and `mask = indices.len() - 1`, so `idx < indices.len()`.
             let entry_idx = unsafe { *self.indices.get_unchecked(idx) };
             if entry_idx == EMPTY_INDEX {
                 return None;
             }
+            // SAFETY: `entry_idx` is guaranteed to be a valid index in `self.entries`
+            // because it was only ever inserted as `self.entries.len()` at insertion time.
             if unsafe { self.entries.get_unchecked(entry_idx as usize).0 } == hash {
+                // SAFETY: Same invariant; `entry_idx` is valid.
                 return Some(&mut unsafe { self.entries.get_unchecked_mut(entry_idx as usize) }.2);
             }
             idx = (idx + 1) & mask as usize;

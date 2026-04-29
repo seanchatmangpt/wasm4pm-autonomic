@@ -6,6 +6,7 @@ use std::hash::{Hash, Hasher};
 
 pub mod bitmask_replay;
 pub mod case_centric;
+pub mod token_replay;
 pub mod trace_generator;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -228,6 +229,9 @@ pub fn token_replay_projected(log: &ProjectedLog, petri_net: &PetriNet) -> f64 {
         let mut produced_tokens = initial_mask.count_ones();
 
         for &act_idx in trace {
+            if act_idx >= act_to_t_idx.len() {
+                continue; // guard: trace has unknown activity
+            }
             unsafe {
                 let t_idx = *act_to_t_idx.get_unchecked(act_idx);
                 let tm = trans_masks.get_unchecked(t_idx);

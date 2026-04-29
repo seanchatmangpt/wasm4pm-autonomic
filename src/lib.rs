@@ -1,8 +1,20 @@
+//! **dteam** — Compiled Cognition for enterprise decision pipelines.
+//!
+//! Every model in this crate is a `const`: trained once at build time,
+//! embedded in the binary, and evaluated in nanoseconds at runtime.
+//! Classical symbolic AI (ELIZA, MYCIN, STRIPS, SHRDLU, Hearsay-II) and
+//! five learned AutoML equivalents compose into `C_compiled = S ⊕ L ⊕ D ⊕ P`:
+//! a self-contained artifact with no inference server, no config loading,
+//! and no runtime drift. The governing equation is `A = μ(O*)` — action
+//! is lawful only when projected from a semantically closed, compiled output set.
+
 pub mod conformance;
+pub mod discovery;
 pub mod io;
 pub mod jtbd_counterfactual_tests;
 pub mod jtbd_tests;
 pub mod models;
+pub mod ocel;
 pub mod ontology_proptests;
 pub mod proptest_kernel_verification;
 pub mod reinforcement;
@@ -112,12 +124,13 @@ pub mod ml;
 pub mod ocpm;
 pub mod powl;
 pub mod probabilistic;
+pub mod ralph_plan;
 pub mod simd;
 
 // Re-export autonomic for easier access
 pub use autonomic::{
     ActionRisk, ActionType, AutonomicAction, AutonomicEvent, AutonomicKernel, AutonomicResult,
-    AutonomicState, DefaultKernel,
+    AutonomicState, DefaultKernel, Vision2030Kernel,
 };
 
 pub mod benchmark;

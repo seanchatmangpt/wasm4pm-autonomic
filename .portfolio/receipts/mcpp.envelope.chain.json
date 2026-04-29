@@ -1,0 +1,75 @@
+{
+  "envelopes": [
+    {
+      "schema": "chatmangpt.receipt.envelope.v1",
+      "envelope_id": "recenv-automl-unifier-001",
+      "operation_id": "obl-receipt-format-unifier-001",
+      "timestamp": "2026-04-26T08:17:26.691824Z",
+      "producer": {
+        "system": "dteam",
+        "kind": "doctor-verdict-automl"
+      },
+      "payload": {
+        "schema": "chatmangpt.doctor.verdict.v1",
+        "hash": "blake3:858ec2bc3fa658735692a8722f9868ac3ab7040ce592783691626479e3e2da14",
+        "path": "/Users/sac/dteam/.portfolio/runs/obl-receipt-format-unifier-001/doctor-automl.json"
+      },
+      "signature": {
+        "algorithm": "Ed25519",
+        "public_key_ref": "/Users/sac/.config/ggen/portfolio.ed25519.pub",
+        "value": "fb4ef6028731afd2951e0b0e162c605192ba10c08c31bf92d2cdc392ba5292f2c9123a88f664c58bb93d2115c328e7ccbc253fd123850ed3c66795100cc4990e"
+      },
+      "chain": {
+        "own_hash": "blake3:9ae6cff4f65e11d670a31fa267fce8b859416c0eaf93febe67cd111015da17ef"
+      }
+    },
+    {
+      "schema": "chatmangpt.receipt.envelope.v1",
+      "envelope_id": "recenv-ralph-unifier-001",
+      "operation_id": "obl-receipt-format-unifier-001",
+      "timestamp": "2026-04-26T08:17:43.513353Z",
+      "producer": {
+        "system": "dteam",
+        "kind": "doctor-verdict-ralph-plan"
+      },
+      "payload": {
+        "schema": "chatmangpt.doctor.verdict.v1",
+        "hash": "blake3:96c74c454393a0c0d115131b6b0534c7fac2206b8d782ef1670d8817839c6e27",
+        "path": "/Users/sac/dteam/.portfolio/runs/obl-receipt-format-unifier-001/doctor-ralph.json"
+      },
+      "signature": {
+        "algorithm": "Ed25519",
+        "public_key_ref": "/Users/sac/.config/ggen/portfolio.ed25519.pub",
+        "value": "ca5ca85d6d728f0da95e7c096aa5ea08747b41f03f1df85c427b188963a9d79480aa47c9afda634d6a95a81cc098294e7d896ee752719787fcb3af768ff02d0e"
+      },
+      "chain": {
+        "previous_envelope_hash": "blake3:9ae6cff4f65e11d670a31fa267fce8b859416c0eaf93febe67cd111015da17ef",
+        "own_hash": "blake3:03b6501f7c199914aa9e13867f5edec4b389ed4cad78f7130c5c919e71d4caed"
+      }
+    },
+    {
+      "schema": "chatmangpt.receipt.envelope.v1",
+      "envelope_id": "recenv-ostar-unifier-001",
+      "operation_id": "obl-mcpp-full-six-stage-run-001",
+      "timestamp": "2026-04-26T22:58:44.062627Z",
+      "producer": {
+        "system": "ostar",
+        "kind": "ostar-stage-evidence"
+      },
+      "payload": {
+        "schema": "chatmangpt.ostar.evidence.v1",
+        "hash": "blake3:f7010c337827049454fdb100afcfc7255a65819275098e1a3c7e089d3fd76546",
+        "path": ".portfolio/runs/obl-receipt-format-unifier-001/ostar-evidence.json"
+      },
+      "signature": {
+        "algorithm": "Ed25519",
+        "public_key_ref": "/Users/sac/.config/ggen/portfolio.ed25519.pub",
+        "value": "7ad3b096235ace1e74ab151288183d68c271e99298d75ce538d691ee322db4d42e46cce4329a90f45f1505930b09e5ea0ade742fb907bcc90453876e257be709"
+      },
+      "chain": {
+        "previous_envelope_hash": "blake3:03b6501f7c199914aa9e13867f5edec4b389ed4cad78f7130c5c919e71d4caed",
+        "own_hash": "blake3:533b971e7037e8875868973e9c56d2480cd2d439ed3b60c2d261c27dd9eace54"
+      }
+    }
+  ]
+}

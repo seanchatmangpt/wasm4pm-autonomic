@@ -46,11 +46,26 @@ impl WorkspaceManager for GitWorktreeManager {
     }
 
     fn commit_changes(&self, path: &Path, id: &str, message: &str) -> Result<()> {
-        Command::new("git")
-            .arg("-C")
-            .arg(path)
-            .args(["add", "."])
-            .status()?;
+        let known_artifacts = ["research.md", "plan.md", "tasks.md", "implement.md"];
+        let mut any_staged = false;
+        for artifact in &known_artifacts {
+            let artifact_path = path.join(artifact);
+            if artifact_path.exists() {
+                Command::new("git")
+                    .arg("-C")
+                    .arg(path)
+                    .args(["add", "--", artifact])
+                    .status()?;
+                any_staged = true;
+            }
+        }
+        if !any_staged {
+            tracing::warn!(
+                "commit_changes: no known artifacts in {}, skipping",
+                path.display()
+            );
+            return Ok(());
+        }
         Command::new("git")
             .arg("-C")
             .arg(path)

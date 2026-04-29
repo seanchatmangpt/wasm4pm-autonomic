@@ -1,0 +1,16 @@
+{
+  "operation_id": "sr-verify-mcpp-20260427T210204Z",
+  "timestamp": "2026-04-27T21:02:04Z",
+  "input_hashes": [
+    "6d002b86becd4c622af5b54024efb1595d98a10f001d753f99dbf9549f628ea2",
+    "6bb50a17e2dc2fc14caea95a15cd8572018b6d22d74fb7b9ad015b5a0a8a935e",
+    "1ee55b7ae632bd99dfea4f2d791ff06b1119975e96d4f822050923e7499f44cb",
+    "970146a02b39726be39daff5d8eb80b058c8395a68f0df1acda6e08965e885f4"
+  ],
+  "output_hashes": [
+    "6a2c943d23ab0b0fe04af28386f3c56434216b830957eaeffb132ce0b2920331"
+  ],
+  "signature": "unsigned",
+  "signed": false,
+  "previous_receipt_hash": "4a6160d7e7036218907fb40900bc891f23894f07358ceb5c7689b19bbcfa0ae7"
+}

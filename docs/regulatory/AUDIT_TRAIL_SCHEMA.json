@@ -1,0 +1,289 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Audit Trail Entry Schema",
+  "description": "Machine-readable schema for immutable per-trace decision logs. Every system decision produces one entry. Entries are write-once, append-only, stored in tamper-evident distributed ledger (blockchain or cryptographically signed log).",
+  "type": "object",
+  "required": [
+    "timestamp",
+    "trace_id",
+    "system_id",
+    "input_hash",
+    "output",
+    "confidence",
+    "audit_signature"
+  ],
+  "properties": {
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp (UTC) of decision. Example: 2026-04-28T14:32:15.123Z"
+    },
+    "trace_id": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{32}$",
+      "description": "Unique trace identifier (MD5 hash of customer_id + request_id). Immutable link to this decision in the event log."
+    },
+    "system_id": {
+      "type": "string",
+      "pattern": "^sys-[0-9]{3}$",
+      "description": "Unique system identifier (e.g., sys-001 for ELIZA-keyword classifier). Corresponds to model card in MODEL_CARD_TEMPLATE.md"
+    },
+    "input_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{32}$",
+      "description": "SHA-256 hash of input data (first 32 chars for brevity). Enables input reproducibility without storing raw PII."
+    },
+    "output": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "approved",
+            "rejected",
+            "escalated",
+            "pending_review",
+            "error"
+          ],
+          "description": "Categorical decision output"
+        },
+        {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Continuous decision output (e.g., probability 0.0–1.0)"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "primary_category": {
+              "type": "string"
+            },
+            "secondary_category": {
+              "type": "string"
+            },
+            "score": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          },
+          "description": "Structured decision with multiple fields"
+        }
+      ]
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Confidence score (0.0–1.0). For symbolic systems: 0 (no rule) or 1 (rule fired). For learned models: posterior probability. For ensemble: (agreement_count / 10)."
+    },
+    "rule_fired": {
+      "oneOf": [
+        {
+          "type": "string",
+          "description": "For symbolic systems: rule identifier (e.g., 'eligibility_rule_001')"
+        },
+        {
+          "type": "null",
+          "description": "For learned models: null (rules do not apply)"
+        }
+      ]
+    },
+    "model_version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "description": "Semantic version of the system at decision time (e.g., 2.1.0). Enables rollback tracking."
+    },
+    "weight_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{32}$",
+      "description": "For learned models: SHA-256 hash of model weights (first 32 chars). Enables detection of weight tampering."
+    },
+    "tier_executed": {
+      "type": "string",
+      "enum": [
+        "tier_1",
+        "tier_2",
+        "tier_3"
+      ],
+      "description": "Execution tier of the decision. Tier 1: automatic (≥0.95 confidence, ≥9/10 agreement). Tier 2: confidence-gated (0.8–0.95). Tier 3: manual review (≤0.8)."
+    },
+    "ensemble_agreement": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10,
+      "description": "Number of systems in the ensemble (out of 10) that agreed with this decision. Enables ensemble monitoring."
+    },
+    "ensemble_variance": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Variance of the ensemble: σ(system_outputs). Used for confidence bound estimation: output ± √(variance)."
+    },
+    "ood_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 5,
+      "description": "Out-of-distribution (OOD) detection score (0.0–5.0). Measured as Mahalanobis distance in feature space. >3.0 triggers rejection."
+    },
+    "ood_rejected": {
+      "type": "boolean",
+      "description": "True if OOD score > 3.0 and decision was rejected. False otherwise."
+    },
+    "latency_ms": {
+      "type": "number",
+      "minimum": 0,
+      "description": "End-to-end decision latency in milliseconds (from input arrival to output generation)."
+    },
+    "data_governance_flag": {
+      "type": "boolean",
+      "description": "True if decision involves sensitive personal data (PII) and requires GDPR/CCPA compliance check."
+    },
+    "human_review_required": {
+      "type": "boolean",
+      "description": "True if confidence < 0.80 or ensemble agreement < 7/10 or OOD detected. Requires manual review before action."
+    },
+    "incident_id": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^INC-[0-9]{6}$",
+          "description": "If this decision was part of an incident response, link to the incident ID."
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "audit_signature": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "HMAC-SHA256 signature of the entire entry (excluding this field). Computed by immutable audit service. Enables tamper detection."
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "number"
+          },
+          {
+            "type": "boolean"
+          }
+        ]
+      },
+      "description": "Optional key-value metadata (e.g., customer_segment, request_type, approval_code)."
+    }
+  },
+  "examples": [
+    {
+      "timestamp": "2026-04-28T14:32:15.123Z",
+      "trace_id": "5a7f8c2e9b1d4e6f3a2c5e8f1a3b4c5d",
+      "system_id": "sys-001",
+      "input_hash": "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6",
+      "output": "approved",
+      "confidence": 0.98,
+      "rule_fired": "eligibility_rule_001",
+      "model_version": "2.1.0",
+      "weight_hash": "w1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6",
+      "tier_executed": "tier_1",
+      "ensemble_agreement": 9,
+      "ensemble_variance": 0.045,
+      "ood_score": 0.12,
+      "ood_rejected": false,
+      "latency_ms": 23.4,
+      "data_governance_flag": true,
+      "human_review_required": false,
+      "incident_id": null,
+      "audit_signature": "sig_2026_04_28_14_32_15_hmac_sha256_64_char_hash_value_here",
+      "metadata": {
+        "customer_segment": "high_value",
+        "request_type": "eligibility_check",
+        "approval_code": "APR-2026-04-28-001"
+      }
+    },
+    {
+      "timestamp": "2026-04-28T14:45:32.567Z",
+      "trace_id": "3b8c6e1f5a7d2e9c4b6f1a3e5d7c2b4a",
+      "system_id": "sys-005",
+      "input_hash": "c5d6e7f8g9h0i1j2k3l4m5n6o7p8q9r0",
+      "output": {
+        "primary_category": "billing_inquiry",
+        "secondary_category": "payment_method_update",
+        "score": 0.87
+      },
+      "confidence": 0.87,
+      "rule_fired": null,
+      "model_version": "1.5.2",
+      "weight_hash": "b1c2d3e4f5g6h7i8j9k0l1m2n3o4p5q6",
+      "tier_executed": "tier_2",
+      "ensemble_agreement": 7,
+      "ensemble_variance": 0.0234,
+      "ood_score": 1.8,
+      "ood_rejected": false,
+      "latency_ms": 45.1,
+      "data_governance_flag": true,
+      "human_review_required": false,
+      "incident_id": null,
+      "audit_signature": "sig_2026_04_28_14_45_32_hmac_sha256_another_64_char_hash",
+      "metadata": {
+        "customer_segment": "standard",
+        "request_type": "support_routing"
+      }
+    },
+    {
+      "timestamp": "2026-04-28T15:12:08.234Z",
+      "trace_id": "7e2a9c4d1f6b8e3a7c5f2d9e1b4a6c8e",
+      "system_id": "sys-007",
+      "input_hash": "d7e8f9g0h1i2j3k4l5m6n7o8p9q0r1s2",
+      "output": "escalated",
+      "confidence": 0.62,
+      "rule_fired": null,
+      "model_version": "1.0.0",
+      "weight_hash": "e2f3g4h5i6j7k8l9m0n1o2p3q4r5s6t7",
+      "tier_executed": "tier_3",
+      "ensemble_agreement": 5,
+      "ensemble_variance": 0.156,
+      "ood_score": 2.9,
+      "ood_rejected": false,
+      "latency_ms": 67.8,
+      "data_governance_flag": true,
+      "human_review_required": true,
+      "incident_id": null,
+      "audit_signature": "sig_2026_04_28_15_12_08_hmac_sha256_third_64_char_hash_value",
+      "metadata": {
+        "customer_segment": "fraud_suspected",
+        "request_type": "transaction_review",
+        "flagged_for_investigation": true
+      }
+    },
+    {
+      "timestamp": "2026-04-28T16:00:55.891Z",
+      "trace_id": "9f3e8c2b7a1d4f6e9c3b5a8e2f7d1c4b",
+      "system_id": "sys-003",
+      "input_hash": "e8f9g0h1i2j3k4l5m6n7o8p9q0r1s2t3",
+      "output": "rejected",
+      "confidence": 0.05,
+      "rule_fired": null,
+      "model_version": "1.5.2",
+      "weight_hash": "f3g4h5i6j7k8l9m0n1o2p3q4r5s6t7u8",
+      "tier_executed": "tier_3",
+      "ensemble_agreement": 1,
+      "ensemble_variance": 0.89,
+      "ood_score": 4.2,
+      "ood_rejected": true,
+      "latency_ms": 34.5,
+      "data_governance_flag": true,
+      "human_review_required": true,
+      "incident_id": "INC-062801",
+      "audit_signature": "sig_2026_04_28_16_00_55_hmac_sha256_incident_64_char_hash",
+      "metadata": {
+        "customer_segment": "new_customer",
+        "request_type": "ood_detection",
+        "reason_rejected": "input_divergence_exceeds_3_sigma"
+      }
+    }
+  ]
+}

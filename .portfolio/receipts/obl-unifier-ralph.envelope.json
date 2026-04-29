@@ -1,0 +1,24 @@
+{
+  "schema": "chatmangpt.receipt.envelope.v1",
+  "envelope_id": "recenv-ralph-unifier-001",
+  "operation_id": "obl-receipt-format-unifier-001",
+  "timestamp": "2026-04-26T08:17:43.513353Z",
+  "producer": {
+    "system": "dteam",
+    "kind": "doctor-verdict-ralph-plan"
+  },
+  "payload": {
+    "schema": "chatmangpt.doctor.verdict.v1",
+    "hash": "blake3:96c74c454393a0c0d115131b6b0534c7fac2206b8d782ef1670d8817839c6e27",
+    "path": "/Users/sac/dteam/.portfolio/runs/obl-receipt-format-unifier-001/doctor-ralph.json"
+  },
+  "signature": {
+    "algorithm": "Ed25519",
+    "public_key_ref": "/Users/sac/.config/ggen/portfolio.ed25519.pub",
+    "value": "ca5ca85d6d728f0da95e7c096aa5ea08747b41f03f1df85c427b188963a9d79480aa47c9afda634d6a95a81cc098294e7d896ee752719787fcb3af768ff02d0e"
+  },
+  "chain": {
+    "previous_envelope_hash": "blake3:9ae6cff4f65e11d670a31fa267fce8b859416c0eaf93febe67cd111015da17ef",
+    "own_hash": "blake3:03b6501f7c199914aa9e13867f5edec4b389ed4cad78f7130c5c919e71d4caed"
+  }
+}

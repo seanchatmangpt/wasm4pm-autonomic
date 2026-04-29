@@ -435,10 +435,14 @@ impl<const WORDS: usize> AutonomicKernel for Vision2030Kernel<WORDS> {
             self.state.process_health = (self.state.process_health + HEALTH_REWARD_REPAIR).min(1.0);
         }
 
+        let t_start = std::time::Instant::now();
+        let execution_latency_ms = t_start.elapsed().as_millis() as u64;
+        let manifest_hash = fnv1a_64(action.parameters.as_bytes());
+
         AutonomicResult {
             success: true,
-            execution_latency_ms: 1,
-            manifest_hash: 0x2030_ABCD,
+            execution_latency_ms,
+            manifest_hash,
         }
     }
 

@@ -365,11 +365,21 @@ fn fmt_us(us: u64) -> String {
 
 // ── CLI arg parsing ───────────────────────────────────────────────────────────
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum DoctorKind {
+    Automl,
+    RalphPlan,
+    RalphAndon,
+}
+
 struct CliArgs {
     target: Option<String>,
     plan: Option<PathBuf>,
     json: bool,
     plans_dir: Option<PathBuf>,
+    kind: DoctorKind,
+    andon: Option<String>,
+    analyses_dir: Option<PathBuf>,
 }
 
 fn parse_args() -> CliArgs {
@@ -378,6 +388,9 @@ fn parse_args() -> CliArgs {
         plan: None,
         json: false,
         plans_dir: None,
+        kind: DoctorKind::Automl,
+        andon: None,
+        analyses_dir: None,
     };
     for raw in std::env::args().skip(1) {
         if raw == "--json" {
@@ -388,6 +401,23 @@ fn parse_args() -> CliArgs {
             args.plan = Some(PathBuf::from(val));
         } else if let Some(val) = raw.strip_prefix("--plans-dir=") {
             args.plans_dir = Some(PathBuf::from(val));
+        } else if let Some(val) = raw.strip_prefix("--andon=") {
+            args.andon = Some(val.to_string());
+        } else if let Some(val) = raw.strip_prefix("--analyses-dir=") {
+            args.analyses_dir = Some(PathBuf::from(val));
+        } else if let Some(val) = raw.strip_prefix("--kind=") {
+            args.kind = match val {
+                "ralph-plan" | "ralph_plan" => DoctorKind::RalphPlan,
+                "ralph-andon" | "ralph_andon" => DoctorKind::RalphAndon,
+                "automl" | "" => DoctorKind::Automl,
+                other => {
+                    eprintln!(
+                        "doctor: unknown --kind={} (allowed: automl, ralph-plan, ralph-andon)",
+                        other
+                    );
+                    std::process::exit(2);
+                }
+            };
         }
     }
     args
@@ -1009,10 +1039,523 @@ fn output_json(
     println!("{}", serde_json::to_string_pretty(&out).unwrap());
 }
 
+// ── RalphPlan mode ────────────────────────────────────────────────────────────
+//
+// Distinct from AutomlPlan diagnosis: RalphPlan accounts for Spec Kit phase
+// execution per processed idea. Pathologies classified here include schema
+// mismatch, accounting unbalance, missing artifact for a completed phase, and
+// false completion (a phase marked complete with a failing gate).
+
+#[derive(Default)]
+struct RalphPlanReport {
+    plans_read: usize,
+    schema_mismatch: Vec<String>,
+    unbalanced: Vec<String>,
+    false_completion: Vec<String>,
+    missing_artifact: Vec<String>,
+    blocked: Vec<String>,
+    skipped: Vec<String>,
+    soft_fail_count: usize,
+    pass_count: usize,
+    fatal_count: usize,
+}
+
+fn run_ralph_plan_mode(plans_dir: &Path, json_mode: bool) -> ExitCode {
+    use dteam::ralph_plan::{GateStatus, RalphPlan, Verdict};
+
+    if !plans_dir.exists() {
+        if json_mode {
+            let out = serde_json::json!({
+                "kind": "ralph-plan",
+                "error": format!("plans directory not found: {}", plans_dir.display()),
+                "verdict": "fatal"
+            });
+            println!("{}", serde_json::to_string_pretty(&out).unwrap());
+        } else {
+            eprintln!(
+                "ralph-plan plans directory not found: {}",
+                plans_dir.display()
+            );
+        }
+        return ExitCode::from(1);
+    }
+
+    let mut report = RalphPlanReport::default();
+    let entries: Vec<PathBuf> = match std::fs::read_dir(plans_dir) {
+        Ok(rd) => rd
+            .filter_map(|e| e.ok().map(|e| e.path()))
+            .filter(|p| p.extension().map(|x| x == "json").unwrap_or(false))
+            .collect(),
+        Err(_) => Vec::new(),
+    };
+
+    for path in &entries {
+        let content = match std::fs::read_to_string(path) {
+            Ok(c) => c,
+            Err(_) => {
+                report
+                    .schema_mismatch
+                    .push(format!("{}: read error", path.display()));
+                continue;
+            }
+        };
+        let plan: RalphPlan = match serde_json::from_str(&content) {
+            Ok(p) => p,
+            Err(e) => {
+                report
+                    .schema_mismatch
+                    .push(format!("{}: parse error: {}", path.display(), e));
+                continue;
+            }
+        };
+        report.plans_read += 1;
+
+        // Anti-lie validator (catches schema/version, accounting, verdict consistency).
+        if let Err(e) = plan.validate() {
+            // Classify by error variant: schema/accounting → fatal, others → soft_fail bucket.
+            let msg = format!("{}: {}", path.display(), e);
+            match e {
+                dteam::ralph_plan::ValidationError::BadSchemaVersion { .. } => {
+                    report.schema_mismatch.push(msg);
+                }
+                dteam::ralph_plan::ValidationError::AccountingUnbalanced { .. }
+                | dteam::ralph_plan::ValidationError::PhaseSequenceLenMismatch { .. } => {
+                    report.unbalanced.push(msg);
+                }
+                _ => {
+                    report.false_completion.push(msg);
+                }
+            }
+            continue;
+        }
+
+        // Phase-level pathologies that aren't structural lies but indicate operational pathologies.
+        for completed in &plan.completed_phases {
+            // Every completed phase must have at least one artifact whose `kind` matches.
+            let has_artifact = plan.artifacts.iter().any(|a| &a.kind == completed);
+            if !has_artifact {
+                report.missing_artifact.push(format!(
+                    "{}: phase '{}' marked completed without producing artifact",
+                    path.display(),
+                    completed
+                ));
+            }
+        }
+        for completed in &plan.completed_phases {
+            // No phase may be completed if a gate referencing it failed.
+            let failed = plan
+                .gates
+                .iter()
+                .any(|g| g.status == GateStatus::Fail && g.name.starts_with(completed));
+            if failed {
+                report.false_completion.push(format!(
+                    "{}: phase '{}' marked completed but gate failed",
+                    path.display(),
+                    completed
+                ));
+            }
+        }
+        if !plan.blocked_phases.is_empty() {
+            report.blocked.push(format!(
+                "{}: {} blocked phase(s)",
+                path.display(),
+                plan.blocked_phases.len()
+            ));
+        }
+        if !plan.skipped_phases.is_empty() {
+            report.skipped.push(format!(
+                "{}: {} skipped phase(s) ({})",
+                path.display(),
+                plan.skipped_phases.len(),
+                plan.skipped_phases.join(",")
+            ));
+        }
+        match plan.verdict {
+            Verdict::Pass => report.pass_count += 1,
+            Verdict::SoftFail => report.soft_fail_count += 1,
+            Verdict::Fatal => report.fatal_count += 1,
+        }
+    }
+
+    // Top-level verdict synthesis.
+    let any_fatal = !report.schema_mismatch.is_empty()
+        || !report.unbalanced.is_empty()
+        || !report.false_completion.is_empty()
+        || report.fatal_count > 0;
+    let any_soft = !report.missing_artifact.is_empty()
+        || !report.blocked.is_empty()
+        || !report.skipped.is_empty()
+        || report.soft_fail_count > 0;
+    let verdict = if any_fatal {
+        "fatal"
+    } else if any_soft {
+        "soft_fail"
+    } else {
+        "pass"
+    };
+
+    if json_mode {
+        let pathologies = build_ralph_pathologies(&report);
+        let out = serde_json::json!({
+            "kind": "ralph-plan",
+            "plans_read": report.plans_read,
+            "pathologies": pathologies,
+            "counts": {
+                "pass": report.pass_count,
+                "soft_fail": report.soft_fail_count,
+                "fatal": report.fatal_count,
+            },
+            "verdict": verdict,
+        });
+        println!("{}", serde_json::to_string_pretty(&out).unwrap());
+    } else {
+        println!(
+            "ralph-plan doctor: {} plans, verdict={}",
+            report.plans_read, verdict
+        );
+    }
+
+    match verdict {
+        "fatal" => ExitCode::from(2),
+        "soft_fail" => ExitCode::from(1),
+        _ => ExitCode::from(0),
+    }
+}
+
+fn build_ralph_pathologies(report: &RalphPlanReport) -> Vec<Value> {
+    let mut out: Vec<Value> = Vec::new();
+    if !report.schema_mismatch.is_empty() {
+        out.push(serde_json::json!({
+            "name": "SCHEMA_MISMATCH",
+            "severity": "fatal",
+            "count": report.schema_mismatch.len(),
+            "message": format!("{} plan(s) failed schema validation", report.schema_mismatch.len()),
+            "repair": "Fix RalphPlan schema version or regenerate plans.",
+            "examples": report.schema_mismatch.iter().take(3).cloned().collect::<Vec<_>>()
+        }));
+    }
+    if !report.unbalanced.is_empty() {
+        out.push(serde_json::json!({
+            "name": "UNBALANCED",
+            "severity": "fatal",
+            "count": report.unbalanced.len(),
+            "message": format!("{} plan(s) have unbalanced phase accounting", report.unbalanced.len()),
+            "repair": "completed + blocked + skipped + pending must equal phases_expected.",
+            "examples": report.unbalanced.iter().take(3).cloned().collect::<Vec<_>>()
+        }));
+    }
+    if !report.false_completion.is_empty() {
+        out.push(serde_json::json!({
+            "name": "FALSE_COMPLETION",
+            "severity": "fatal",
+            "count": report.false_completion.len(),
+            "message": format!("{} false-completion violation(s)", report.false_completion.len()),
+            "repair": "A phase cannot be marked completed if its gate failed; verdict must reflect gates.",
+            "examples": report.false_completion.iter().take(3).cloned().collect::<Vec<_>>()
+        }));
+    }
+    if !report.missing_artifact.is_empty() {
+        out.push(serde_json::json!({
+            "name": "MISSING_PRODUCING_ARTIFACT",
+            "severity": "warn",
+            "count": report.missing_artifact.len(),
+            "message": format!("{} completed phase(s) without an artifact", report.missing_artifact.len()),
+            "repair": "Every completed phase must record at least one artifact in `artifacts`.",
+            "examples": report.missing_artifact.iter().take(3).cloned().collect::<Vec<_>>()
+        }));
+    }
+    if !report.blocked.is_empty() {
+        out.push(serde_json::json!({
+            "name": "BLOCKED_PHASES",
+            "severity": "warn",
+            "count": report.blocked.len(),
+            "message": format!("{} plan(s) report blocked phases", report.blocked.len()),
+            "repair": "Resolve upstream gate failures or reclassify.",
+            "examples": report.blocked.iter().take(3).cloned().collect::<Vec<_>>()
+        }));
+    }
+    if !report.skipped.is_empty() {
+        out.push(serde_json::json!({
+            "name": "SKIPPED_PHASES",
+            "severity": "warn",
+            "count": report.skipped.len(),
+            "message": format!("{} plan(s) report skipped phases", report.skipped.len()),
+            "repair": "Either run the skipped phases or downgrade the canonical phase_sequence to match scope.",
+            "examples": report.skipped.iter().take(3).cloned().collect::<Vec<_>>()
+        }));
+    }
+    out
+}
+
+// ── RalphAndon mode (5-Whys auto-escalation) ─────────────────────────────────
+//
+// Reads an andon event JSON (schema speckit.portfolio.andon.event.v1) from a
+// path or `-` (stdin), produces a deterministic heuristic 5-Whys analysis, and
+// writes it to <analyses-dir>/<andon-id>.5whys.json.
+//
+// Exit codes:
+//   0 — healthy verdict
+//   1 — soft fail (SLOW / SATURATED / REDUNDANT / STALE)
+//   2 — LYING
+
+fn andon_verdict_for_class(class: &str, tier: &str) -> &'static str {
+    // Hard-classified verdicts driven by the andon taxonomy. Anything that
+    // attacks truth or lifecycle integrity → LYING. Performance/diversity
+    // pathologies → soft buckets. Everything else → healthy fallthrough.
+    match class {
+        "DOCTOR_LYING"
+        | "CHAIN_BROKEN"
+        | "EXECUTOR_RECEIPT_DEFECT"
+        | "CONSTITUTION_VIOLATION"
+        | "CONSTITUTION_MISSING"
+        | "CAUSAL_INCONSISTENT"
+        | "LIFECYCLE_UNSOUND"
+        | "STOP_LINE_BREACH"
+        | "CAPABILITY_MISSING" => "LYING",
+        "HEIJUNKA_STARVED" | "RATE_LIMIT_EXHAUSTED" | "DRIVER_TIMEOUT" => "SLOW",
+        "SEQUENCING_DEFECT" | "CONFORMANCE_DRIFT" => "REDUNDANT",
+        "TASKS_EMPTY"
+        | "PLAN_MISSING"
+        | "TASKS_MISSING"
+        | "SPEC_MISSING"
+        | "SPECKIT_SPEC_MISSING"
+        | "SPECKIT_NOT_INITIALIZED" => "SATURATED",
+        "RECEIPT_UNVERIFIED" | "DOCTOR_DEGRADED" => "STALE",
+        _ => match tier {
+            "red" => "LYING",
+            "orange" => "STALE",
+            "yellow" => "REDUNDANT",
+            _ => "healthy",
+        },
+    }
+}
+
+fn five_whys_for(
+    class: &str,
+    tier: &str,
+    scope: &str,
+    halts: &str,
+) -> (Vec<(String, String)>, String) {
+    // Deterministic 5-Whys: each (q,a) pair is keyed off the andon class so
+    // identical events always produce identical analyses (no LLM nondeterminism).
+    let q1 = format!("Why was the andon '{}' raised?", class);
+    let a1 = format!(
+        "A {} signal escalated within scope {} (halts={}).",
+        tier, scope, halts
+    );
+    let q2 = "Why did the producing operator allow that signal to escalate?".to_string();
+    let a2 = match class {
+        "CHAIN_BROKEN" | "EXECUTOR_RECEIPT_DEFECT" | "CAUSAL_INCONSISTENT" => {
+            "A receipt or chain link failed integrity checks at append time.".to_string()
+        }
+        "DOCTOR_LYING" | "LIFECYCLE_UNSOUND" => {
+            "A doctor invariant detected an artifact whose declared state contradicts evidence."
+                .to_string()
+        }
+        "CONSTITUTION_MISSING" | "CONSTITUTION_VIOLATION" => {
+            "The cell's constitution is absent or contradicted by an executed obligation."
+                .to_string()
+        }
+        "HEIJUNKA_STARVED" => {
+            "The heijunka queue produced no eligible obligation within the polling window."
+                .to_string()
+        }
+        "RATE_LIMIT_EXHAUSTED" | "DRIVER_TIMEOUT" => {
+            "The chosen driver exceeded its budget envelope before producing an artifact."
+                .to_string()
+        }
+        _ => format!(
+            "Class {} signals a defect in the {} subsystem that the operator did not preempt.",
+            class, scope
+        ),
+    };
+    let q3 = "Why was the underlying defect not caught upstream?".to_string();
+    let a3 = match scope {
+        "CHAIN" | "RECEIPT" => {
+            "Chain-append validation lacks a pre-flight conformance check for this class."
+                .to_string()
+        }
+        "EXECUTOR" => {
+            "Executor receipts are not gated through the doctor before chain-append.".to_string()
+        }
+        "DOCTOR" => "Doctor self-checks did not include a fixture for this pathology.".to_string(),
+        "CONSTITUTION" => {
+            "Constitution presence/parity is not asserted at obligation-dequeue time.".to_string()
+        }
+        "SPECKIT" | "TASK" => {
+            "Spec Kit phase artifacts are not required by an upstream gate.".to_string()
+        }
+        "HEIJUNKA" => "Heijunka has no starvation alarm before the queue empties.".to_string(),
+        "AGENT" => "Agent capability/auth is not probed before obligation assignment.".to_string(),
+        _ => "No upstream proof gate exists for this pathology.".to_string(),
+    };
+    let q4 = "Why does that gap exist in the manufacturing pipeline?".to_string();
+    let a4 = match halts {
+        "portfolio" => {
+            "The pathology is portfolio-fatal but escalation is reactive, not preventive."
+                .to_string()
+        }
+        "cell" => "Cell-scoped fail-fast logic does not pre-empt this class before work starts."
+            .to_string(),
+        _ => "The class is currently treated as informational rather than gated.".to_string(),
+    };
+    let q5 = "Why has the gap not been engineered out yet?".to_string();
+    let a5 = format!(
+        "No obligation in the heijunka queue has been seeded to add a preventive check for {}.",
+        class
+    );
+    let root_cause = format!(
+        "Missing preventive proof-gate for andon class '{}' in scope '{}' (tier={}, halts={}).",
+        class, scope, tier, halts
+    );
+    (
+        vec![(q1, a1), (q2, a2), (q3, a3), (q4, a4), (q5, a5)],
+        root_cause,
+    )
+}
+
+fn run_ralph_andon_mode(
+    andon_src: Option<&str>,
+    analyses_dir: Option<&Path>,
+    json_mode: bool,
+) -> ExitCode {
+    // Read input from path or stdin ('-' or absent).
+    let raw = match andon_src {
+        Some(s) if s != "-" => match std::fs::read_to_string(s) {
+            Ok(c) => c,
+            Err(e) => {
+                eprintln!("ralph-andon: cannot read andon file {}: {}", s, e);
+                return ExitCode::from(2);
+            }
+        },
+        _ => {
+            use std::io::Read;
+            let mut buf = String::new();
+            if let Err(e) = std::io::stdin().read_to_string(&mut buf) {
+                eprintln!("ralph-andon: cannot read stdin: {}", e);
+                return ExitCode::from(2);
+            }
+            buf
+        }
+    };
+
+    let v: Value = match serde_json::from_str(&raw) {
+        Ok(v) => v,
+        Err(e) => {
+            eprintln!("ralph-andon: parse error: {}", e);
+            return ExitCode::from(2);
+        }
+    };
+
+    let schema = v.get("schema").and_then(|x| x.as_str()).unwrap_or("");
+    if !schema.is_empty() && schema != "speckit.portfolio.andon.event.v1" {
+        eprintln!(
+            "ralph-andon: unexpected schema '{}' (want speckit.portfolio.andon.event.v1)",
+            schema
+        );
+        return ExitCode::from(2);
+    }
+
+    let id = v
+        .get("id")
+        .and_then(|x| x.as_str())
+        .unwrap_or("andon-unknown")
+        .to_string();
+    let class = v
+        .get("class")
+        .and_then(|x| x.as_str())
+        .unwrap_or("")
+        .to_string();
+    let tier = v
+        .get("tier")
+        .and_then(|x| x.as_str())
+        .unwrap_or("yellow")
+        .to_string();
+    let scope = v
+        .get("scope")
+        .and_then(|x| x.as_str())
+        .unwrap_or("CELL")
+        .to_string();
+    let halts = v
+        .get("halts")
+        .and_then(|x| x.as_str())
+        .unwrap_or("none")
+        .to_string();
+
+    let (whys, root_cause) = five_whys_for(&class, &tier, &scope, &halts);
+    let verdict = andon_verdict_for_class(&class, &tier);
+
+    let analysis = serde_json::json!({
+        "schema": "speckit.portfolio.andon.5whys.v1",
+        "andon_id": id,
+        "andon_class": class,
+        "andon_tier": tier,
+        "andon_scope": scope,
+        "andon_halts": halts,
+        "whys": whys.iter().map(|(q, a)| serde_json::json!({"q": q, "a": a})).collect::<Vec<_>>(),
+        "root_cause": root_cause,
+        "verdict": verdict,
+    });
+
+    // Write to analyses-dir/<andon-id>.5whys.json (default: ./analyses).
+    let dir = analyses_dir
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from("analyses"));
+    if let Err(e) = std::fs::create_dir_all(&dir) {
+        eprintln!(
+            "ralph-andon: cannot create analyses dir {}: {}",
+            dir.display(),
+            e
+        );
+        return ExitCode::from(2);
+    }
+    let out_path = dir.join(format!("{}.5whys.json", id));
+    let serialized = serde_json::to_string_pretty(&analysis).unwrap();
+    if let Err(e) = std::fs::write(&out_path, &serialized) {
+        eprintln!("ralph-andon: cannot write {}: {}", out_path.display(), e);
+        return ExitCode::from(2);
+    }
+
+    if json_mode {
+        println!("{}", serialized);
+    } else {
+        println!(
+            "ralph-andon: id={} class={} verdict={} → {}",
+            id,
+            class,
+            verdict,
+            out_path.display()
+        );
+    }
+
+    match verdict {
+        "LYING" => ExitCode::from(2),
+        "healthy" => ExitCode::from(0),
+        _ => ExitCode::from(1),
+    }
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 fn main() -> ExitCode {
     let args = parse_args();
+
+    // ── ralph-andon mode (5-Whys auto-escalation) ─────────────────────────────
+    if args.kind == DoctorKind::RalphAndon {
+        return run_ralph_andon_mode(
+            args.andon.as_deref(),
+            args.analyses_dir.as_deref(),
+            args.json,
+        );
+    }
+
+    // ── ralph-plan mode (distinct artifact family from AutomlPlan) ────────────
+    if args.kind == DoctorKind::RalphPlan {
+        let working_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+        let default_plans_dir = working_dir.join("artifacts/ralph/ralph_plans");
+        let plans_dir = args.plans_dir.as_deref().unwrap_or(&default_plans_dir);
+        return run_ralph_plan_mode(plans_dir, args.json);
+    }
 
     // ── Single-plan deep-dive mode ────────────────────────────────────────────
     if let Some(plan_path) = &args.plan {

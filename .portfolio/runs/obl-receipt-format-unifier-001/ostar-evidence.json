@@ -1,0 +1,16 @@
+{
+  "schema": "chatmangpt.ostar.evidence.v1",
+  "stage_id": "seeded",
+  "operation_id": "obl-mcpp-full-six-stage-run-001",
+  "run_id": "20260426T225834Z",
+  "verdict": "soft_fail",
+  "timestamp": "2026-04-26T22:58:34Z",
+  "metrics": {
+    "fitness": 0.87,
+    "precision": 0.82,
+    "simplicity": 0.9,
+    "generalization": 0.85
+  },
+  "artifacts": [],
+  "pathologies": []
+}
