@@ -30,6 +30,7 @@ pub mod powl64;
 pub mod trace;
 pub mod conformance;
 pub mod utils;
+pub mod export;
 
 pub mod breeds {
     //! Cognitive breed passes: ELIZA, MYCIN, STRIPS, SHRDLU, Prolog, Hearsay-II,
