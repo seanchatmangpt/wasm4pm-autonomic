@@ -92,6 +92,9 @@ pub mod doctrine;
 // Doctrine-to-code coverage table (Kill Zone 1 of the anti-fake gauntlet).
 pub mod doctrine_coverage;
 
+// Causal-dependency harness (Kill Zone 2 — reused by perf, packs, master).
+pub mod causal_harness;
+
 // LLM provider bridge (Gemini CLI; pluggable). Untrusted output goes
 // through strict admission before becoming corpus.
 pub mod llm;
