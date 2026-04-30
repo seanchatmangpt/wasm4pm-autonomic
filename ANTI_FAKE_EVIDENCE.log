@@ -1,0 +1,297 @@
+BRANCH: feat/anti-fake-gauntlet-zones-2-7
+COMMIT: c9a3404c09bf36e8ff6e22734eee2d624748b786
+STDOUT:
+
+running 98 tests
+test causal_harness::tests::each_scenario_has_at_least_one_perturbation ... ok
+test causal_harness::tests::canonical_scenarios_cover_every_response_class ... ok
+test causal::tests::fatigue_component_has_high_effect_when_response_diverges ... ok
+test align::tests::exact_replay_yields_fitness_one ... ok
+test align::tests::unknown_trace_drops_fitness ... ok
+test causal::tests::irrelevant_component_has_low_effect ... ok
+test align::tests::fitness_is_deterministic ... ok
+test causal::tests::rank_orders_by_effect_size ... ok
+test bridge::tests::deploy_enforces_tier_allowlist ... ok
+test compile::tests::compile_produces_urn_blake3_digest ... ok
+test compile::tests::compile_is_deterministic ... ok
+test bridge::tests::deploy_allows_default_pack_on_any_tier ... ok
+test compliance::tests::audit_report_is_deterministic ... ok
+test compile::tests::compile_digest_changes_with_rules ... ok
+test bridge::tests::anchor_emits_urn_blake3 ... ok
+test compliance::tests::healthcare_pack_with_refuse_default_violates_hipaa ... ok
+test compliance::tests::enterprise_pack_with_admitted_breeds_passes_audit ... ok
+test corpus::tests::corpus_round_trips_episodes ... ok
+test compliance::tests::financial_pack_without_dendral_violates_sox_pci ... ok
+test counterfactual::tests::handles_single_motif_with_synthetic_perturbation ... ok
+test counterfactual::tests::pairs_motifs_with_different_responses ... ok
+test doctrine::tests::doctrine_benchmark_tiers_are_six_canonical ... ok
+test doctrine::tests::doctrine_cli_grammar_is_twelve ... ok
+test doctrine::tests::doctrine_earned_zero_classes_are_seven ... ok
+test doctrine::tests::doctrine_forbidden_regressions_are_ten ... ok
+test doctrine::tests::doctrine_public_ontology_prefixes_are_public ... ok
+test doctrine::tests::doctrine_response_lattice_is_seven ... ok
+test doctrine::tests::doctrine_safe_default_is_ignore ... ok
+test doctrine::tests::doctrine_three_identity_surfaces ... ok
+test doctrine_coverage::tests::doctrine_constants_have_consumers ... ok
+test doctrine_coverage::tests::earned_zero_classes_have_one_link_per_variant ... ok
+test doctrine_coverage::tests::forbidden_regressions_have_one_link_per_variant ... ok
+test doctrine_coverage::tests::identity_surfaces_have_one_link_each ... ok
+test domain::tests::dev_pack_is_cloud_only ... ok
+test domain::tests::every_domain_has_at_least_one_breed ... ok
+test domain::tests::every_domain_has_ontology_profile ... ok
+test domain::tests::financial_carries_sox_and_pci ... ok
+test domain::tests::healthcare_carries_hipaa ... ok
+test drift::tests::drift_records_mismatches ... ok
+test gauntlet::tests::gauntlet_admits_correct_policy ... ok
+test drift::tests::drift_threshold_fires ... ok
+test gauntlet::tests::gauntlet_rejects_constant_policy ... ok
+test jtbd::tests::jtbd_evaluation_admits_genuine_policy ... ok
+test jtbd::tests::jtbd_evaluation_catches_forbidden_response ... ok
+test jtbd::tests::jtbd_evaluation_catches_stub_policies ... ok
+test lifecycle::tests::lifecycle_promotes_through_all_channels ... ok
+test lifecycle::tests::lifecycle_rejects_skipped_promotion ... ok
+test llm::config::tests::default_when_neither ... ok
+test llm::config::tests::env_wins_when_no_flag ... ok
+test lifecycle::tests::lifecycle_rolls_back_to_prior_version ... ok
+test llm::config::tests::flag_wins_over_env ... ok
+test lifecycle::tests::lifecycle_rollback_requires_prior_version ... ok
+test llm::gemini_cli::tests::envelope_missing_response_is_rejected ... ok
+test llm::gemini_cli::tests::envelope_with_non_null_error_is_reported ... ok
+test llm::gemini_cli::tests::envelope_extracts_response_string ... ok
+test llm::schema::tests::canonical_response_parses ... ok
+test llm::schema::tests::response_outside_lattice_fails_serde ... ok
+test llm::schema::tests::unknown_field_is_rejected ... ok
+test llm::world_corpus::tests::world_to_corpus_rejects_dangling_object_reference ... ok
+test llm::world_corpus::tests::world_to_corpus_rejects_empty_counterfactuals ... ok
+test llm::world_corpus::tests::world_to_corpus_produces_episodes_with_derived_urns ... ok
+test metamorphic::tests::metamorphic_fails_constant_policy ... ok
+test manifest::tests::manifest_counts_rules_by_class ... ok
+test metamorphic::tests::metamorphic_flags_unsafe_default ... ok
+test metamorphic::tests::metamorphic_passes_for_real_policy ... ok
+test manifest::tests::manifest_roundtrips_and_verifies ... ok
+test motifs::tests::motif_discovery_is_deterministic ... ok
+test motifs::tests::motif_support_counts_co_occurrences ... ok
+test mutation::tests::mutation_kills_constant_collapse ... ok
+test ocel::tests::ocel_rejects_dangling_reference ... ok
+test ocel::tests::ocel_rejects_duplicate_object_iri ... ok
+test ocel::tests::ocel_rejects_private_namespace ... ok
+test ocel::tests::ocel_validates_public_ontology ... ok
+test manifest::tests::manifest_tamper_matrix ... ok
+test petri::tests::dfg_counts_edges_and_endpoints ... ok
+test petri::tests::dfg_is_deterministic ... ok
+test petri::tests::petri_net_lifted_from_dfg ... ok
+test powl64_audit::tests::chain_head_is_deterministic ... ok
+test receipt_audit::tests::polarity_flip_changes_urn ... ok
+test powl64_audit::tests::unique_paths_have_unique_heads ... ok
+test powl64_audit::tests::audit_detects_all_three_tamper_classes ... ok
+test receipt_audit::tests::receipt_audit_admits_genuine_material ... ok
+test receipt_audit::tests::urn_starts_with_urn_blake3 ... ok
+test registry::tests::registry_idempotent_on_same_digest ... ok
+test registry::tests::registry_round_trips_pack ... ok
+test scale::tests::aggregate_is_deterministic_under_fixed_seed ... ok
+test registry::tests::registry_separates_versions_by_digest ... ok
+test scale::tests::slo_fails_when_drift_or_fitness_breaks ... ok
+test scale::tests::aggregate_sums_counts_across_tenants ... ok
+test scale::tests::slo_passes_within_budget ... ok
+test streaming::tests::streaming_does_not_fire_on_steady_state ... ok
+test streaming::tests::streaming_fires_on_persistent_mismatch ... ok
+test streaming::tests::streaming_recovers_after_correction ... ok
+test synth::tests::synth_emits_canonical_lattice_only ... ok
+test world_gen::tests::world_gen_rejects_private_ontology ... ok
+test world_gen::tests::world_gen_validates_public_ontology ... ok
+test world_gen::tests::world_gen_changes_with_spec_name ... ok
+test world_gen::tests::world_gen_is_deterministic ... ok
+
+test result: ok. 98 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 6 tests
+scenario=settle_via_settled_posture baseline=Settle perturb=drop_posture expected=Ask after=Ask reason=default fallback correct=true
+test causal_remove_required_posture_bit_changes_response ... ok
+scenario=retrieve_via_expected_package baseline=Retrieve perturb=drop_expectation expected=Ask after=Ask reason=default fallback correct=true
+test causal_remove_required_affordance_changes_response ... ok
+scenario=retrieve_via_expected_package baseline=Retrieve perturb=drop_affordance expected=Ask after=Ask reason=default fallback correct=true
+scenario=retrieve_via_expected_package baseline=Retrieve perturb=drop_posture expected=Ask after=Ask reason=default fallback correct=true
+scenario=inspect_via_alert_with_inspect_affordance baseline=Inspect perturb=drop_affordance expected=Ask after=Ask reason=default fallback correct=true
+scenario=inspect_via_alert_with_inspect_affordance baseline=Inspect perturb=drop_posture expected=Ask after=Ask reason=default fallback correct=true
+test causal_remove_required_triple_changes_response ... ok
+scenario=ask_via_evidence_gap baseline=Ask perturb=drop_ntriple expected=Ignore after=Ignore reason=calm baseline correct=true
+test causal_every_response_class_has_positive_assertion ... ok
+scenario=refuse_via_theft_risk_alert baseline=Refuse perturb=drop_risk expected=Ask after=Ask reason=default fallback correct=true
+scenario=refuse_via_theft_risk_alert baseline=Refuse perturb=drop_posture expected=Ask after=Ask reason=default fallback correct=true
+scenario=escalate_via_must_escalate baseline=Escalate perturb=drop_risk expected=Ask after=Ask reason=default fallback correct=true
+scenario=ignore_via_calm_no_expectation_no_risk baseline=Ignore perturb=drop_posture expected=Ask after=Ask reason=default fallback correct=true
+test causal_constant_response_policy_is_rejected_by_gauntlet ... ok
+scenario=ask_via_dd_structure_evidence_gap baseline=Ask perturb=drop_ntriple expected=Ignore after=Ignore reason=calm baseline correct=true
+test causal_every_perturbation_changes_response ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 8 tests
+test differential_receipt_urn_changes_under_plan_node_change ... ok
+test differential_receipt_urn_changes_under_prior_chain_change ... ok
+test differential_receipt_urn_changes_under_polarity_flip ... ok
+test differential_receipt_urn_is_deterministic_across_calls ... ok
+test differential_present_mask_matches_compute_present_mask ... ok
+test differential_decide_equals_decide_with_trace_baseline ... ok
+test differential_decide_equals_decide_with_trace_perturbed ... ok
+test differential_present_mask_load_bearing_under_perturbation ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 6 tests
+test doctrine_constants_are_used_by_runtime_paths ... ok
+test cli_grammar_is_canonical_space_separated ... ok
+test coverage_links_point_at_workspace_files_not_external_paths ... ok
+test identity_surfaces_have_executable_consumers ... ok
+test earned_zero_classes_have_executable_consumers ... ok
+test forbidden_regressions_have_executable_negative_fixtures ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 10 tests
+test llm_rejects_markdown_wrapped_json ... ok
+test llm_rejects_dangling_event_object_reference ... ok
+test llm_rejects_zero_objects_or_zero_events ... ok
+test llm_rejects_event_with_zero_object_links ... ok
+test llm_rejects_profile_mismatch ... ok
+test llm_rejects_private_ontology_namespace ... ok
+test llm_rejects_response_outside_lattice ... ok
+test llm_rejects_pii_bearing_event_id ... ok
+test good_world_admits ... ok
+test ocel_world_affects_policy_or_fails ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 8 tests
+test ocel_spec_file_path_no_bypass ... ok
+test ocel_flat_world_rejected ... ok
+test ocel_world_events_reference_declared_objects ... ok
+test ocel_zero_counterfactuals_rejected ... ok
+test ocel_private_ontology_term_rejected ... ok
+test ocel_profile_mismatch_rejected ... ok
+test ocel_admitted_world_produces_nonempty_corpus ... ok
+test ocel_different_worlds_produce_different_episodes ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 7 tests
+test bad_pack_overlapping_bits_rejected ... ok
+test bad_pack_missing_ontology_profile_rejected ... ok
+test pack_activation_changes_decision_surface ... ok
+test pack_compile_output_is_nonempty_and_manifested ... ok
+test pack_manifest_tamper_fails_verification ... ok
+test bad_pack_private_ontology_term_rejected ... ok
+test pack_semantics_match_ccog_static_pack_behavior ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 6 tests
+test anti_fake_perf_control_allocation_is_detected ... ok
+scenario=settle_via_settled_posture decide_allocations=0 decide_bytes=0 select_allocations=0 select_bytes=0
+cross_zone scenario=settle_via_settled_posture alloc_before=0 alloc_after=0 count=0 changed=true
+scenario=retrieve_via_expected_package decide_allocations=0 decide_bytes=0 select_allocations=0 select_bytes=0
+cross_zone scenario=retrieve_via_expected_package alloc_before=0 alloc_after=0 count=0 changed=true
+cross_zone scenario=retrieve_via_expected_package alloc_before=0 alloc_after=0 count=0 changed=true
+scenario=inspect_via_alert_with_inspect_affordance decide_allocations=0 decide_bytes=0 select_allocations=0 select_bytes=0
+cross_zone scenario=retrieve_via_expected_package alloc_before=0 alloc_after=0 count=0 changed=true
+cross_zone scenario=inspect_via_alert_with_inspect_affordance alloc_before=0 alloc_after=0 count=0 changed=true
+cross_zone scenario=inspect_via_alert_with_inspect_affordance alloc_before=0 alloc_after=0 count=0 changed=true
+scenario=ask_via_evidence_gap decide_allocations=0 decide_bytes=0 select_allocations=0 select_bytes=0
+scenario=refuse_via_theft_risk_alert decide_allocations=0 decide_bytes=0 select_allocations=0 select_bytes=0
+scenario=escalate_via_must_escalate decide_allocations=0 decide_bytes=0 select_allocations=0 select_bytes=0
+scenario=ignore_via_calm_no_expectation_no_risk decide_allocations=0 decide_bytes=0 select_allocations=0 select_bytes=0
+cross_zone scenario=ask_via_evidence_gap alloc_before=0 alloc_after=0 count=0 changed=true
+cross_zone scenario=refuse_via_theft_risk_alert alloc_before=0 alloc_after=0 count=0 changed=true
+scenario=ask_via_dd_structure_evidence_gap decide_allocations=0 decide_bytes=0 select_allocations=0 select_bytes=0
+test performance_select_instinct_zero_alloc_all_response_classes ... ok
+cross_zone scenario=refuse_via_theft_risk_alert alloc_before=0 alloc_after=0 count=0 changed=true
+test performance_decide_zero_alloc_generated_snapshots ... ok
+test performance_perturbed_decide_remains_zero_alloc ... ok
+test performance_decide_does_not_materialize_or_seal ... ok
+cross_zone scenario=escalate_via_must_escalate alloc_before=0 alloc_after=0 count=0 changed=true
+cross_zone scenario=ignore_via_calm_no_expectation_no_risk alloc_before=0 alloc_after=0 count=0 changed=true
+cross_zone scenario=ask_via_dd_structure_evidence_gap alloc_before=0 alloc_after=0 count=0 changed=true
+test anti_fake_decide_is_zero_heap_and_input_dependent ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 3 tests
+test cli_run_gauntlet_rejects_constant_policy ... ok
+test cli_verify_replay_detects_tamper ... ok
+test cli_full_pipeline_canonical_grammar ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.77s
+
+
+running 3 tests
+test e2e_constant_policy_is_rejected_by_gauntlet ... ok
+test e2e_supply_chain_pack_compiles_and_registers ... ok
+test master_pipeline_end_to_end_reality ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+STDERR:
+   Compiling autoinstinct v30.1.1 (/Users/sac/dteam/crates/autoinstinct)
+warning: unused import: `select_instinct_v0`
+  --> crates/autoinstinct/src/causal_harness.rs:19:22
+   |
+19 | use ccog::instinct::{select_instinct_v0, select_instinct_v0_with_reason, AutonomicInstinct};
+   |                      ^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `std::collections::BTreeMap`
+ --> crates/autoinstinct/src/llm/world_corpus.rs:7:5
+  |
+7 | use std::collections::BTreeMap;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `Counterfactual` and `OcelObject`
+  --> crates/autoinstinct/src/llm/world_corpus.rs:12:21
+   |
+12 | use super::schema::{Counterfactual, OcelEvent, OcelObject, OcelWorld};
+   |                     ^^^^^^^^^^^^^^             ^^^^^^^^^^
+
+warning: `autoinstinct` (lib) generated 3 warnings (run `cargo fix --lib -p autoinstinct` to apply 3 suggestions)
+warning: `autoinstinct` (lib test) generated 1 warning (1 duplicate)
+warning: unused variable: `scenarios`
+  --> crates/autoinstinct/tests/pipeline_e2e.rs:90:9
+   |
+90 |     let scenarios = autoinstinct::counterfactual::generate(&motifs);
+   |         ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_scenarios`
+   |
+   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: `autoinstinct` (test "pipeline_e2e") generated 1 warning (run `cargo fix --test "pipeline_e2e" -p autoinstinct` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.15s
+     Running unittests src/lib.rs (target/debug/deps/autoinstinct-53d3a6fff983ba17)
+     Running unittests src/bin/ainst.rs (target/debug/deps/ainst-116a3d32c8b3e105)
+     Running tests/anti_fake_causal.rs (target/debug/deps/anti_fake_causal-75e3c10029bb8558)
+     Running tests/anti_fake_differential.rs (target/debug/deps/anti_fake_differential-c43e79e137eef501)
+     Running tests/anti_fake_doctrine.rs (target/debug/deps/anti_fake_doctrine-519ba9b5696e9bb3)
+     Running tests/anti_fake_llm.rs (target/debug/deps/anti_fake_llm-21be1dd67bed1cc8)
+     Running tests/anti_fake_ocel.rs (target/debug/deps/anti_fake_ocel-8e671c9c3370ea89)
+     Running tests/anti_fake_packs.rs (target/debug/deps/anti_fake_packs-2febde49564a9443)
+     Running tests/anti_fake_perf.rs (target/debug/deps/anti_fake_perf-7bcd177a5c6e2628)
+     Running tests/cli_smoke.rs (target/debug/deps/cli_smoke-55cd6c224e074669)
+     Running tests/pipeline_e2e.rs (target/debug/deps/pipeline_e2e-96a4591c1d43e2b3)
+   Doc-tests autoinstinct

@@ -119,10 +119,45 @@ mod tests {
     }
 
     #[test]
-    fn manifest_tamper_detected() {
+    fn manifest_tamper_matrix() {
         let pack = sample_pack();
-        let mut manifest = build(&pack);
-        manifest.name.push('!');
-        assert!(!verify(&manifest), "name tamper must invalidate manifest");
+        let base_manifest = build(&pack);
+
+        // 1. Name tamper
+        let mut m = base_manifest.clone();
+        m.name.push('!');
+        assert!(!verify(&m), "name tamper must invalidate manifest");
+
+        // 2. Version tamper
+        let mut m = base_manifest.clone();
+        m.autoinstinct_version = "99.99.99".into();
+        assert!(!verify(&m), "version tamper must invalidate manifest");
+
+        // 3. Digest tamper
+        let mut m = base_manifest.clone();
+        m.digest_urn = "urn:blake3:deadbeef".into();
+        assert!(!verify(&m), "digest tamper must invalidate manifest");
+
+        // 4. Ontology Profile tamper
+        let mut m = base_manifest.clone();
+        m.ontology_profile.push("urn:acme:fake".into());
+        assert!(!verify(&m), "ontology profile tamper must invalidate manifest");
+
+        // 5. Admitted Breeds tamper
+        let mut m = base_manifest.clone();
+        m.admitted_breeds.push("fake_breed".into());
+        assert!(!verify(&m), "admitted breeds tamper must invalidate manifest");
+
+        // 6. Rules by class tamper
+        let mut m = base_manifest.clone();
+        if let Some(first) = m.rules_by_class.first_mut() {
+            first.1 += 1;
+        }
+        assert!(!verify(&m), "rules_by_class tamper must invalidate manifest");
+
+        // 7. Default response tamper
+        let mut m = base_manifest.clone();
+        m.default_response = AutonomicInstinct::Escalate;
+        assert!(!verify(&m), "default_response tamper must invalidate manifest");
     }
 }

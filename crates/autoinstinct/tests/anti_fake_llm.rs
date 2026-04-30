@@ -122,9 +122,22 @@ fn llm_rejects_event_with_zero_object_links() {
 }
 
 #[test]
-fn llm_rejects_prose_around_json() {
-    let bad = format!("Here is your world:\n{}\nHope that helps!", good_world_json());
-    let err = admit(&bad, PROFILE).unwrap_err();
-    assert!(matches!(err, LlmAdmissionError::Shape(_)),
-            "prose around JSON must be rejected, got {err:?}");
+fn ocel_world_affects_policy_or_fails() {
+    // Proves that when LLM returns adversarial garbage, the admission
+    // gate hard-fails and does not silently fall back to a fixture
+    // that would allow downstream policy synthesis to continue.
+    let adversarial = r#"{
+        "version":"30.1.1",
+        "profile":"supply-chain",
+        "scenario":"dock-obstruction",
+        "objects": [{"id":"fake-1", "type":"fake", "label":"Fake", "ontologyType":"https://schema.org/Thing"}],
+        "events": [],
+        "counterfactuals": [],
+        "expectedInstincts": []
+    }"#;
+    let err = admit(adversarial, PROFILE).unwrap_err();
+    assert!(
+        matches!(err, LlmAdmissionError::Structural(_)),
+        "generator must hard-fail on invalid world rather than falling back, got {err:?}"
+    );
 }

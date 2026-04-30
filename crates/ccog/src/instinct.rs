@@ -45,46 +45,56 @@ pub enum AutonomicInstinct {
 /// posture/context bits in subsequent versions, but the precedence ordering
 /// is stable for `v0` consumers.
 #[inline]
-pub fn select_instinct_v0(
+pub fn select_instinct_v0_with_reason(
     snap: &CompiledFieldSnapshot,
     posture: &PostureBundle,
     ctx: &ContextBundle,
-) -> AutonomicInstinct {
+) -> (AutonomicInstinct, &'static str) {
     let present = compute_present_mask(snap);
 
     if posture.has(PostureBit::SETTLED) {
-        return AutonomicInstinct::Settle;
+        return (AutonomicInstinct::Settle, "settled posture");
     }
     if ctx.risk_has(ContextBit::MUST_ESCALATE) {
-        return AutonomicInstinct::Escalate;
+        return (AutonomicInstinct::Escalate, "must escalate risk");
     }
     if ctx.risk_has(ContextBit::SAFETY_RISK) && !ctx.afford_has(ContextBit::CAN_INSPECT) {
-        return AutonomicInstinct::Escalate;
+        return (AutonomicInstinct::Escalate, "safety risk without inspect affordance");
     }
     if ctx.expect_has(ContextBit::PACKAGE_EXPECTED)
         && ctx.afford_has(ContextBit::CAN_RETRIEVE_NOW)
         && (posture.has(PostureBit::CADENCE_DELIVERY) || posture.has(PostureBit::ORIENTED_TO_ENTRY))
     {
-        return AutonomicInstinct::Retrieve;
+        return (AutonomicInstinct::Retrieve, "package expected with retrieve affordance");
     }
     if ctx.expect_has(ContextBit::PARTNER_DUE) && posture.has(PostureBit::CADENCE_PARTNER) {
-        return AutonomicInstinct::Settle;
+        return (AutonomicInstinct::Settle, "partner due with partner cadence");
     }
     if (present & (1u64 << Predicate::DD_MISSING_PROV_VALUE)) != 0 {
-        return AutonomicInstinct::Ask;
+        return (AutonomicInstinct::Ask, "missing evidence (DD missing prov:value)");
     }
     if ctx.risk_has(ContextBit::THEFT_RISK) && posture.has(PostureBit::ALERT) {
-        return AutonomicInstinct::Refuse;
+        return (AutonomicInstinct::Refuse, "theft risk under alert posture");
     }
     if ctx.afford_has(ContextBit::CAN_INSPECT)
         && (posture.has(PostureBit::ALERT) || posture.has(PostureBit::ENGAGED))
     {
-        return AutonomicInstinct::Inspect;
+        return (AutonomicInstinct::Inspect, "can inspect under alert/engaged posture");
     }
     if posture.has(PostureBit::CALM) && ctx.expectation_mask == 0 && ctx.risk_mask == 0 {
-        return AutonomicInstinct::Ignore;
+        return (AutonomicInstinct::Ignore, "calm baseline");
     }
-    AutonomicInstinct::Ask
+    (AutonomicInstinct::Ask, "default fallback")
+}
+
+/// Wrapper over `select_instinct_v0_with_reason` returning only the `AutonomicInstinct`.
+#[inline]
+pub fn select_instinct_v0(
+    snap: &CompiledFieldSnapshot,
+    posture: &PostureBundle,
+    ctx: &ContextBundle,
+) -> AutonomicInstinct {
+    select_instinct_v0_with_reason(snap, posture, ctx).0
 }
 
 #[cfg(test)]

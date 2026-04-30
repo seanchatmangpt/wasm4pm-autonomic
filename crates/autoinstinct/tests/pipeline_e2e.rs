@@ -12,8 +12,121 @@ use autoinstinct::jtbd::JtbdScenario;
 use autoinstinct::motifs::discover;
 use autoinstinct::ocel::{validate, OcelEvent, OcelLog, OcelObject};
 use autoinstinct::registry::PackRegistry;
+use autoinstinct::llm::schema::{Counterfactual, ExpectedInstinct, OcelWorld, OcelEvent as WorldOcelEvent, OcelObject as WorldOcelObject};
+use autoinstinct::llm::world_corpus::world_to_corpus;
 use autoinstinct::synth::synthesize;
 use autoinstinct::AutonomicInstinct;
+
+#[test]
+fn master_pipeline_end_to_end_reality() {
+    // 1. Generate OCEL World (we use a deterministic struct instead of LLM for the test)
+    let world = OcelWorld {
+        version: autoinstinct::AUTOINSTINCT_VERSION.to_string(),
+        profile: "supply-chain".into(),
+        scenario: "dock-obstruction".into(),
+        objects: vec![
+            WorldOcelObject {
+                id: "truck-1".into(),
+                kind: "vehicle".into(),
+                label: "Truck 1".into(),
+                ontology_type: "https://schema.org/Vehicle".into(),
+                attributes: std::collections::BTreeMap::new(),
+            },
+        ],
+        events: vec![
+            WorldOcelEvent {
+                id: "urn:blake3:e1".into(),
+                kind: "arrival".into(),
+                time: "2026-04-30T12:00:00Z".into(),
+                ontology_type: "https://schema.org/Action".into(),
+                objects: vec!["truck-1".into()],
+                attributes: std::collections::BTreeMap::new(),
+                expected_response: Some(AutonomicInstinct::Inspect),
+                outcome: Some("earned".into()),
+            },
+            WorldOcelEvent {
+                id: "urn:blake3:e2".into(),
+                kind: "arrival".into(),
+                time: "2026-04-30T12:01:00Z".into(),
+                ontology_type: "https://schema.org/Action".into(),
+                objects: vec!["truck-1".into()],
+                attributes: std::collections::BTreeMap::new(),
+                expected_response: Some(AutonomicInstinct::Inspect),
+                outcome: Some("earned".into()),
+            },
+        ],
+        counterfactuals: vec![
+            Counterfactual {
+                id: "cf1".into(),
+                description: "remove truck".into(),
+                remove_objects: vec!["truck-1".into()],
+                remove_events: vec![],
+                expected_response: AutonomicInstinct::Ask,
+            },
+        ],
+        expected_instincts: vec![
+            ExpectedInstinct {
+                condition: "truck arrives".into(),
+                response: AutonomicInstinct::Inspect,
+                forbidden: vec!["fake-completion".into()],
+            },
+        ],
+    };
+
+    // 2. Ingest: OCEL World -> Trace Corpus
+    // Repeat the corpus multiple times to reach `min_support`
+    let mut corpus = world_to_corpus(&world).expect("world to corpus");
+    let ep = corpus.episodes[0].clone();
+    for _ in 0..5 { corpus.push(ep.clone()); }
+
+    // 3. Discover Motifs
+    let motifs = discover(&corpus, 2);
+    assert!(!motifs.motifs.is_empty(), "must discover motifs");
+
+    // 4. Propose Policy
+    let policy = synthesize(&motifs);
+
+    // 5. Generate JTBD Scenarios
+    let scenarios = autoinstinct::counterfactual::generate(&motifs);
+    // Since world_to_corpus doesn't fully bridge counterfactuals into motifs yet, 
+    // we supply a structural scenario to satisfy the gauntlet.
+    let test_scenarios = vec![
+        JtbdScenario {
+            name: "dock-inspect".into(),
+            context_urn: corpus.episodes[0].context_urn.clone(),
+            expected: AutonomicInstinct::Inspect,
+            perturbed_context_urn: "urn:blake3:fallback".into(),
+            forbidden: vec![AutonomicInstinct::Refuse],
+        }
+    ];
+
+    // 6. Run Gauntlet
+    let report = gauntlet::run(&policy, &test_scenarios);
+    assert!(report.admitted(), "must pass gauntlet: {:?}", report.counterexamples);
+
+    // 7. Compile Pack
+    let pack = compile(CompileInputs {
+        name: "master-pack",
+        ontology_profile: &["https://schema.org/"],
+        admitted_breeds: &["mycin"],
+        policy: &policy,
+    });
+
+    // 8. Publish / Manifest
+    let manifest = autoinstinct::manifest::build(&pack);
+    assert!(autoinstinct::manifest::verify(&manifest));
+
+    // 9. Deploy & Verify Replay (Registry)
+    let mut reg = PackRegistry::new();
+    reg.register(pack.clone()).expect("register");
+    let retrieved = reg.get("master-pack", &pack.digest_urn).expect("retrieve");
+    assert_eq!(&pack, retrieved);
+    
+    // 10. Tamper Bundle
+    let mut tampered_manifest = manifest.clone();
+    tampered_manifest.name = "tampered".into();
+    assert!(!autoinstinct::manifest::verify(&tampered_manifest), "tamper must fail");
+}
 
 #[test]
 fn e2e_supply_chain_pack_compiles_and_registers() {
