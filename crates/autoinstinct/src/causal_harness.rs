@@ -16,7 +16,7 @@
 
 use ccog::compiled::CompiledFieldSnapshot;
 use ccog::field::FieldContext;
-use ccog::instinct::{select_instinct_v0, select_instinct_v0_with_reason, AutonomicInstinct};
+use ccog::instinct::{select_instinct_v0_with_reason, AutonomicInstinct};
 use ccog::multimodal::{ContextBit, ContextBundle, PostureBit, PostureBundle};
 
 /// A perturbation is a closed-form mutation of the closed context.

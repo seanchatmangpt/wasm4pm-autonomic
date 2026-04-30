@@ -95,6 +95,9 @@ pub mod doctrine_coverage;
 // Causal-dependency harness (Kill Zone 2 — reused by perf, packs, master).
 pub mod causal_harness;
 
+// Phase 4 — anti-fake scorecard / executive gate.
+pub mod scorecard;
+
 // LLM provider bridge (Gemini CLI; pluggable). Untrusted output goes
 // through strict admission before becoming corpus.
 pub mod llm;
