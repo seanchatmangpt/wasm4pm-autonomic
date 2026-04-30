@@ -72,12 +72,37 @@ fn closed_surface(s: &CausalScenario) -> (CompiledFieldSnapshot, PostureBundle, 
     (snap, posture, ctx)
 }
 
+// Force initialization of OnceLock statics inside compute_present_mask before measurement.
+fn force_init_statics() {
+    let (field, _, _) = build_inputs(&canonical_scenarios()[0]);
+    let snap = CompiledFieldSnapshot::from_field(&field).expect("snap");
+    let _ = decide(&snap);
+}
+
 // =============================================================================
 // Tests
 // =============================================================================
 
 #[test]
+fn anti_fake_perf_control_allocation_is_detected() {
+    // Positive control: proves CountingAlloc actually counts allocations.
+    // If this test fails, all zero-alloc assertions are vacuous — the allocator
+    // is not measuring anything.
+    let (_, bytes, count) = measure(|| {
+        let v: Vec<u8> = vec![1u8, 2, 3, 4, 5];
+        std::hint::black_box(v)
+    });
+    assert!(
+        count >= 1,
+        "CountingAlloc did NOT detect a deliberate Vec allocation \
+         (bytes={bytes}, count={count}) — all zero-alloc assertions are vacuous"
+    );
+    assert!(bytes >= 5, "bytes={bytes} is unexpectedly small for a 5-byte Vec");
+}
+
+#[test]
 fn performance_decide_zero_alloc_generated_snapshots() {
+    force_init_statics();
     for s in canonical_scenarios() {
         let (snap, posture, ctx) = closed_surface(&s);
         // Warm up to dodge any first-call lazy init.
@@ -104,6 +129,7 @@ fn performance_decide_zero_alloc_generated_snapshots() {
 
 #[test]
 fn performance_select_instinct_zero_alloc_all_response_classes() {
+    force_init_statics();
     for s in canonical_scenarios() {
         let (snap, posture, ctx) = closed_surface(&s);
         // Warm up.
@@ -122,6 +148,7 @@ fn performance_select_instinct_zero_alloc_all_response_classes() {
 
 #[test]
 fn performance_decide_does_not_materialize_or_seal() {
+    force_init_statics();
     // If decide() materialized (built Construct8) or sealed (built a
     // receipt) it would allocate bytes — deltas and BLAKE3 hashers both
     // touch the heap. Zero alloc across every scenario is the proof.
@@ -144,11 +171,12 @@ fn performance_decide_does_not_materialize_or_seal() {
 
 #[test]
 fn performance_perturbed_decide_remains_zero_alloc() {
+    force_init_statics();
     // Cross-zone: under each load-bearing perturbation, decide() must
     // remain alloc-free. A regression that allocates only on certain
     // input shapes would slip past a single-fixture check.
     for s in canonical_scenarios() {
-        for pert in &s.perturbations {
+        for (pert, _) in &s.perturbations {
             let (field, _, _) = perturb(&s, pert);
             let snap = CompiledFieldSnapshot::from_field(&field).expect("snap");
             let _ = decide(&snap);
@@ -165,6 +193,7 @@ fn performance_perturbed_decide_remains_zero_alloc() {
 
 #[test]
 fn anti_fake_decide_is_zero_heap_and_input_dependent() {
+    force_init_statics();
     // The cross-zone invariant. For each scenario:
     //   1. decide()/select_instinct_v0() under closed surface allocate 0.
     //   2. Under perturbation, response changes.
@@ -181,7 +210,7 @@ fn anti_fake_decide_is_zero_heap_and_input_dependent() {
             assert_eq!(bytes, 0, "baseline alloc != 0 for `{}`", s.name);
             (resp, bytes)
         };
-        for pert in &s.perturbations {
+        for (pert, _expected) in &s.perturbations {
             let (f, p, c) = perturb(&s, pert);
             let snap = CompiledFieldSnapshot::from_field(&f).expect("snap");
             let _ = select_instinct_v0(&snap, &p, &c); // warm

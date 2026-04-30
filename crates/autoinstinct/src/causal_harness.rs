@@ -53,8 +53,9 @@ pub struct CausalScenario {
     pub affordance_bits: Vec<u32>,
     /// Required positive response class.
     pub expected: AutonomicInstinct,
-    /// Perturbations that must each change `expected`.
-    pub perturbations: Vec<Perturbation>,
+    /// Perturbations with expected response class after removal.
+    /// Each perturbation must produce this specific response (not just any different response).
+    pub perturbations: Vec<(Perturbation, AutonomicInstinct)>,
 }
 
 /// Materialize a closed cognition surface from `(field, posture, ctx)`.
@@ -128,7 +129,8 @@ pub fn perturb(
 ///
 /// Every entry must:
 /// 1. produce its `expected` response under the given closed context, and
-/// 2. drop to a *different* response when any perturbation is applied.
+/// 2. produce a specific expected response when any perturbation is applied
+///    (not just any different response).
 #[must_use]
 pub fn canonical_scenarios() -> Vec<CausalScenario> {
     use AutonomicInstinct::*;
@@ -144,7 +146,7 @@ pub fn canonical_scenarios() -> Vec<CausalScenario> {
             risk_bits: vec![],
             affordance_bits: vec![],
             expected: Settle,
-            perturbations: vec![Perturbation::DropPostureBit(PostureBit::SETTLED)],
+            perturbations: vec![(Perturbation::DropPostureBit(PostureBit::SETTLED), Ask)],
         },
         CausalScenario {
             name: "retrieve_via_expected_package",
@@ -156,9 +158,9 @@ pub fn canonical_scenarios() -> Vec<CausalScenario> {
             affordance_bits: vec![ContextBit::CAN_RETRIEVE_NOW],
             expected: Retrieve,
             perturbations: vec![
-                Perturbation::DropExpectation(ContextBit::PACKAGE_EXPECTED),
-                Perturbation::DropAffordance(ContextBit::CAN_RETRIEVE_NOW),
-                Perturbation::DropPostureBit(PostureBit::CADENCE_DELIVERY),
+                (Perturbation::DropExpectation(ContextBit::PACKAGE_EXPECTED), Ask),
+                (Perturbation::DropAffordance(ContextBit::CAN_RETRIEVE_NOW), Ask),
+                (Perturbation::DropPostureBit(PostureBit::CADENCE_DELIVERY), Ask),
             ],
         },
         CausalScenario {
@@ -171,15 +173,15 @@ pub fn canonical_scenarios() -> Vec<CausalScenario> {
             affordance_bits: vec![ContextBit::CAN_INSPECT],
             expected: Inspect,
             perturbations: vec![
-                Perturbation::DropAffordance(ContextBit::CAN_INSPECT),
-                Perturbation::DropPostureBit(PostureBit::ALERT),
+                (Perturbation::DropAffordance(ContextBit::CAN_INSPECT), Ask),
+                (Perturbation::DropPostureBit(PostureBit::ALERT), Ask),
             ],
         },
         CausalScenario {
             name: "ask_via_evidence_gap",
             profile: "enterprise",
             field_ntriples: dd_missing.clone(),
-            // CALM posture is critical: when DD is removed and no
+            // CALM posture is structural: when DD is removed and no
             // expectations/risks remain, the lattice reaches the
             // calm-baseline branch and returns Ignore — proving Ask was
             // earned by the DD triple, not by a default fallback.
@@ -188,8 +190,11 @@ pub fn canonical_scenarios() -> Vec<CausalScenario> {
             risk_bits: vec![],
             affordance_bits: vec![],
             expected: Ask,
-            perturbations: vec![Perturbation::DropTriple(
-                "<http://example.org/d1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/DigitalDocument> .",
+            perturbations: vec![(
+                Perturbation::DropTriple(
+                    "<http://example.org/d1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/DigitalDocument> ."
+                ),
+                Ignore
             )],
         },
         CausalScenario {
@@ -202,8 +207,8 @@ pub fn canonical_scenarios() -> Vec<CausalScenario> {
             affordance_bits: vec![],
             expected: Refuse,
             perturbations: vec![
-                Perturbation::DropRisk(ContextBit::THEFT_RISK),
-                Perturbation::DropPostureBit(PostureBit::ALERT),
+                (Perturbation::DropRisk(ContextBit::THEFT_RISK), Ask),
+                (Perturbation::DropPostureBit(PostureBit::ALERT), Ask),
             ],
         },
         CausalScenario {
@@ -215,7 +220,9 @@ pub fn canonical_scenarios() -> Vec<CausalScenario> {
             risk_bits: vec![ContextBit::MUST_ESCALATE],
             affordance_bits: vec![],
             expected: Escalate,
-            perturbations: vec![Perturbation::DropRisk(ContextBit::MUST_ESCALATE)],
+            perturbations: vec![
+                (Perturbation::DropRisk(ContextBit::MUST_ESCALATE), Ask),
+            ],
         },
         CausalScenario {
             name: "ignore_via_calm_no_expectation_no_risk",
@@ -226,7 +233,7 @@ pub fn canonical_scenarios() -> Vec<CausalScenario> {
             risk_bits: vec![],
             affordance_bits: vec![],
             expected: Ignore,
-            perturbations: vec![Perturbation::DropPostureBit(PostureBit::CALM)],
+            perturbations: vec![(Perturbation::DropPostureBit(PostureBit::CALM), Ask)],
         },
     ]
 }

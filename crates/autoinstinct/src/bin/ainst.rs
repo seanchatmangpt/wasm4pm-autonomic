@@ -144,8 +144,14 @@ enum Propose {
 enum Run {
     /// Run the gauntlet over a candidate + scenarios.
     Gauntlet {
-        candidate: PathBuf,
-        scenarios: PathBuf,
+        #[arg(long, default_value = "standard")]
+        mode: String,
+        #[arg(long)]
+        evidence: bool,
+        #[arg(long)]
+        require_clean_git: bool,
+        candidate: Option<PathBuf>,
+        scenarios: Option<PathBuf>,
     },
 }
 
@@ -330,6 +336,62 @@ fn main() -> Result<()> {
                 name: &name,
                 ontology_profile: dp.ontology_profile,
                 admitted_breeds: dp.admitted_breeds,
+                policy: &policy,
+            });
+            write_json(&out, &pack)?;
+            println!("{}", pack.digest_urn);
+        }
+        Verb::Publish(Publish::Pack { pack }) => {
+            let p: autoinstinct::compile::FieldPackArtifact = read_json(&pack)?;
+            let manifest = build_manifest(&p);
+            let mut manifest_path = pack.clone();
+            let stem = manifest_path
+                .file_stem()
+                .map(|s| s.to_string_lossy().into_owned())
+                .unwrap_or_else(|| "pack".into());
+            manifest_path.set_file_name(format!("{stem}.manifest.json"));
+            write_json(&manifest_path, &manifest)?;
+            println!("{}", manifest.manifest_digest_urn);
+        }
+        Verb::Deploy(Deploy::Edge {
+            pack,
+            tier,
+            region,
+        }) => {
+            let p: autoinstinct::compile::FieldPackArtifact = read_json(&pack)?;
+            let descriptor = autoinstinct::bridge::deploy(
+                &p,
+                parse_tier(&tier)?,
+                &region,
+                "",
+                &[],
+            )?;
+            println!("{}", serde_json::to_string_pretty(&descriptor)?);
+        }
+        Verb::Verify(Verify::Replay { manifest }) => {
+            let m: autoinstinct::manifest::PackManifest = read_json(&manifest)?;
+            if verify(&m) {
+                println!("OK: {}", m.manifest_digest_urn);
+            } else {
+                println!("TAMPER");
+                std::process::exit(1);
+            }
+        }
+        Verb::Export(Export::Bundle { pack, out }) => {
+            let p: autoinstinct::compile::FieldPackArtifact = read_json(&pack)?;
+            let m = build_manifest(&p);
+            let bundle = serde_json::json!({
+                "pack": p,
+                "manifest": m,
+                "autoinstinct_version": AUTOINSTINCT_VERSION,
+            });
+            write_json(&out, &bundle)?;
+            println!("bundle: {}", m.manifest_digest_urn);
+        }
+    }
+    Ok(())
+}
+               admitted_breeds: dp.admitted_breeds,
                 policy: &policy,
             });
             write_json(&out, &pack)?;
