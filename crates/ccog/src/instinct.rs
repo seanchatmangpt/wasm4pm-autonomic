@@ -11,7 +11,9 @@ use crate::compiled_hook::{compute_present_mask, Predicate};
 use crate::multimodal::{ContextBit, ContextBundle, PostureBit, PostureBundle};
 
 /// Right-sized response class — the action the cognition surface admits.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(
+    Clone, Copy, Debug, Default, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize,
+)]
 pub enum AutonomicInstinct {
     /// Known harmless event — return to baseline.
     Settle,
@@ -25,7 +27,8 @@ pub enum AutonomicInstinct {
     Refuse,
     /// Persistent unresolved disturbance — escalate.
     Escalate,
-    /// No-op.
+    /// No-op. Default — safest fallback when no other variant applies.
+    #[default]
     Ignore,
 }
 
