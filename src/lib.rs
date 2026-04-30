@@ -45,6 +45,25 @@ pub struct RlState<const WORDS: usize> {
     pub universe: Option<Universe64>,
 }
 
+impl<const WORDS: usize> Default for RlState<WORDS> {
+    fn default() -> Self {
+        Self {
+            health_level: 0,
+            event_rate_q: 0,
+            activity_count_q: 0,
+            spc_alert_level: 0,
+            drift_status: 0,
+            rework_ratio_q: 0,
+            circuit_state: 0,
+            cycle_phase: 0,
+            marking_mask: utils::dense_kernel::KBitSet::default(),
+            activities_hash: 0,
+            ontology_mask: crate::utils::dense_kernel::KBitSet::default(),
+            universe: None,
+        }
+    }
+}
+
 #[derive(Clone, Copy, Eq, Hash, PartialEq, Debug)]
 pub enum RlAction {
     Idle,
