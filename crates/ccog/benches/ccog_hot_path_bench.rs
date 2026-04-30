@@ -1,9 +1,12 @@
 // Chatman Equation hot-path budget: ≤500µs warm. Validate via `cargo bench -p ccog`.
 use criterion::{black_box, criterion_group, criterion_main, BatchSize, Criterion};
-use ccog::{FieldContext, Construct8, process, process_with_hooks, HookRegistry};
+use ccog::{
+    bark, BarkKernel, CompiledFieldSnapshot, CompiledHookTable, Construct8, FieldContext,
+    HookRegistry, compile_builtin, process, process_with_hooks,
+};
 use ccog::breeds::{eliza, mycin, strips};
 use ccog::graph::GraphIri;
-use ccog::hooks::{missing_evidence_hook, phrase_binding_hook};
+use ccog::hooks::{missing_evidence_hook, phrase_binding_hook, transition_admissibility_hook, receipt_hook};
 
 const BENCH_NTRIPLES: &str = r#"
 <http://example.org/claim/1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/Claim> .
@@ -88,6 +91,51 @@ fn bench_hook_fire(c: &mut Criterion) {
     });
 }
 
+fn bench_bark_const(c: &mut Criterion) {
+    let field = setup_field();
+    let snap = CompiledFieldSnapshot::from_field(&field).unwrap();
+    c.bench_function("bark_const_artifact", |b| {
+        b.iter(|| bark(black_box(&snap)).unwrap())
+    });
+}
+
+fn bench_bark_const_with_snapshot(c: &mut Criterion) {
+    let field = setup_field();
+    c.bench_function("bark_with_snapshot_build", |b| {
+        b.iter(|| {
+            let snap = CompiledFieldSnapshot::from_field(black_box(&field)).unwrap();
+            bark(&snap).unwrap()
+        })
+    });
+}
+
+fn bench_compiled_hook_table(c: &mut Criterion) {
+    let field = setup_field();
+    let snap = CompiledFieldSnapshot::from_field(&field).unwrap();
+    let mut table = CompiledHookTable::new();
+    table.register(compile_builtin(&missing_evidence_hook()).unwrap());
+    table.register(compile_builtin(&phrase_binding_hook()).unwrap());
+    table.register(compile_builtin(&transition_admissibility_hook()).unwrap());
+    table.register(compile_builtin(&receipt_hook()).unwrap());
+    c.bench_function("compiled_hook_table_fire", |b| {
+        b.iter(|| table.fire(black_box(&snap)).unwrap())
+    });
+}
+
+fn bench_bark_kernel(c: &mut Criterion) {
+    let field = setup_field();
+    let snap = CompiledFieldSnapshot::from_field(&field).unwrap();
+    let kernel = BarkKernel::linear(vec![
+        compile_builtin(&missing_evidence_hook()).unwrap(),
+        compile_builtin(&phrase_binding_hook()).unwrap(),
+        compile_builtin(&transition_admissibility_hook()).unwrap(),
+        compile_builtin(&receipt_hook()).unwrap(),
+    ]).unwrap();
+    c.bench_function("bark_kernel_fire", |b| {
+        b.iter(|| kernel.fire(black_box(&snap)).unwrap())
+    });
+}
+
 criterion_group!(benches,
     bench_eliza_bind,
     bench_mycin_evidence,
@@ -95,5 +143,9 @@ criterion_group!(benches,
     bench_construct8_from_sparql,
     bench_process,
     bench_process_with_hooks,
-    bench_hook_fire);
+    bench_hook_fire,
+    bench_bark_const,
+    bench_bark_const_with_snapshot,
+    bench_compiled_hook_table,
+    bench_bark_kernel);
 criterion_main!(benches);

@@ -4,6 +4,7 @@
 //! Compiled Cognition core: field-cognition facade over RDF graph closure.
 
 pub mod admit;
+pub mod bark_artifact;
 pub mod bark_kernel;
 pub mod compiled;
 pub mod compiled_hook;
@@ -41,6 +42,10 @@ pub use verdict::{
 pub use receipt::Receipt;
 pub use construct8::Construct8;
 pub use hooks::{HookRegistry, KnowledgeHook, HookTrigger, HookOutcome};
+pub use compiled::CompiledFieldSnapshot;
+pub use compiled_hook::{compile_builtin, compute_present_mask, CompiledHook, CompiledHookTable};
+pub use bark_kernel::BarkKernel;
+pub use bark_artifact::{bark, bark_table, BarkSlot, BUILTINS};
 pub use facade::process_with_hooks;
 pub use runtime::scheduler::{Scheduler, TickReport};
 pub use runtime::delta::{GraphSnapshot, GraphDelta};
