@@ -68,9 +68,9 @@ impl Receipt {
     /// field_id_bytes || 0x00 || prior_chain_hash_bytes_or_32_zero_bytes || 0x00 || polarity_u8
     /// ```
     ///
-    /// `prior_chain = None` serializes as 32 zero bytes — the placeholder for
-    /// a chain origin. `prior_chain = Some([0u8; 32])` produces the same
-    /// canonical material (and therefore the same derived URN).
+    /// `prior_chain = None` serializes as 32 zero bytes — the canonical
+    /// sentinel for a chain origin. `prior_chain = Some([0u8; 32])` produces
+    /// the same canonical material (and therefore the same derived URN).
     pub fn canonical_material(
         hook_id: &str,
         plan_node: u16,

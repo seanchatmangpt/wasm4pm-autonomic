@@ -35,6 +35,79 @@ pub fn check_transition(
     })
 }
 
+/// Probe whether a given breed is admissible right now against `field`.
+///
+/// Each breed has a precondition predicate that must be satisfied by the
+/// graph for the breed to advance:
+///
+/// | Breed         | Precondition predicate           | Reason                                  |
+/// |---------------|----------------------------------|-----------------------------------------|
+/// | Eliza         | `skos:prefLabel`                 | Phrase binding needs labeled subjects   |
+/// | Mycin         | `prov:value` OR no missing DDs   | Evidence available                      |
+/// | Strips        | All DDs have `prov:value`        | Lawful transition                       |
+/// | Shrdlu        | `rdf:type`                       | Affordance probing needs typed subjects |
+/// | Prolog        | `skos:broader`                   | Transitive relation chains              |
+/// | Hearsay       | `prov:wasInformedBy`             | Fusion needs attestations               |
+/// | Dendral       | `prov:wasGeneratedBy`            | Chain reconstruction needs activities   |
+/// | CompiledHook  | always advanced                  | Mask known by construction              |
+pub fn admit_breed(breed: Breed, field: &FieldContext) -> Result<bool> {
+    use oxigraph::model::NamedNode as N;
+    let admissible = match breed {
+        Breed::Eliza => field.graph.pattern_exists(
+            None,
+            Some(&N::new("http://www.w3.org/2004/02/skos/core#prefLabel")?),
+            None,
+        )?,
+        Breed::Mycin => {
+            // Advanced if any prov:value is present or all DDs have one.
+            let has_value = field.graph.pattern_exists(
+                None,
+                Some(&N::new("http://www.w3.org/ns/prov#value")?),
+                None,
+            )?;
+            if has_value {
+                true
+            } else {
+                let dd = N::new("https://schema.org/DigitalDocument")?;
+                let pv = N::new("http://www.w3.org/ns/prov#value")?;
+                let docs = field.graph.instances_of(&dd)?;
+                docs.iter().all(|d| {
+                    field
+                        .graph
+                        .has_value_for(d, &pv)
+                        .unwrap_or(false)
+                })
+            }
+        }
+        Breed::Strips => {
+            let probe = GraphIri::from_iri("urn:ccog:powl8:strips-probe")?;
+            check_transition(&probe, field)?.admissible
+        }
+        Breed::Shrdlu => field.graph.pattern_exists(
+            None,
+            Some(&N::new("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")?),
+            None,
+        )?,
+        Breed::Prolog => field.graph.pattern_exists(
+            None,
+            Some(&N::new("http://www.w3.org/2004/02/skos/core#broader")?),
+            None,
+        )?,
+        Breed::Hearsay => field.graph.pattern_exists(
+            None,
+            Some(&N::new("http://www.w3.org/ns/prov#wasInformedBy")?),
+            None,
+        )?,
+        Breed::Dendral => field.graph.pattern_exists(
+            None,
+            Some(&N::new("http://www.w3.org/ns/prov#wasGeneratedBy")?),
+            None,
+        )?,
+        Breed::CompiledHook => true,
+    };
+    Ok(admissible)
+}
+
 /// Admit a POWL8 plan against the field state.
 ///
 /// Performs `shape_match` first. If the plan is not Sound (Cyclic or
@@ -46,10 +119,9 @@ pub fn check_transition(
 /// Advanced semantics:
 /// - `StartNode`, `Silent`: advanced = `true`.
 /// - `EndNode`: advanced = `false` (entered only after all predecessors).
-/// - `Activity(Strips)`: probed via [`check_transition`] against a sentinel
-///   IRI. Advanced iff the field admits a STRIPS transition right now.
-/// - `Activity(_)` for other breeds: defaults to `false` (placeholder; per-
-///   breed kinetic probes will be added in later tracks).
+/// - `Activity(breed)`: advanced iff [`admit_breed`] returns `true` for the
+///   breed against the current field. Each breed has its own precondition
+///   predicate (see [`admit_breed`]).
 /// - `OperatorSequence`, `OperatorParallel`, `PartialOrder`: not directly
 ///   advanced themselves; their children's advancement determines downstream
 ///   readiness.
@@ -64,7 +136,6 @@ pub fn admit_powl8(plan: &Powl8, field: &FieldContext) -> Result<PlanVerdict> {
     }
 
     let mut advanced = [false; MAX_NODES];
-    let strips_probe_iri = GraphIri::from_iri("urn:ccog:powl8:strips-probe")?;
     for (idx, node) in plan.nodes.iter().enumerate() {
         if idx >= MAX_NODES {
             break;
@@ -72,13 +143,7 @@ pub fn admit_powl8(plan: &Powl8, field: &FieldContext) -> Result<PlanVerdict> {
         advanced[idx] = match *node {
             Powl8Node::StartNode | Powl8Node::Silent => true,
             Powl8Node::EndNode => false,
-            Powl8Node::Activity(Breed::Strips) => {
-                check_transition(&strips_probe_iri, field)?.admissible
-            }
-            // Other breeds: not yet kinetically probed in this track.
-            Powl8Node::Activity(_) => false,
-            // Operators/sub-plans are structural; their advancement comes
-            // from their constituent children, not from the operator node.
+            Powl8Node::Activity(breed) => admit_breed(breed, field)?,
             Powl8Node::OperatorSequence { .. }
             | Powl8Node::OperatorParallel { .. }
             | Powl8Node::PartialOrder { .. } => false,
@@ -168,4 +233,119 @@ pub fn admit_powl8_with_advanced(
         admissible,
         admission: PlanAdmission::Sound,
     })
+}
+
+#[cfg(test)]
+mod breed_probe_tests {
+    use super::*;
+
+    fn field_with(triples: &str) -> FieldContext {
+        let mut f = FieldContext::new("t");
+        f.load_field_state(triples).expect("load");
+        f
+    }
+
+    #[test]
+    fn eliza_admitted_when_pref_label_present() -> Result<()> {
+        let f = field_with(
+            "<http://example.org/c1> <http://www.w3.org/2004/02/skos/core#prefLabel> \"x\" .\n",
+        );
+        assert!(admit_breed(Breed::Eliza, &f)?);
+        Ok(())
+    }
+
+    #[test]
+    fn eliza_denied_on_empty_field() -> Result<()> {
+        let f = FieldContext::new("t");
+        assert!(!admit_breed(Breed::Eliza, &f)?);
+        Ok(())
+    }
+
+    #[test]
+    fn mycin_admitted_when_prov_value_present() -> Result<()> {
+        let f = field_with(
+            "<http://example.org/d1> <http://www.w3.org/ns/prov#value> \"x\" .\n",
+        );
+        assert!(admit_breed(Breed::Mycin, &f)?);
+        Ok(())
+    }
+
+    #[test]
+    fn mycin_admitted_when_no_dd_present() -> Result<()> {
+        // No DDs and no prov:value → trivially "all DDs have prov:value" (vacuous truth).
+        let f = FieldContext::new("t");
+        assert!(admit_breed(Breed::Mycin, &f)?);
+        Ok(())
+    }
+
+    #[test]
+    fn mycin_denied_when_dd_missing_prov_value() -> Result<()> {
+        let f = field_with(
+            "<http://example.org/d1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/DigitalDocument> .\n",
+        );
+        assert!(!admit_breed(Breed::Mycin, &f)?);
+        Ok(())
+    }
+
+    #[test]
+    fn strips_admitted_when_all_dds_have_value() -> Result<()> {
+        let f = field_with(
+            "<http://example.org/d1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/DigitalDocument> .\n\
+             <http://example.org/d1> <http://www.w3.org/ns/prov#value> \"x\" .\n",
+        );
+        assert!(admit_breed(Breed::Strips, &f)?);
+        Ok(())
+    }
+
+    #[test]
+    fn strips_denied_when_dd_missing_value() -> Result<()> {
+        let f = field_with(
+            "<http://example.org/d1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/DigitalDocument> .\n",
+        );
+        assert!(!admit_breed(Breed::Strips, &f)?);
+        Ok(())
+    }
+
+    #[test]
+    fn shrdlu_admitted_when_rdf_type_present() -> Result<()> {
+        let f = field_with(
+            "<http://example.org/d1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/Thing> .\n",
+        );
+        assert!(admit_breed(Breed::Shrdlu, &f)?);
+        Ok(())
+    }
+
+    #[test]
+    fn prolog_admitted_when_skos_broader_present() -> Result<()> {
+        let f = field_with(
+            "<http://example.org/c1> <http://www.w3.org/2004/02/skos/core#broader> <http://example.org/c2> .\n",
+        );
+        assert!(admit_breed(Breed::Prolog, &f)?);
+        Ok(())
+    }
+
+    #[test]
+    fn hearsay_admitted_when_prov_was_informed_by_present() -> Result<()> {
+        let f = field_with(
+            "<http://example.org/c1> <http://www.w3.org/ns/prov#wasInformedBy> <http://example.org/c2> .\n",
+        );
+        assert!(admit_breed(Breed::Hearsay, &f)?);
+        Ok(())
+    }
+
+    #[test]
+    fn dendral_admitted_when_prov_was_generated_by_present() -> Result<()> {
+        let f = field_with(
+            "<http://example.org/e1> <http://www.w3.org/ns/prov#wasGeneratedBy> <http://example.org/a1> .\n",
+        );
+        assert!(admit_breed(Breed::Dendral, &f)?);
+        Ok(())
+    }
+
+    #[test]
+    fn compiled_hook_always_admitted() -> Result<()> {
+        let f = FieldContext::new("t");
+        assert!(admit_breed(Breed::CompiledHook, &f)?);
+        Ok(())
+    }
 }

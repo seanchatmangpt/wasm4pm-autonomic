@@ -10,6 +10,29 @@ use crate::compiled::CompiledFieldSnapshot;
 use crate::compiled_hook::compute_present_mask;
 use crate::verdict::PackPosture;
 
+/// Reason a bark slot did not fire — typed enum for conformance review.
+///
+/// Replaces the prior `Option<&'static str>` skip-reason: structured enum
+/// values can be compared in conformance replay. The user feedback called
+/// this out as "Strings are fine for display, but not for conformance."
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum BarkSkipReason {
+    /// Predecessor plan node has not yet advanced.
+    PredecessorNotAdvanced,
+    /// Slot's `require_mask` was not satisfied by the present mask.
+    RequireMaskUnsatisfied,
+    /// No compiled hook attached to this plan position.
+    NoSlot,
+    /// Hook was registered as `ManualOnly` and skipped during fire_matching.
+    ManualOnly,
+    /// Hook check returned false even though the trigger fired.
+    CheckFailed,
+    /// Hook fired but its act has not been materialized yet.
+    ActNotMaterialized,
+    /// Hook fired and materialized but `emit_receipt` was false.
+    ReceiptDisabled,
+}
+
 /// Per-node entry in a [`CcogTrace`]. Records why a slot fired or skipped.
 #[derive(Clone, Debug, Default)]
 pub struct BarkNodeTrace {
@@ -29,8 +52,10 @@ pub struct BarkNodeTrace {
     pub act_emitted_triples: u8,
     /// Deterministic receipt URN if the slot emitted one.
     pub receipt_urn: Option<String>,
-    /// Reason the slot was skipped, if applicable.
+    /// Reason the slot was skipped, if applicable. Display-only legacy field.
     pub skip_reason: Option<&'static str>,
+    /// Typed skip reason for conformance review. `None` if the slot fired.
+    pub skip: Option<BarkSkipReason>,
 }
 
 /// Causal trace of a single bark dispatch — present mask, posture, per-slot detail.
@@ -101,10 +126,13 @@ pub fn trace_bark(snap: &CompiledFieldSnapshot, table: &'static [BarkSlot]) -> C
     for (i, slot) in table.iter().enumerate() {
         let trigger_fired = (slot.require_mask & present_mask) == slot.require_mask;
         let check_passed = trigger_fired; // mask-encoded
-        let skip_reason = if !trigger_fired {
-            Some("require_mask not satisfied")
+        let (skip_reason, skip) = if !trigger_fired {
+            (
+                Some("require_mask not satisfied"),
+                Some(BarkSkipReason::RequireMaskUnsatisfied),
+            )
         } else {
-            None
+            (None, None)
         };
         let node = BarkNodeTrace {
             slot_idx: i as u16,
@@ -116,6 +144,7 @@ pub fn trace_bark(snap: &CompiledFieldSnapshot, table: &'static [BarkSlot]) -> C
             act_emitted_triples: 0,
             receipt_urn: None,
             skip_reason,
+            skip,
         };
         trace.nodes.push(node);
     }

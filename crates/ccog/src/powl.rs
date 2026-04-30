@@ -81,7 +81,9 @@ impl Default for BinaryRelation {
 /// with its own partial order, or a binary operator over child indices.
 #[derive(Clone, Copy, Debug)]
 pub enum Powl8Node {
-    /// No-op placeholder; treated as advanced once entered.
+    /// Silent runtime marker. Carries no breed; advanced unconditionally when its
+    /// predecessors are advanced. Used as a synchronization point in partial-order
+    /// plans (e.g., to fan-in independent activities before a successor).
     Silent,
     /// Single breed invocation.
     Activity(Breed),

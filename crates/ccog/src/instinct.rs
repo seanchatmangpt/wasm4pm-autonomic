@@ -1,14 +1,17 @@
-//! Autonomic Instinct response classes (Phase 5 Track F stub).
+//! Autonomic Instinct response classes (Phase 6).
 //!
 //! Maps closed `O*` (compiled snapshot + posture + context) to a single
-//! right-sized response class. Track F writer fleshes out `select_instinct()`
-//! against the multimodal bundles.
+//! right-sized response class. The decision lattice reads the full closed
+//! cognition surface — predicate masks from the snapshot, multimodal posture
+//! bits from the trusted local interpreter, and local context (expectation,
+//! risk, affordance) from the surrounding cognition space.
 
 use crate::compiled::CompiledFieldSnapshot;
+use crate::compiled_hook::{compute_present_mask, Predicate};
 use crate::multimodal::{ContextBit, ContextBundle, PostureBit, PostureBundle};
 
 /// Right-sized response class — the action the cognition surface admits.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum AutonomicInstinct {
     /// Known harmless event — return to baseline.
     Settle,
@@ -28,26 +31,50 @@ pub enum AutonomicInstinct {
 
 /// Select a single response class from the closed cognition surface.
 ///
-/// This is a stub mapping using only posture + context bits. The full
-/// implementation in Track F+ uses the snapshot's predicate masks too.
-pub fn select_instinct(
-    _snap: &CompiledFieldSnapshot,
+/// The decision lattice is precedence-ordered: SETTLED posture closes the
+/// loop first; risk overrides expectation; expectation+affordance+cadence
+/// drive Retrieve; absent risks but missing evidence yields Ask; theft +
+/// alert without affordance yields Refuse; ALERT/ENGAGED with inspect
+/// affordance yields Inspect; calm baseline with no expectations yields
+/// Ignore; default falls back to Ask.
+///
+/// `_v0` denotes lattice version one — the structure may extend with new
+/// posture/context bits in subsequent versions, but the precedence ordering
+/// is stable for `v0` consumers.
+#[inline]
+pub fn select_instinct_v0(
+    snap: &CompiledFieldSnapshot,
     posture: &PostureBundle,
     ctx: &ContextBundle,
 ) -> AutonomicInstinct {
+    let present = compute_present_mask(snap);
+
     if posture.has(PostureBit::SETTLED) {
         return AutonomicInstinct::Settle;
     }
-    if (ctx.expectation_mask & (1u64 << ContextBit::PACKAGE_EXPECTED)) != 0
-        && (ctx.affordance_mask & (1u64 << ContextBit::CAN_RETRIEVE_NOW)) != 0
+    if ctx.risk_has(ContextBit::MUST_ESCALATE) {
+        return AutonomicInstinct::Escalate;
+    }
+    if ctx.risk_has(ContextBit::SAFETY_RISK) && !ctx.afford_has(ContextBit::CAN_INSPECT) {
+        return AutonomicInstinct::Escalate;
+    }
+    if ctx.expect_has(ContextBit::PACKAGE_EXPECTED)
+        && ctx.afford_has(ContextBit::CAN_RETRIEVE_NOW)
+        && (posture.has(PostureBit::CADENCE_DELIVERY) || posture.has(PostureBit::ORIENTED_TO_ENTRY))
     {
         return AutonomicInstinct::Retrieve;
     }
-    if (ctx.risk_mask & (1u64 << ContextBit::MUST_ESCALATE)) != 0 {
-        return AutonomicInstinct::Escalate;
+    if ctx.expect_has(ContextBit::PARTNER_DUE) && posture.has(PostureBit::CADENCE_PARTNER) {
+        return AutonomicInstinct::Settle;
     }
-    if (ctx.affordance_mask & (1u64 << ContextBit::CAN_INSPECT)) != 0
-        && posture.has(PostureBit::ALERT)
+    if (present & (1u64 << Predicate::DD_MISSING_PROV_VALUE)) != 0 {
+        return AutonomicInstinct::Ask;
+    }
+    if ctx.risk_has(ContextBit::THEFT_RISK) && posture.has(PostureBit::ALERT) {
+        return AutonomicInstinct::Refuse;
+    }
+    if ctx.afford_has(ContextBit::CAN_INSPECT)
+        && (posture.has(PostureBit::ALERT) || posture.has(PostureBit::ENGAGED))
     {
         return AutonomicInstinct::Inspect;
     }
@@ -62,24 +89,70 @@ mod tests {
     use super::*;
     use crate::field::FieldContext;
 
+    fn empty_snap() -> CompiledFieldSnapshot {
+        let f = FieldContext::new("t");
+        CompiledFieldSnapshot::from_field(&f).expect("snapshot")
+    }
+
+    fn dd_missing_snap() -> CompiledFieldSnapshot {
+        let mut f = FieldContext::new("t");
+        f.load_field_state(
+            "<http://example.org/d1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/DigitalDocument> .\n",
+        )
+        .expect("load");
+        CompiledFieldSnapshot::from_field(&f).expect("snapshot")
+    }
+
     #[test]
     fn settled_yields_settle() {
-        let f = FieldContext::new("t");
-        let snap = CompiledFieldSnapshot::from_field(&f).unwrap();
+        let snap = empty_snap();
         let posture = PostureBundle {
             posture_mask: 1u64 << PostureBit::SETTLED,
             confidence: 200,
         };
-        let ctx = ContextBundle::default();
-        assert_eq!(select_instinct(&snap, &posture, &ctx), AutonomicInstinct::Settle);
+        assert_eq!(
+            select_instinct_v0(&snap, &posture, &ContextBundle::default()),
+            AutonomicInstinct::Settle
+        );
     }
 
     #[test]
-    fn package_expected_plus_affordance_yields_retrieve() {
-        let f = FieldContext::new("t");
-        let snap = CompiledFieldSnapshot::from_field(&f).unwrap();
+    fn must_escalate_overrides_other_signals() {
+        let snap = empty_snap();
+        // Even with PACKAGE_EXPECTED + CAN_RETRIEVE_NOW + CADENCE_DELIVERY,
+        // MUST_ESCALATE wins.
+        let posture = PostureBundle {
+            posture_mask: (1u64 << PostureBit::CADENCE_DELIVERY) | (1u64 << PostureBit::ORIENTED_TO_ENTRY),
+            confidence: 200,
+        };
+        let ctx = ContextBundle {
+            expectation_mask: 1u64 << ContextBit::PACKAGE_EXPECTED,
+            risk_mask: 1u64 << ContextBit::MUST_ESCALATE,
+            affordance_mask: 1u64 << ContextBit::CAN_RETRIEVE_NOW,
+        };
+        assert_eq!(select_instinct_v0(&snap, &posture, &ctx), AutonomicInstinct::Escalate);
+    }
+
+    #[test]
+    fn safety_risk_without_inspect_affordance_escalates() {
+        let snap = empty_snap();
         let posture = PostureBundle {
             posture_mask: 1u64 << PostureBit::ALERT,
+            confidence: 200,
+        };
+        let ctx = ContextBundle {
+            expectation_mask: 0,
+            risk_mask: 1u64 << ContextBit::SAFETY_RISK,
+            affordance_mask: 0,
+        };
+        assert_eq!(select_instinct_v0(&snap, &posture, &ctx), AutonomicInstinct::Escalate);
+    }
+
+    #[test]
+    fn package_expected_plus_delivery_cadence_yields_retrieve() {
+        let snap = empty_snap();
+        let posture = PostureBundle {
+            posture_mask: 1u64 << PostureBit::CADENCE_DELIVERY,
             confidence: 200,
         };
         let ctx = ContextBundle {
@@ -87,6 +160,122 @@ mod tests {
             risk_mask: 0,
             affordance_mask: 1u64 << ContextBit::CAN_RETRIEVE_NOW,
         };
-        assert_eq!(select_instinct(&snap, &posture, &ctx), AutonomicInstinct::Retrieve);
+        assert_eq!(select_instinct_v0(&snap, &posture, &ctx), AutonomicInstinct::Retrieve);
+    }
+
+    #[test]
+    fn partner_due_plus_cadence_yields_settle() {
+        let snap = empty_snap();
+        let posture = PostureBundle {
+            posture_mask: 1u64 << PostureBit::CADENCE_PARTNER,
+            confidence: 200,
+        };
+        let ctx = ContextBundle {
+            expectation_mask: 1u64 << ContextBit::PARTNER_DUE,
+            risk_mask: 0,
+            affordance_mask: 0,
+        };
+        assert_eq!(select_instinct_v0(&snap, &posture, &ctx), AutonomicInstinct::Settle);
+    }
+
+    #[test]
+    fn missing_evidence_yields_ask() {
+        let snap = dd_missing_snap();
+        let posture = PostureBundle {
+            posture_mask: 1u64 << PostureBit::ALERT,
+            confidence: 200,
+        };
+        assert_eq!(
+            select_instinct_v0(&snap, &posture, &ContextBundle::default()),
+            AutonomicInstinct::Ask
+        );
+    }
+
+    #[test]
+    fn theft_risk_with_alert_yields_refuse() {
+        let snap = empty_snap();
+        let posture = PostureBundle {
+            posture_mask: 1u64 << PostureBit::ALERT,
+            confidence: 200,
+        };
+        let ctx = ContextBundle {
+            expectation_mask: 0,
+            risk_mask: 1u64 << ContextBit::THEFT_RISK,
+            affordance_mask: 0,
+        };
+        assert_eq!(select_instinct_v0(&snap, &posture, &ctx), AutonomicInstinct::Refuse);
+    }
+
+    #[test]
+    fn inspect_affordance_with_engaged_yields_inspect() {
+        let snap = empty_snap();
+        let posture = PostureBundle {
+            posture_mask: 1u64 << PostureBit::ENGAGED,
+            confidence: 200,
+        };
+        let ctx = ContextBundle {
+            expectation_mask: 0,
+            risk_mask: 0,
+            affordance_mask: 1u64 << ContextBit::CAN_INSPECT,
+        };
+        assert_eq!(select_instinct_v0(&snap, &posture, &ctx), AutonomicInstinct::Inspect);
+    }
+
+    #[test]
+    fn calm_with_no_signals_yields_ignore() {
+        let snap = empty_snap();
+        let posture = PostureBundle {
+            posture_mask: 1u64 << PostureBit::CALM,
+            confidence: 200,
+        };
+        assert_eq!(
+            select_instinct_v0(&snap, &posture, &ContextBundle::default()),
+            AutonomicInstinct::Ignore
+        );
+    }
+
+    #[test]
+    fn default_falls_back_to_ask() {
+        let snap = empty_snap();
+        let posture = PostureBundle {
+            posture_mask: 1u64 << PostureBit::ORIENTED_INTERIOR,
+            confidence: 200,
+        };
+        // No matching condition → default Ask.
+        assert_eq!(
+            select_instinct_v0(&snap, &posture, &ContextBundle::default()),
+            AutonomicInstinct::Ask
+        );
+    }
+
+    #[test]
+    fn settled_overrides_must_escalate() {
+        // SETTLED wins over MUST_ESCALATE (resolution beats escalation).
+        let snap = empty_snap();
+        let posture = PostureBundle {
+            posture_mask: 1u64 << PostureBit::SETTLED,
+            confidence: 200,
+        };
+        let ctx = ContextBundle {
+            expectation_mask: 0,
+            risk_mask: 1u64 << ContextBit::MUST_ESCALATE,
+            affordance_mask: 0,
+        };
+        assert_eq!(select_instinct_v0(&snap, &posture, &ctx), AutonomicInstinct::Settle);
+    }
+
+    #[test]
+    fn must_escalate_overrides_retrieve() {
+        let snap = empty_snap();
+        let posture = PostureBundle {
+            posture_mask: 1u64 << PostureBit::CADENCE_DELIVERY,
+            confidence: 200,
+        };
+        let ctx = ContextBundle {
+            expectation_mask: 1u64 << ContextBit::PACKAGE_EXPECTED,
+            risk_mask: 1u64 << ContextBit::MUST_ESCALATE,
+            affordance_mask: 1u64 << ContextBit::CAN_RETRIEVE_NOW,
+        };
+        assert_eq!(select_instinct_v0(&snap, &posture, &ctx), AutonomicInstinct::Escalate);
     }
 }

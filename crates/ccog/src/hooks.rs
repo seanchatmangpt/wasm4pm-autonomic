@@ -463,26 +463,54 @@ fn check_any_doc_missing_value_snap(snap: &CompiledFieldSnapshot) -> bool {
     false
 }
 
-/// Act: emit a placeholder `prov:value` triple for each documented gap (≤8 triples).
+/// Act: emit a `schema:AskAction` gap-finding delta per missing evidence.
+///
+/// Phase 5 conformance rule (Track D): the missing-evidence hook must NOT
+/// emit `<doc> prov:value "placeholder"` — that would lie semantically by
+/// claiming evidence exists when it does not. Instead, emit:
+///
+/// ```text
+/// <urn:blake3:{hash(doc_iri)}> rdf:type schema:AskAction
+/// <urn:blake3:{hash(doc_iri)}> schema:object <doc_iri>
+/// ```
+///
+/// After applying this delta, `check_any_doc_missing_value_snap` still
+/// returns `true` for the same document — gap is recorded, not patched.
 fn emit_missing_evidence_delta_snap(snap: &CompiledFieldSnapshot) -> Result<Construct8> {
     let dd = oxigraph::model::NamedNode::new("https://schema.org/DigitalDocument")
         .expect("Invalid schema:DigitalDocument IRI");
     let pv = oxigraph::model::NamedNode::new("http://www.w3.org/ns/prov#value")
         .expect("Invalid prov:value IRI");
+    let rdf_type = oxigraph::model::NamedNode::new("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
+        .expect("Invalid rdf:type IRI");
+    let ask_action = oxigraph::model::NamedNode::new("https://schema.org/AskAction")
+        .expect("Invalid schema:AskAction IRI");
+    let schema_object = oxigraph::model::NamedNode::new("https://schema.org/object")
+        .expect("Invalid schema:object IRI");
+    let ask_action_term: oxigraph::model::Term = ask_action.into();
+
     let mut delta = Construct8::empty();
+    let mut emitted: u8 = 0;
     for d in snap.instances_of(&dd) {
-        if delta.is_full() {
+        if emitted >= 4 {
             break;
         }
         if !snap.has_value_for(d, &pv) {
-            let triple = oxigraph::model::Triple::new(
-                d.clone(),
-                pv.clone(),
-                oxigraph::model::Term::Literal(oxigraph::model::Literal::new_simple_literal(
-                    "placeholder",
-                )),
-            );
-            let _ = delta.push(triple);
+            let h = blake3::hash(d.as_str().as_bytes());
+            let activity = oxigraph::model::NamedNode::new(&format!("urn:blake3:{}", h.to_hex()))
+                .expect("urn:blake3 must be a valid IRI");
+            let doc_term: oxigraph::model::Term = d.clone().into();
+            let _ = delta.push(oxigraph::model::Triple::new(
+                activity.clone(),
+                rdf_type.clone(),
+                ask_action_term.clone(),
+            ));
+            let _ = delta.push(oxigraph::model::Triple::new(
+                activity,
+                schema_object.clone(),
+                doc_term,
+            ));
+            emitted += 1;
         }
     }
     Ok(delta)
@@ -496,27 +524,38 @@ fn check_concept_with_label_snap(snap: &CompiledFieldSnapshot) -> bool {
     snap.has_any_with_predicate(&pref_label)
 }
 
-/// Act: emit a `skos:definition` placeholder for each labeled concept (≤8 triples).
+/// Act: emit a `prov:wasInformedBy` provenance link per labeled concept.
+///
+/// Phase 5 (Track D): replaced the prior `skos:definition "derived from
+/// prefLabel"` placeholder with a real provenance edge:
+///
+/// ```text
+/// <concept> prov:wasInformedBy <urn:blake3:{hash(label_text)}>
+/// ```
 fn emit_phrase_definition_delta_snap(snap: &CompiledFieldSnapshot) -> Result<Construct8> {
     let pref_label =
         oxigraph::model::NamedNode::new("http://www.w3.org/2004/02/skos/core#prefLabel")
             .expect("Invalid skos:prefLabel IRI");
-    let definition =
-        oxigraph::model::NamedNode::new("http://www.w3.org/2004/02/skos/core#definition")
-            .expect("Invalid skos:definition IRI");
+    let was_informed_by = oxigraph::model::NamedNode::new("http://www.w3.org/ns/prov#wasInformedBy")
+        .expect("Invalid prov:wasInformedBy IRI");
     let mut delta = Construct8::empty();
-    for (concept, _label) in snap.pairs_with_predicate(&pref_label) {
+    for (concept, label) in snap.pairs_with_predicate(&pref_label) {
         if delta.is_full() {
             break;
         }
-        let triple = oxigraph::model::Triple::new(
+        let label_str = match label {
+            oxigraph::model::Term::Literal(lit) => lit.value().to_string(),
+            _ => continue,
+        };
+        let h = blake3::hash(label_str.as_bytes());
+        let label_node = oxigraph::model::NamedNode::new(&format!("urn:blake3:{}", h.to_hex()))
+            .expect("urn:blake3 must be a valid IRI");
+        let label_term: oxigraph::model::Term = label_node.into();
+        let _ = delta.push(oxigraph::model::Triple::new(
             concept.clone(),
-            definition.clone(),
-            oxigraph::model::Term::Literal(oxigraph::model::Literal::new_simple_literal(
-                "derived from prefLabel",
-            )),
-        );
-        let _ = delta.push(triple);
+            was_informed_by.clone(),
+            label_term,
+        ));
     }
     Ok(delta)
 }
@@ -600,8 +639,10 @@ fn emit_receipt_activity_delta_snap(_snap: &CompiledFieldSnapshot) -> Result<Con
 /// Missing evidence hook: fires when a DigitalDocument lacks `prov:value`.
 ///
 /// **Trigger:** `TypePresent(schema:DigitalDocument)` — direct triple-pattern lookup
-/// **Check:** `Fn(check_any_doc_missing_value)` — short-circuits on first gap
-/// **Act:** `Fn(emit_missing_evidence_delta)` — placeholder `prov:value` per gap (≤8)
+/// **Check:** `SnapshotFn(check_any_doc_missing_value_snap)` — short-circuits on first gap
+/// **Act:** `SnapshotFn(emit_missing_evidence_delta_snap)` — emits a `schema:AskAction`
+/// gap-finding delta per missing document (≤4 gaps × 2 triples). The delta records the
+/// gap; it does NOT fabricate a `prov:value` for the document.
 /// **Receipt:** Emitted on success
 pub fn missing_evidence_hook() -> KnowledgeHook {
     KnowledgeHook {
@@ -619,8 +660,10 @@ pub fn missing_evidence_hook() -> KnowledgeHook {
 /// Phrase binding hook: fires when any subject carries a `skos:prefLabel`.
 ///
 /// **Trigger:** `Pattern { predicate: skos:prefLabel }` — direct triple-pattern lookup
-/// **Check:** `Fn(check_concept_with_label)` — short-circuits on first match
-/// **Act:** `Fn(emit_phrase_definition_delta)` — `skos:definition` placeholder per pair (≤8)
+/// **Check:** `SnapshotFn(check_concept_with_label_snap)` — short-circuits on first match
+/// **Act:** `SnapshotFn(emit_phrase_definition_delta_snap)` — emits a
+/// `prov:wasInformedBy` provenance link per labeled concept, pointing at a
+/// `urn:blake3:` derived from the label text (≤8 pairs).
 /// **Receipt:** Emitted on success
 pub fn phrase_binding_hook() -> KnowledgeHook {
     let pref_label =
@@ -734,6 +777,50 @@ mod tests {
         assert_eq!(outcomes[0].hook_name, "missing_evidence");
         assert!(!outcomes[0].delta.is_empty(), "Delta should contain constructed triple");
 
+        Ok(())
+    }
+
+    /// Phase 5 conformance rule: the missing-evidence hook records the gap
+    /// without fabricating evidence. After applying the delta, the same
+    /// document still lacks `prov:value` — `check_any_doc_missing_value_snap`
+    /// must continue returning `true`. This is the core "boundary" test from
+    /// the user's review.
+    #[test]
+    fn missing_evidence_does_not_fill_evidence() -> Result<()> {
+        let mut field = FieldContext::new("test");
+        field.load_field_state(
+            "<http://example.org/doc1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/DigitalDocument> .\n"
+        )?;
+        let snap_before = CompiledFieldSnapshot::from_field(&field)?;
+        assert!(check_any_doc_missing_value_snap(&snap_before),
+            "precondition: gap exists before hook fires");
+
+        let hook = missing_evidence_hook();
+        let mut registry = HookRegistry::new();
+        registry.register(hook);
+        let outcomes = registry.fire_matching(&field)?;
+        assert!(!outcomes.is_empty(), "hook fires");
+
+        // Apply the delta to the field (simulate the runtime committing it).
+        let nt = outcomes[0].delta.to_ntriples();
+        // The delta must not contain any triple that would set prov:value on the doc.
+        assert!(
+            !nt.contains("doc1> <http://www.w3.org/ns/prov#value>"),
+            "delta must not assert prov:value on the gap document, got: {}",
+            nt
+        );
+        // The delta must not contain placeholder strings.
+        assert!(!nt.contains("placeholder"), "no placeholder strings in delta");
+        // The delta must not contain old "derived from prefLabel" sentinel.
+        assert!(!nt.contains("derived from prefLabel"));
+
+        // Apply the delta and re-check: gap must still be detectable.
+        field.graph.insert_ntriples(&nt)?;
+        let snap_after = CompiledFieldSnapshot::from_field(&field)?;
+        assert!(
+            check_any_doc_missing_value_snap(&snap_after),
+            "post-hook: gap must still exist (delta records gap, does not fill it)"
+        );
         Ok(())
     }
 

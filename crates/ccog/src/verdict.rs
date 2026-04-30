@@ -155,7 +155,10 @@ pub enum Breed {
     Hearsay = 5,
     /// DENDRAL: provenance chain reconstruction.
     Dendral = 6,
-    /// Opaque compiled hook activity — placeholder for compiled-hook plan nodes.
+    /// Compiled-hook activity — runtime kind for nodes whose semantics are
+    /// carried by an attached `CompiledHook` slot rather than a fixed breed.
+    /// Used by `BarkKernel::linear` and any plan-builder that targets the
+    /// compiled-hook slot table.
     CompiledHook = 7,
 }
 

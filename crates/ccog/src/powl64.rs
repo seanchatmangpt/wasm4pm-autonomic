@@ -394,12 +394,13 @@ impl Powl64 {
         cell
     }
 
-    /// Stub shape-match: cell-count parity (v0 invariant).
+    /// Shape match v0 — cell-count equivalence.
     ///
-    /// `v0_cell_count` denotes the original stub-level invariant: two
-    /// universes match iff they hold the same total cell count. Full DAG
-    /// isomorphism is a future phase. For ordered-replay strong equivalence
-    /// see [`Powl64::shape_match_v1_path`].
+    /// Two universes are v0-equivalent iff they have the same materialized
+    /// cell count (sum across coord buckets, including collisions). This is
+    /// the weakest meaningful invariant — it confirms two chains span the
+    /// same number of extends, not that they followed the same path. For
+    /// ordered-replay strong equivalence see [`Powl64::shape_match_v1_path`].
     ///
     /// # Errors
     ///
@@ -423,8 +424,8 @@ impl Powl64 {
     /// Same as [`Powl64::shape_match_v0_cell_count`].
     #[deprecated(
         since = "0.1.0",
-        note = "renamed to `shape_match_v0_cell_count` (this is the v0 stub-level invariant). \
-                Use `shape_match_v0_cell_count` (or `shape_match_v1_path` for ordered replay)."
+        note = "renamed to `shape_match_v0_cell_count` (cell-count equivalence). \
+                For ordered-path equivalence use `shape_match_v1_path`."
     )]
     pub fn shape_match(&self, other: &Powl64) -> Result<(), String> {
         self.shape_match_v0_cell_count(other)

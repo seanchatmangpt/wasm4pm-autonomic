@@ -40,7 +40,8 @@ mod tests {
     use crate::graph::GraphIri;
     use chrono::Utc;
 
-    fn mock(name: &'static str, with_receipt: bool) -> HookOutcome {
+    /// Deterministic test-only constructor for a single `HookOutcome`.
+    fn make_outcome(name: &'static str, with_receipt: bool) -> HookOutcome {
         let receipt = if with_receipt {
             Some(Receipt::new(
                 GraphIri::from_iri("urn:test:act:1").unwrap(),
@@ -59,31 +60,31 @@ mod tests {
     #[test]
     fn one_confirmed_is_alert() {
         let f = FieldContext::new("t");
-        let o = vec![mock("phrase_binding", true)];
+        let o = vec![make_outcome("phrase_binding", true)];
         assert_eq!(fuse_posture(&o, &f).unwrap(), PackPosture::Alert);
     }
     #[test]
     fn two_confirmed_is_engaged() {
         let f = FieldContext::new("t");
-        let o = vec![mock("a", true), mock("b", true)];
+        let o = vec![make_outcome("a", true), make_outcome("b", true)];
         assert_eq!(fuse_posture(&o, &f).unwrap(), PackPosture::Engaged);
     }
     #[test]
     fn four_confirmed_is_settled() {
         let f = FieldContext::new("t");
-        let o = vec![mock("a", true), mock("b", true), mock("c", true), mock("d", true)];
+        let o = vec![make_outcome("a", true), make_outcome("b", true), make_outcome("c", true), make_outcome("d", true)];
         assert_eq!(fuse_posture(&o, &f).unwrap(), PackPosture::Settled);
     }
     #[test]
     fn missing_evidence_escalates() {
         let f = FieldContext::new("t");
-        let o = vec![mock("missing_evidence", true)];
+        let o = vec![make_outcome("missing_evidence", true)];
         assert_eq!(fuse_posture(&o, &f).unwrap(), PackPosture::Engaged);
     }
     #[test]
     fn no_receipt_does_not_count() {
         let f = FieldContext::new("t");
-        let o = vec![mock("a", false), mock("b", true)];
+        let o = vec![make_outcome("a", false), make_outcome("b", true)];
         assert_eq!(fuse_posture(&o, &f).unwrap(), PackPosture::Alert);
     }
 }

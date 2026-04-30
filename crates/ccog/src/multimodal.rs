@@ -1,9 +1,12 @@
-//! Multimodal posture and context bundles (Phase 5 Track F stub).
+//! Multimodal posture and context bundles (Phase 6).
 //!
-//! `PostureBundle` captures interpreter posture (audio cadence, gaze
-//! orientation, body tension, settling). `ContextBundle` captures local
-//! cognition surface — expectation, risk, affordance. The `Track F` writer
-//! fleshes out ingest helpers and bit-name constants.
+//! `PostureBundle` captures interpreter posture as a 64-bit mask over
+//! [`PostureBit`] positions — audio cadence (delivery vs partner), gaze
+//! orientation (entry vs interior), body tension (calm/alert/engaged), and
+//! settling. `ContextBundle` captures local cognition surface as three
+//! parallel masks — expectation, risk, and affordance — over [`ContextBit`]
+//! positions. The bundles are immutable, `Copy`-able, and consumed by the
+//! [`crate::instinct::select_instinct_v0`] decision lattice.
 
 /// Bit positions for canonical posture predicates.
 #[allow(non_snake_case)]
@@ -83,5 +86,73 @@ impl ContextBundle {
         (self.expectation_mask & m) != 0
             || (self.risk_mask & m) != 0
             || (self.affordance_mask & m) != 0
+    }
+
+    /// True iff `bit` is set in `risk_mask`.
+    #[must_use]
+    pub const fn risk_has(&self, bit: u32) -> bool {
+        (self.risk_mask >> bit) & 1 == 1
+    }
+
+    /// True iff `bit` is set in `expectation_mask`.
+    #[must_use]
+    pub const fn expect_has(&self, bit: u32) -> bool {
+        (self.expectation_mask >> bit) & 1 == 1
+    }
+
+    /// True iff `bit` is set in `affordance_mask`.
+    #[must_use]
+    pub const fn afford_has(&self, bit: u32) -> bool {
+        (self.affordance_mask >> bit) & 1 == 1
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn risk_has_isolates_risk_channel() {
+        let ctx = ContextBundle {
+            expectation_mask: 1u64 << ContextBit::PACKAGE_EXPECTED,
+            risk_mask: 1u64 << ContextBit::THEFT_RISK,
+            affordance_mask: 1u64 << ContextBit::CAN_INSPECT,
+        };
+        assert!(ctx.risk_has(ContextBit::THEFT_RISK));
+        assert!(!ctx.risk_has(ContextBit::PACKAGE_EXPECTED));
+        assert!(!ctx.risk_has(ContextBit::CAN_INSPECT));
+    }
+
+    #[test]
+    fn expect_has_isolates_expectation_channel() {
+        let ctx = ContextBundle {
+            expectation_mask: 1u64 << ContextBit::PARTNER_DUE,
+            risk_mask: 1u64 << ContextBit::PARTNER_DUE,
+            affordance_mask: 0,
+        };
+        // expect_has only reads expectation_mask.
+        assert!(ctx.expect_has(ContextBit::PARTNER_DUE));
+        assert!(!ctx.expect_has(ContextBit::CAN_RETRIEVE_NOW));
+    }
+
+    #[test]
+    fn afford_has_isolates_affordance_channel() {
+        let ctx = ContextBundle {
+            expectation_mask: 0,
+            risk_mask: 0,
+            affordance_mask: 1u64 << ContextBit::CAN_RETRIEVE_NOW,
+        };
+        assert!(ctx.afford_has(ContextBit::CAN_RETRIEVE_NOW));
+        assert!(!ctx.afford_has(ContextBit::CAN_INSPECT));
+    }
+
+    #[test]
+    fn posture_has_returns_true_for_set_bit() {
+        let p = PostureBundle {
+            posture_mask: 1u64 << PostureBit::ALERT,
+            confidence: 100,
+        };
+        assert!(p.has(PostureBit::ALERT));
+        assert!(!p.has(PostureBit::CALM));
     }
 }
