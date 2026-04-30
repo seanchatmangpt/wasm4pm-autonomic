@@ -201,6 +201,9 @@ fn master_ocel_to_pack_to_ccog_runtime_to_proof() {
         require_expectation_mask: 0,
         require_risk_mask: 0,
         require_affordance_mask: 0,
+        require_k1_mask: 0,
+        require_k2_mask: 0,
+        require_k3_mask: 0,
     });
 
     let with_pack = select_instinct_with_pack(&snap, &posture, &ctx, &loaded);

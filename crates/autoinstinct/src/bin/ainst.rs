@@ -467,6 +467,19 @@ fn synthetic_outcome(bin: &str) -> BinaryOutcome {
             "anti_fake_decide_is_zero_heap_and_input_dependent",
         ],
         "anti_fake_master" => &["master_ocel_to_pack_to_ccog_runtime_to_proof"],
+        "anti_fake_lifestyle" => &[
+            "lifestyle_pack_validates_clean",
+            "lifestyle_fatigue_softens_routine_to_ask",
+            "lifestyle_safety_overrides_capacity_for_driving",
+            "lifestyle_evidence_gap_asks_not_fabricates",
+            "lifestyle_meaning_scales_activity_without_new_response_class",
+            "lifestyle_drop_capacity_bit_changes_routine_response",
+            "lifestyle_drop_safety_bit_changes_driving_response",
+            "lifestyle_precedence_is_observable_in_matched_group_id",
+            "lifestyle_no_context_falls_through_to_v0_baseline",
+            "master_lifestyle_overlap_collapses_to_canonical_lattice",
+            "lifestyle_no_assert_true_placeholders_remain",
+        ],
         "anti_fake_packs" => &[
             "kz7a_pack_manifest_tamper_fails_verification",
             "kz7a_bad_pack_overlapping_bits_rejected",
@@ -675,6 +688,20 @@ fn run_anti_fake_gate(
     let master = outcomes.get("anti_fake_master").is_some_and(|o| {
         o.success && o.all_required_pass(&["master_ocel_to_pack_to_ccog_runtime_to_proof"])
     });
+    let kz9_lifestyle = outcomes.get("anti_fake_lifestyle").is_some_and(|o| {
+        o.success
+            && o.all_required_pass(&[
+                "lifestyle_pack_validates_clean",
+                "lifestyle_fatigue_softens_routine_to_ask",
+                "lifestyle_safety_overrides_capacity_for_driving",
+                "lifestyle_evidence_gap_asks_not_fabricates",
+                "lifestyle_meaning_scales_activity_without_new_response_class",
+                "lifestyle_drop_capacity_bit_changes_routine_response",
+                "lifestyle_drop_safety_bit_changes_driving_response",
+                "lifestyle_precedence_is_observable_in_matched_group_id",
+                "master_lifestyle_overlap_collapses_to_canonical_lattice",
+            ])
+    });
 
     let mut card = Scorecard {
         git_clean: if require_clean_git { git_clean } else { true },
@@ -694,6 +721,7 @@ fn run_anti_fake_gate(
         ccog_regression_pass: ccog_ok,
         autoinstinct_regression_pass: autoinstinct_ok,
         master_ocel_to_pack_to_runtime_pass: master,
+        kz9_lifestyle_overlap_pass: kz9_lifestyle,
         overall_pass: false,
     };
     card.recompute_overall();

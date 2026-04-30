@@ -30,7 +30,11 @@ pub mod bits;
 pub mod dev;
 pub mod edge;
 pub mod enterprise;
+pub mod ids;
 pub mod lifestyle;
+pub mod lifestyle_overlap;
+
+pub use ids::{GroupId, ObligationId, PackId, RuleId};
 
 use crate::bark_artifact::BarkSlot;
 use crate::compiled::CompiledFieldSnapshot;
@@ -124,27 +128,79 @@ impl std::fmt::Display for PackLoadError {
 
 impl std::error::Error for PackLoadError {}
 
+/// Phase 7 K-tier mask bundle — fixed-arity, no allocations.
+///
+/// K0 is the existing `(posture, expectation, risk, affordance)` four-mask
+/// surface (carried inline on [`LoadedPackRule`] for compatibility). K1–K3
+/// are additional `u64` tiers for overlapping cognition fields:
+///
+/// - K1: Routine / Capacity / Regulation / Safety
+/// - K2: Meaning / Social / Recovery / Identity
+/// - K3: Environment / Object / Transition / Evidence / Rhythm
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct TierMasks {
+    /// K1 mask — Routine / Capacity / Regulation / Safety.
+    pub k1: u64,
+    /// K2 mask — Meaning / Social / Recovery / Identity.
+    pub k2: u64,
+    /// K3 mask — Environment / Object / Transition / Evidence / Rhythm.
+    pub k3: u64,
+}
+
+impl TierMasks {
+    /// All-zero tier masks (no Lifestyle context supplied).
+    pub const ZERO: Self = Self { k1: 0, k2: 0, k3: 0 };
+}
+
 /// A single runtime-evaluable pack rule.
 ///
-/// Each rule names itself, declares a posture/context mask requirement, and
-/// names the response it admits when the requirement is matched. A rule
+/// Each rule names itself, declares a posture/context mask requirement
+/// across the existing K0 surface AND the K1/K2/K3 tier masks, and names
+/// the response it admits when every requirement is satisfied. A rule
 /// matches when every set bit in each `require_*_mask` is also set in the
-/// corresponding runtime mask. An all-zero requirement means "no constraint
-/// on this dimension".
-#[derive(Clone, Debug, PartialEq, Eq)]
+/// corresponding runtime mask. An all-zero requirement means "no
+/// constraint on this dimension".
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct LoadedPackRule {
     /// Stable rule id (used in `PackDecision::matched_rule_id` for traceability).
-    pub id: String,
+    /// Static-lifetime: rule ids are either compile-time literals (packs
+    /// authored in Rust) or interned at load time via [`intern_rule_id`].
+    pub id: RuleId,
     /// Response admitted by the rule on match.
     pub response: AutonomicInstinct,
-    /// Posture bits the rule requires (subset relation).
+    /// Posture bits the rule requires (K0 — subset relation).
     pub require_posture_mask: u64,
-    /// Expectation bits the rule requires.
+    /// Expectation bits the rule requires (K0).
     pub require_expectation_mask: u64,
-    /// Risk bits the rule requires.
+    /// Risk bits the rule requires (K0).
     pub require_risk_mask: u64,
-    /// Affordance bits the rule requires.
+    /// Affordance bits the rule requires (K0).
     pub require_affordance_mask: u64,
+    /// K1 tier mask requirement (Routine / Capacity / Regulation / Safety).
+    #[doc(alias = "k1")]
+    pub require_k1_mask: u64,
+    /// K2 tier mask requirement (Meaning / Social / Recovery / Identity).
+    #[doc(alias = "k2")]
+    pub require_k2_mask: u64,
+    /// K3 tier mask requirement (Environment / Object / Transition /
+    /// Evidence / Rhythm).
+    #[doc(alias = "k3")]
+    pub require_k3_mask: u64,
+}
+
+/// Declarative precedence group of rules. Groups are evaluated in
+/// ascending [`LoadedRuleGroup::precedence_rank`] order; the first
+/// matching rule wins. Groups are how Lifestyle fields express
+/// `Safety > Evidence > Capacity > Meaning > Routine` without a
+/// hard-coded ladder in code.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct LoadedRuleGroup {
+    /// Stable group id (e.g. `lifestyle.safety`).
+    pub id: String,
+    /// Precedence rank — lower runs first.
+    pub precedence_rank: u32,
+    /// Rules belonging to this group, evaluated in declared order.
+    pub rules: Vec<LoadedPackRule>,
 }
 
 /// Runtime-loaded field pack artifact.
@@ -161,8 +217,13 @@ pub struct LoadedFieldPack {
     /// Response strings must be canonical members of AutonomicInstinct enum.
     pub rules: Vec<(String, String)>,
     /// Mask-keyed runtime rules consumed by [`select_instinct_with_pack`].
-    /// Evaluated in declared order; first match wins.
+    /// Evaluated *after* every group; first match wins. Legacy ungrouped
+    /// surface used by KZ7B fixtures.
     pub mask_rules: Vec<LoadedPackRule>,
+    /// Declarative precedence groups (Phase 7). Walked in ascending
+    /// `precedence_rank` order before `mask_rules`; first matching rule
+    /// wins.
+    pub groups: Vec<LoadedRuleGroup>,
     /// Default response when no rule matches (canonical lattice member string).
     pub default_response: String,
     /// Pack digest URN (for traceability).
@@ -171,9 +232,11 @@ pub struct LoadedFieldPack {
 
 /// Result of [`select_instinct_with_pack`].
 ///
-/// Carries both the response and the observable rule/pack provenance — so a
-/// caller (or anti-fake test) can prove that a pack rule actually fired
-/// rather than coinciding with the no-pack baseline.
+/// Carries the response and the observable rule/pack/group provenance —
+/// so a caller (or anti-fake test) can prove that a pack rule actually
+/// fired rather than coinciding with the no-pack baseline. The
+/// `matched_group_id` surfaces *which* precedence group admitted the
+/// rule, so KZ8 reports can audit why one field outranked another.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PackDecision {
     /// Selected response class.
@@ -182,6 +245,8 @@ pub struct PackDecision {
     pub matched_pack_id: Option<String>,
     /// Rule id that matched, if any.
     pub matched_rule_id: Option<String>,
+    /// Precedence group id that admitted the rule (groups path only).
+    pub matched_group_id: Option<String>,
 }
 
 /// Load a compiled field pack from raw rule data.
@@ -232,6 +297,7 @@ pub fn load_compiled(
         ontology_profile: ontology_profile.to_vec(),
         rules: rules.to_vec(),
         mask_rules: Vec::new(),
+        groups: Vec::new(),
         default_response: default_response.to_string(),
         digest_urn: digest_urn.to_string(),
     })
@@ -250,6 +316,7 @@ pub fn load_compiled(
 ///
 /// Returns `PackLoadError::ValidationFailed` describing the first conflict.
 pub fn validate(pack: &LoadedFieldPack) -> Result<(), PackLoadError> {
+    // 1. Validate ungrouped mask_rules amongst themselves.
     for (i, r1) in pack.mask_rules.iter().enumerate() {
         for r2 in pack.mask_rules.iter().skip(i + 1) {
             if r1.id == r2.id {
@@ -258,11 +325,7 @@ pub fn validate(pack: &LoadedFieldPack) -> Result<(), PackLoadError> {
                     r1.id
                 )));
             }
-            let overlap = (r1.require_posture_mask & r2.require_posture_mask)
-                | (r1.require_expectation_mask & r2.require_expectation_mask)
-                | (r1.require_risk_mask & r2.require_risk_mask)
-                | (r1.require_affordance_mask & r2.require_affordance_mask);
-            if overlap != 0 && r1.response != r2.response {
+            if rules_overlap_with_conflicting_responses(r1, r2) {
                 return Err(PackLoadError::ValidationFailed(format!(
                     "overlapping bit requirements between `{}` and `{}` with conflicting responses",
                     r1.id, r2.id
@@ -270,7 +333,55 @@ pub fn validate(pack: &LoadedFieldPack) -> Result<(), PackLoadError> {
             }
         }
     }
+    // 2. Validate group ids unique and ranks distinct.
+    for (i, g1) in pack.groups.iter().enumerate() {
+        for g2 in pack.groups.iter().skip(i + 1) {
+            if g1.id == g2.id {
+                return Err(PackLoadError::ValidationFailed(format!(
+                    "duplicate group id: {}",
+                    g1.id
+                )));
+            }
+            if g1.precedence_rank == g2.precedence_rank {
+                return Err(PackLoadError::ValidationFailed(format!(
+                    "duplicate precedence_rank {} between groups `{}` and `{}`",
+                    g1.precedence_rank, g1.id, g2.id
+                )));
+            }
+        }
+    }
+    // 3. Validate rules within each group amongst themselves.
+    for g in &pack.groups {
+        for (i, r1) in g.rules.iter().enumerate() {
+            for r2 in g.rules.iter().skip(i + 1) {
+                if r1.id == r2.id {
+                    return Err(PackLoadError::ValidationFailed(format!(
+                        "duplicate rule id `{}` in group `{}`",
+                        r1.id, g.id
+                    )));
+                }
+                if rules_overlap_with_conflicting_responses(r1, r2) {
+                    return Err(PackLoadError::ValidationFailed(format!(
+                        "overlapping bit requirements in group `{}` between `{}` and `{}` with conflicting responses",
+                        g.id, r1.id, r2.id
+                    )));
+                }
+            }
+        }
+    }
     Ok(())
+}
+
+#[inline]
+fn rules_overlap_with_conflicting_responses(r1: &LoadedPackRule, r2: &LoadedPackRule) -> bool {
+    let overlap = (r1.require_posture_mask & r2.require_posture_mask)
+        | (r1.require_expectation_mask & r2.require_expectation_mask)
+        | (r1.require_risk_mask & r2.require_risk_mask)
+        | (r1.require_affordance_mask & r2.require_affordance_mask)
+        | (r1.require_k1_mask & r2.require_k1_mask)
+        | (r1.require_k2_mask & r2.require_k2_mask)
+        | (r1.require_k3_mask & r2.require_k3_mask);
+    overlap != 0 && r1.response != r2.response
 }
 
 /// Subset match: every set bit in `require` must also be set in `actual`.
@@ -279,24 +390,31 @@ const fn mask_satisfies(actual: u64, require: u64) -> bool {
     (actual & require) == require
 }
 
-/// True when every dimension's requirement is satisfied by the runtime masks.
+/// True when every dimension's requirement is satisfied by the runtime
+/// masks across both the K0 surface (posture/context) and the K1/K2/K3
+/// tier masks. K0-only rules (where K1/K2/K3 requirements are zero)
+/// match identically to the pre-Phase-7 behavior.
 #[inline]
-fn rule_matches(rule: &LoadedPackRule, posture: &PostureBundle, ctx: &ContextBundle) -> bool {
+fn rule_matches(
+    rule: &LoadedPackRule,
+    posture: &PostureBundle,
+    ctx: &ContextBundle,
+    tiers: &TierMasks,
+) -> bool {
     mask_satisfies(posture.posture_mask, rule.require_posture_mask)
         && mask_satisfies(ctx.expectation_mask, rule.require_expectation_mask)
         && mask_satisfies(ctx.risk_mask, rule.require_risk_mask)
         && mask_satisfies(ctx.affordance_mask, rule.require_affordance_mask)
+        && mask_satisfies(tiers.k1, rule.require_k1_mask)
+        && mask_satisfies(tiers.k2, rule.require_k2_mask)
+        && mask_satisfies(tiers.k3, rule.require_k3_mask)
 }
 
-/// Decide a response over the closed cognition surface, biased by a loaded
-/// pack.
+/// Decide a response over the closed cognition surface, biased by a
+/// loaded pack — K0 only (no K-tier context).
 ///
-/// Pack rules are evaluated in declared order; the first rule whose mask
-/// requirements are satisfied by `posture`/`ctx` wins. If no rule matches,
-/// the function falls through to [`select_instinct_v0`] — packs bias the
-/// canonical lattice; they never replace it. The returned [`PackDecision`]
-/// carries the matched rule's id (if any) so downstream code can prove pack
-/// participation rather than coincidence with the baseline.
+/// Equivalent to [`select_instinct_with_pack_tiered`] with
+/// [`TierMasks::ZERO`]. Preserved for KZ7B back-compat.
 #[must_use]
 pub fn select_instinct_with_pack(
     snap: &CompiledFieldSnapshot,
@@ -304,12 +422,48 @@ pub fn select_instinct_with_pack(
     ctx: &ContextBundle,
     pack: &LoadedFieldPack,
 ) -> PackDecision {
+    select_instinct_with_pack_tiered(snap, posture, ctx, &TierMasks::ZERO, pack)
+}
+
+/// Decide a response over the closed cognition surface (K0 + K-tier),
+/// biased by a loaded pack.
+///
+/// Evaluation order:
+/// 1. Walk [`LoadedFieldPack::groups`] in declared order (call
+///    [`sort_groups_by_precedence`] at load time so this is ascending
+///    by `precedence_rank`). Within each group, the first rule whose
+///    K0+K-tier requirements are satisfied wins.
+/// 2. Fall back to [`LoadedFieldPack::mask_rules`] (legacy ungrouped
+///    rules — KZ7B fixtures live here).
+/// 3. Fall through to [`select_instinct_v0`] — packs bias the canonical
+///    lattice; they never replace it.
+#[must_use]
+pub fn select_instinct_with_pack_tiered(
+    snap: &CompiledFieldSnapshot,
+    posture: &PostureBundle,
+    ctx: &ContextBundle,
+    tiers: &TierMasks,
+    pack: &LoadedFieldPack,
+) -> PackDecision {
+    for group in &pack.groups {
+        for rule in &group.rules {
+            if rule_matches(rule, posture, ctx, tiers) {
+                return PackDecision {
+                    response: rule.response,
+                    matched_pack_id: Some(pack.name.clone()),
+                    matched_rule_id: Some(rule.id.clone()),
+                    matched_group_id: Some(group.id.clone()),
+                };
+            }
+        }
+    }
     for rule in &pack.mask_rules {
-        if rule_matches(rule, posture, ctx) {
+        if rule_matches(rule, posture, ctx, tiers) {
             return PackDecision {
                 response: rule.response,
                 matched_pack_id: Some(pack.name.clone()),
                 matched_rule_id: Some(rule.id.clone()),
+                matched_group_id: None,
             };
         }
     }
@@ -317,7 +471,15 @@ pub fn select_instinct_with_pack(
         response: select_instinct_v0(snap, posture, ctx),
         matched_pack_id: None,
         matched_rule_id: None,
+        matched_group_id: None,
     }
+}
+
+/// Sort a pack's groups by `precedence_rank` ascending — call this once
+/// after loading so [`select_instinct_with_pack_tiered`] can walk in
+/// order without re-sorting on every decision.
+pub fn sort_groups_by_precedence(pack: &mut LoadedFieldPack) {
+    pack.groups.sort_by_key(|g| g.precedence_rank);
 }
 
 #[cfg(test)]

@@ -65,6 +65,13 @@ pub struct Scorecard {
     /// (`master_ocel_to_pack_to_ccog_runtime_to_proof`).
     pub master_ocel_to_pack_to_runtime_pass: bool,
 
+    // ---------------- Phase 7.1 — Lifestyle Overlap (KZ9) ----------------
+    /// Phase 7.1 / KZ9: overlapping cognition fields collapse to the
+    /// canonical 7-class lattice without forking it; precedence is
+    /// observable in `matched_group_id`; perturbations are load-bearing.
+    #[serde(default)]
+    pub kz9_lifestyle_overlap_pass: bool,
+
     // ---------------- aggregate ----------------
     /// True iff every required dimension passes. Computed by [`Scorecard::recompute_overall`].
     pub overall_pass: bool,
@@ -91,6 +98,7 @@ impl Scorecard {
             && self.ccog_regression_pass
             && self.autoinstinct_regression_pass
             && self.master_ocel_to_pack_to_runtime_pass
+            && self.kz9_lifestyle_overlap_pass
     }
 
     /// Recompute and store [`Scorecard::overall_pass`] from the dimensions.
@@ -126,6 +134,7 @@ impl Scorecard {
             "ccog_regression_pass",
             "autoinstinct_regression_pass",
             "master_ocel_to_pack_to_runtime_pass",
+            "kz9_lifestyle_overlap_pass",
         ]
     }
 }
@@ -139,6 +148,7 @@ pub const KILLZONE_TEST_BINARIES: &[&str] = &[
     "anti_fake_perf",
     "anti_fake_packs",
     "anti_fake_master",
+    "anti_fake_lifestyle",
 ];
 
 /// Outcome of a single test binary run.
@@ -212,6 +222,7 @@ pub fn all_true_scorecard() -> Scorecard {
         ccog_regression_pass: true,
         autoinstinct_regression_pass: true,
         master_ocel_to_pack_to_runtime_pass: true,
+        kz9_lifestyle_overlap_pass: true,
         overall_pass: true,
     }
 }
@@ -304,6 +315,7 @@ test result: FAILED. 2 passed; 1 failed; 0 ignored
             |s| s.ccog_regression_pass = false,
             |s| s.autoinstinct_regression_pass = false,
             |s| s.master_ocel_to_pack_to_runtime_pass = false,
+            |s| s.kz9_lifestyle_overlap_pass = false,
         ]
     }
 }

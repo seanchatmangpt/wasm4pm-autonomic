@@ -104,6 +104,9 @@ fn kz7a_bad_pack_overlapping_bits_rejected() {
                 require_expectation_mask: 0,
                 require_risk_mask: 0,
                 require_affordance_mask: 0,
+                require_k1_mask: 0,
+                require_k2_mask: 0,
+                require_k3_mask: 0,
             },
             LoadedPackRule {
                 id: "rule.b".to_string(),
@@ -113,8 +116,12 @@ fn kz7a_bad_pack_overlapping_bits_rejected() {
                 require_expectation_mask: 0,
                 require_risk_mask: 0,
                 require_affordance_mask: 0,
+                require_k1_mask: 0,
+                require_k2_mask: 0,
+                require_k3_mask: 0,
             },
         ],
+        groups: vec![],
         default_response: "Ignore".to_string(),
         digest_urn: "urn:blake3:placeholder".to_string(),
     };
@@ -250,6 +257,9 @@ fn kz7a_pack_semantics_match_ccog_static_pack_behavior() {
         require_expectation_mask: 0,
         require_risk_mask: 0,
         require_affordance_mask: 0,
+        require_k1_mask: 0,
+        require_k2_mask: 0,
+        require_k3_mask: 0,
     });
     validate_pack(&loaded).expect("mirror pack validates");
 
@@ -337,6 +347,9 @@ fn build_pack_with_calm_override(
         require_expectation_mask: 0,
         require_risk_mask: 0,
         require_affordance_mask: 0,
+        require_k1_mask: 0,
+        require_k2_mask: 0,
+        require_k3_mask: 0,
     });
     loaded
 }
@@ -408,6 +421,9 @@ fn kz7b_pack_no_match_falls_through_to_v0() {
         require_expectation_mask: 1u64 << ccog::multimodal::ContextBit::PACKAGE_EXPECTED,
         require_risk_mask: 0,
         require_affordance_mask: 0,
+        require_k1_mask: 0,
+        require_k2_mask: 0,
+        require_k3_mask: 0,
     });
 
     let decision = select_instinct_with_pack(&snap, &posture, &ctx, &pack);

@@ -296,7 +296,7 @@ fn act_transition_admissibility(snap: &CompiledFieldSnapshot) -> Result<Construc
 /// carries no example.org IRIs.
 fn act_receipt(_snap: &CompiledFieldSnapshot) -> Result<Construct8> {
     let h = blake3::hash(b"receipt_hook");
-    let activity = NamedNode::new(&format!("urn:blake3:{}", h.to_hex()))?;
+    let activity = NamedNode::new(format!("urn:blake3:{}", h.to_hex()))?;
     let rt = NamedNode::new("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")?;
     let act = NamedNode::new("http://www.w3.org/ns/prov#Activity")?;
     let assoc = NamedNode::new("http://www.w3.org/ns/prov#wasAssociatedWith")?;

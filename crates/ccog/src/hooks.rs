@@ -497,8 +497,8 @@ fn emit_missing_evidence_delta_snap(snap: &CompiledFieldSnapshot) -> Result<Cons
         }
         if !snap.has_value_for(d, &pv) {
             let h = blake3::hash(d.as_str().as_bytes());
-            let activity = oxigraph::model::NamedNode::new(&format!("urn:blake3:{}", h.to_hex()))
-                .expect("urn:blake3 must be a valid IRI");
+            let activity = oxigraph::model::NamedNode::new(format!("urn:blake3:{}", h.to_hex()))
+                .expect("derived urn:blake3 IRI must be valid");
             let doc_term: oxigraph::model::Term = d.clone().into();
             let _ = delta.push(oxigraph::model::Triple::new(
                 activity.clone(),
@@ -617,7 +617,7 @@ fn emit_validity_delta_snap(snap: &CompiledFieldSnapshot) -> Result<Construct8> 
 fn emit_receipt_activity_delta_snap(_snap: &CompiledFieldSnapshot) -> Result<Construct8> {
     let h = blake3::hash(b"receipt_hook");
     let activity_iri =
-        oxigraph::model::NamedNode::new(&format!("urn:blake3:{}", h.to_hex()))?;
+        oxigraph::model::NamedNode::new(format!("urn:blake3:{}", h.to_hex()))?;
     let rdf_type =
         oxigraph::model::NamedNode::new("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")?;
     let prov_activity = oxigraph::model::NamedNode::new("http://www.w3.org/ns/prov#Activity")?;

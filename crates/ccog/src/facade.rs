@@ -13,7 +13,7 @@ use crate::receipt::Receipt;
 use crate::verdict::{Verdict, BoundTerms};
 
 /// Public facade: the five MVP operations that orchestrate the cognitive passes.
-
+///
 /// Process a phrase through all cognitive passes and emit a verdict.
 pub fn process(phrase: &str, field: &mut FieldContext) -> Result<Verdict> {
     // Phase 1: ELIZA phrase binding
