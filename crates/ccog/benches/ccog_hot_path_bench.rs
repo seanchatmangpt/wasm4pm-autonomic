@@ -21,7 +21,9 @@ use ccog::{
 use ccog::breeds::{eliza, mycin, strips};
 use ccog::graph::GraphIri;
 use ccog::hooks::{missing_evidence_hook, phrase_binding_hook, transition_admissibility_hook, receipt_hook};
-use ccog::trace::{trace_default_builtins, BenchmarkTier};
+use ccog::trace::{decide_with_trace, trace_default_builtins, BenchmarkTier};
+use ccog::conformance::replay_trace;
+use ccog::BUILTINS;
 
 const _ALL_TIERS: &[BenchmarkTier] = &[
     BenchmarkTier::KernelFloor,
@@ -176,6 +178,19 @@ fn bench_present_mask_only(c: &mut Criterion) {
     });
 }
 
+// Phase 7: ConformanceReplay tier — replay a pre-computed trace against
+// the same snapshot and table.
+//   conformance_replay_default_builtins  — ConformanceReplay
+fn bench_conformance_replay(c: &mut Criterion) {
+    let _tier = BenchmarkTier::ConformanceReplay;
+    let field = setup_field();
+    let snap = CompiledFieldSnapshot::from_field(&field).unwrap();
+    let (_decision, trace) = decide_with_trace(&snap);
+    c.bench_function("conformance_replay_default_builtins", |b| {
+        b.iter(|| replay_trace(black_box(&trace), black_box(&snap), BUILTINS))
+    });
+}
+
 criterion_group!(benches,
     bench_eliza_bind,
     bench_mycin_evidence,
@@ -189,5 +204,6 @@ criterion_group!(benches,
     bench_compiled_hook_table,
     bench_bark_kernel,
     bench_kernel_floor,
-    bench_present_mask_only);
+    bench_present_mask_only,
+    bench_conformance_replay);
 criterion_main!(benches);

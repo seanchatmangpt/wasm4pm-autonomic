@@ -62,6 +62,12 @@ pub struct BarkSlot {
     pub act: ActFn,
     /// Whether to emit a PROV receipt with the outcome.
     pub emit_receipt: bool,
+    /// Plan-node bitmask of predecessor slots that must have advanced
+    /// before this slot fires. Default `0` = no predecessor constraint
+    /// (preserves legacy semantics). Used by Phase 7 `decide_with_trace`
+    /// to record `BarkSkipReason::PredecessorNotAdvanced`; the
+    /// alloc-free `decide_table` ignores this field.
+    pub predecessor_mask: u64,
 }
 
 const fn dd_present_mask() -> u64 {
@@ -83,25 +89,41 @@ pub const BUILTINS: &[BarkSlot] = &[
         require_mask: dd_present_mask(),
         act: act_missing_evidence,
         emit_receipt: true,
+        predecessor_mask: 0,
     },
     BarkSlot {
         name: "phrase_binding",
         require_mask: pref_label_mask(),
         act: act_phrase_binding,
         emit_receipt: true,
+        predecessor_mask: 0,
     },
     BarkSlot {
         name: "transition_admissibility",
         require_mask: rdf_type_mask(),
         act: act_transition_admissibility,
         emit_receipt: true,
+        predecessor_mask: 0,
     },
     BarkSlot {
         name: "receipt",
         require_mask: 0,
         act: act_receipt,
         emit_receipt: true,
+        predecessor_mask: 0,
     },
+];
+
+/// Side-table of real hook check fns aligned 1:1 to `BUILTINS` by slot
+/// index. Cited from `hooks.rs:654/679/702/718`. Used only by the
+/// diagnostic trace path (`decide_with_trace_table`); the alloc-free
+/// `decide_table` does not invoke these. The fourth slot ("receipt") is
+/// `Always`-trigger / always-true check, so we pin it to `|_| true`.
+pub const BUILTIN_HOOKS: &[(&str, fn(&CompiledFieldSnapshot) -> bool)] = &[
+    ("missing_evidence", crate::hooks::check_any_doc_missing_value_snap),
+    ("phrase_binding", crate::hooks::check_concept_with_label_snap),
+    ("transition_admissibility", crate::hooks::check_any_typed_subject_snap),
+    ("receipt", |_snap| true),
 ];
 
 /// Decision packet emitted by [`decide`] / [`decide_table`].
@@ -522,6 +544,7 @@ mod tests {
             require_mask: 0,
             act: act_receipt,
             emit_receipt: false,
+            predecessor_mask: 0,
         }];
         let field = FieldContext::new("test");
         let snap = CompiledFieldSnapshot::from_field(&field)?;

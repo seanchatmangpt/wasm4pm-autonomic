@@ -450,7 +450,7 @@ fn evaluate_act(
 /// Check: any `schema:DigitalDocument` instance lacking a `prov:value`.
 ///
 /// Iterates the snapshot's `instances_of` and short-circuits on first gap.
-fn check_any_doc_missing_value_snap(snap: &CompiledFieldSnapshot) -> bool {
+pub(crate) fn check_any_doc_missing_value_snap(snap: &CompiledFieldSnapshot) -> bool {
     let dd = oxigraph::model::NamedNode::new("https://schema.org/DigitalDocument")
         .expect("Invalid schema:DigitalDocument IRI");
     let pv = oxigraph::model::NamedNode::new("http://www.w3.org/ns/prov#value")
@@ -517,7 +517,7 @@ fn emit_missing_evidence_delta_snap(snap: &CompiledFieldSnapshot) -> Result<Cons
 }
 
 /// Check: any subject carries a `skos:prefLabel`.
-fn check_concept_with_label_snap(snap: &CompiledFieldSnapshot) -> bool {
+pub(crate) fn check_concept_with_label_snap(snap: &CompiledFieldSnapshot) -> bool {
     let pref_label =
         oxigraph::model::NamedNode::new("http://www.w3.org/2004/02/skos/core#prefLabel")
             .expect("Invalid skos:prefLabel IRI");
@@ -561,7 +561,7 @@ fn emit_phrase_definition_delta_snap(snap: &CompiledFieldSnapshot) -> Result<Con
 }
 
 /// Check: any subject carries an `rdf:type` assertion.
-fn check_any_typed_subject_snap(snap: &CompiledFieldSnapshot) -> bool {
+pub(crate) fn check_any_typed_subject_snap(snap: &CompiledFieldSnapshot) -> bool {
     let rdf_type =
         oxigraph::model::NamedNode::new("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
             .expect("Invalid rdf:type IRI");
@@ -843,6 +843,106 @@ mod tests {
             "Hook should not fire when prov:value is present"
         );
 
+        Ok(())
+    }
+
+    /// Phase 7 boundary detector (warm path sibling): the missing-evidence
+    /// hook must emit `schema:AskAction` gap-finding triples — never a
+    /// fabricated `prov:value "placeholder"`.
+    #[test]
+    fn missing_evidence_hook_emits_ask_action_not_placeholder() -> Result<()> {
+        let mut field = FieldContext::new("test");
+        field.load_field_state(
+            "<http://example.org/doc1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/DigitalDocument> .\n",
+        )?;
+        let hook = missing_evidence_hook();
+        let mut registry = HookRegistry::new();
+        registry.register(hook);
+        let outcomes = registry.fire_matching(&field)?;
+        let me = outcomes
+            .iter()
+            .find(|o| o.hook_name == "missing_evidence")
+            .expect("missing_evidence should fire");
+        let nt = me.delta.to_ntriples();
+        assert!(!nt.contains("\"placeholder\""), "no fabricated placeholder: {}", nt);
+        assert!(
+            !nt.contains("<http://www.w3.org/ns/prov#value>"),
+            "no prov:value: {}",
+            nt
+        );
+        assert!(
+            nt.contains("<https://schema.org/AskAction>"),
+            "must reference schema:AskAction: {}",
+            nt
+        );
+        Ok(())
+    }
+
+    /// Phase 7 boundary detector (warm path sibling): the phrase-binding
+    /// hook must emit `prov:wasInformedBy`, never the old
+    /// `skos:definition "derived from prefLabel"` placeholder.
+    #[test]
+    fn phrase_binding_hook_emits_was_informed_by() -> Result<()> {
+        let mut field = FieldContext::new("test");
+        field.load_field_state(
+            "<http://example.org/c1> <http://www.w3.org/2004/02/skos/core#prefLabel> \"hello\" .\n",
+        )?;
+        let hook = phrase_binding_hook();
+        let mut registry = HookRegistry::new();
+        registry.register(hook);
+        let outcomes = registry.fire_matching(&field)?;
+        let pb = outcomes
+            .iter()
+            .find(|o| o.hook_name == "phrase_binding")
+            .expect("phrase_binding should fire");
+        let nt = pb.delta.to_ntriples();
+        assert!(!nt.contains("derived from prefLabel"), "no placeholder: {}", nt);
+        assert!(
+            nt.contains("<http://www.w3.org/ns/prov#wasInformedBy>"),
+            "must use prov:wasInformedBy: {}",
+            nt
+        );
+        Ok(())
+    }
+
+    /// Phase 7 boundary detector (warm path sibling): the
+    /// transition-admissibility hook must emit `prov:Activity` /
+    /// `prov:used`, NOT a SHACL shape on instances.
+    #[test]
+    fn transition_admissibility_hook_emits_prov_activity_not_shacl_shape() -> Result<()> {
+        let mut field = FieldContext::new("test");
+        field.load_field_state(
+            "<http://example.org/c1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2004/02/skos/core#Concept> .\n",
+        )?;
+        let hook = transition_admissibility_hook();
+        let mut registry = HookRegistry::new();
+        registry.register(hook);
+        let outcomes = registry.fire_matching(&field)?;
+        let ta = outcomes
+            .iter()
+            .find(|o| o.hook_name == "transition_admissibility")
+            .expect("transition_admissibility should fire");
+        let nt = ta.delta.to_ntriples();
+        assert!(
+            !nt.contains("<http://www.w3.org/ns/shacl#targetClass>"),
+            "no sh:targetClass: {}",
+            nt
+        );
+        assert!(
+            !nt.contains("<http://www.w3.org/ns/shacl#nodeKind>"),
+            "no sh:nodeKind: {}",
+            nt
+        );
+        assert!(
+            nt.contains("<http://www.w3.org/ns/prov#Activity>"),
+            "must reference prov:Activity: {}",
+            nt
+        );
+        assert!(
+            nt.contains("<http://www.w3.org/ns/prov#used>"),
+            "must reference prov:used: {}",
+            nt
+        );
         Ok(())
     }
 
