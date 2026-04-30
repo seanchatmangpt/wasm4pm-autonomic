@@ -4,6 +4,7 @@
 //! Compiled Cognition core: field-cognition facade over RDF graph closure.
 
 pub mod admit;
+pub mod compiled;
 pub mod graph;
 pub mod field;
 pub mod operation;

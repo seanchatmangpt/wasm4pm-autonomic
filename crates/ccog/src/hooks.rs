@@ -23,6 +23,7 @@
 //! }
 //! ```
 
+use crate::compiled::CompiledFieldSnapshot;
 use crate::construct8::Construct8;
 use crate::field::FieldContext;
 use crate::graph::GraphIri;
@@ -94,6 +95,9 @@ pub enum HookCheck {
     /// Denial-polarity admit function: 0 = admitted, nonzero = denied.
     /// Cannot fail; composed via bitwise OR for branchless gating.
     Admit(fn(&FieldContext) -> u64),
+
+    /// Snapshot-driven check: O(1) HashMap lookups, no graph walks.
+    SnapshotFn(fn(&CompiledFieldSnapshot) -> bool),
 }
 
 impl std::fmt::Debug for HookCheck {
@@ -108,6 +112,7 @@ impl std::fmt::Debug for HookCheck {
                 .field("object", object)
                 .finish(),
             Self::Admit(_) => f.debug_tuple("Admit").field(&"<admit>").finish(),
+            Self::SnapshotFn(_) => f.debug_tuple("SnapshotFn").field(&"<snap>").finish(),
         }
     }
 }
@@ -126,6 +131,9 @@ pub enum HookAct {
 
     /// Pre-computed triples returned verbatim (≤8). No parsing or SPARQL.
     ConstantTriples(Vec<oxigraph::model::Triple>),
+
+    /// Snapshot-driven act: O(1) HashMap lookups, no graph walks.
+    SnapshotFn(fn(&CompiledFieldSnapshot) -> Result<Construct8>),
 }
 
 impl std::fmt::Debug for HookAct {
@@ -134,6 +142,7 @@ impl std::fmt::Debug for HookAct {
             Self::Sparql(q) => f.debug_tuple("Sparql").field(q).finish(),
             Self::Fn(_) => f.debug_tuple("Fn").field(&"<fn>").finish(),
             Self::ConstantTriples(t) => f.debug_tuple("ConstantTriples").field(&t.len()).finish(),
+            Self::SnapshotFn(_) => f.debug_tuple("SnapshotFn").field(&"<snap>").finish(),
         }
     }
 }
@@ -214,23 +223,24 @@ impl HookRegistry {
     /// Hook execution is deterministic and side-effect free at the registry level.
     /// Individual act functions may have imperative side effects (e.g., logging).
     pub fn fire_matching(&self, field: &FieldContext) -> Result<Vec<HookOutcome>> {
+        let snapshot = CompiledFieldSnapshot::from_field(field)?;
         let mut outcomes = Vec::new();
 
         for hook in &self.hooks {
             // Evaluate trigger
-            let trigger_fired = evaluate_trigger(&hook.trigger, field)?;
+            let trigger_fired = evaluate_trigger(&hook.trigger, field, &snapshot)?;
             if !trigger_fired {
                 continue;
             }
 
             // Evaluate check
-            let check_passed = evaluate_check(&hook.check, field)?;
+            let check_passed = evaluate_check(&hook.check, field, &snapshot)?;
             if !check_passed {
                 continue;
             }
 
             // Execute act
-            let delta = evaluate_act(&hook.act, field)?;
+            let delta = evaluate_act(&hook.act, field, &snapshot)?;
 
             // Generate receipt if requested
             let receipt = if hook.emit_receipt {
@@ -258,26 +268,28 @@ impl HookRegistry {
 
 /// Evaluate a hook trigger against the field context.
 ///
-/// - `RdfChange { predicate }` → ASK `{ ?s <predicate> ?o }`
-/// - `SparqlAsk { query }` → ASK `{ <query> }` with PREFIXES prepended
-/// - `Manual` → always true
-fn evaluate_trigger(trigger: &HookTrigger, field: &FieldContext) -> Result<bool> {
+/// Snapshot-aware variants short-circuit through the pre-built indices:
+/// - `TypePresent(class)` → snapshot.instances_of(class)
+/// - `Pattern { subject: None, predicate: Some(p), object: None }` → snapshot.has_any_with_predicate(p)
+/// Other patterns fall back to the graph walk.
+fn evaluate_trigger(
+    trigger: &HookTrigger,
+    field: &FieldContext,
+    snapshot: &CompiledFieldSnapshot,
+) -> Result<bool> {
     match trigger {
         HookTrigger::RdfChange { predicate } => {
-            let query = format!("ASK {{ ?s <{}> ?o }}", predicate.as_str());
-            field.graph.ask(&query)
+            let p = oxigraph::model::NamedNode::new(predicate.as_str())?;
+            Ok(snapshot.has_any_with_predicate(&p))
         }
         HookTrigger::SparqlAsk { query } => field.graph.ask(query),
+        HookTrigger::Pattern { subject: None, predicate: Some(p), object: None } => {
+            Ok(snapshot.has_any_with_predicate(p))
+        }
         HookTrigger::Pattern { subject, predicate, object } => {
             field.graph.pattern_exists(subject.as_ref(), predicate.as_ref(), object.as_ref())
         }
-        HookTrigger::TypePresent(class) => {
-            let rdf_type = oxigraph::model::NamedNode::new(
-                "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
-            )?;
-            let class_term: oxigraph::model::Term = class.clone().into();
-            field.graph.pattern_exists(None, Some(&rdf_type), Some(&class_term))
-        }
+        HookTrigger::TypePresent(class) => Ok(!snapshot.instances_of(class).is_empty()),
         HookTrigger::Manual => Ok(true),
     }
 }
@@ -286,7 +298,12 @@ fn evaluate_trigger(trigger: &HookTrigger, field: &FieldContext) -> Result<bool>
 ///
 /// - `Sparql(query)` → call field.graph.ask() with PREFIXES prepended
 /// - `Fn(f)` → call f(field)
-fn evaluate_check(check: &HookCheck, field: &FieldContext) -> Result<bool> {
+/// - `SnapshotFn(f)` → call f(snapshot) — O(1) HashMap path
+fn evaluate_check(
+    check: &HookCheck,
+    field: &FieldContext,
+    snapshot: &CompiledFieldSnapshot,
+) -> Result<bool> {
     match check {
         HookCheck::Sparql(query) => field.graph.ask(query),
         HookCheck::Fn(f) => f(field),
@@ -294,6 +311,7 @@ fn evaluate_check(check: &HookCheck, field: &FieldContext) -> Result<bool> {
             field.graph.pattern_exists(subject.as_ref(), predicate.as_ref(), object.as_ref())
         }
         HookCheck::Admit(f) => Ok(crate::admit::admitted(f(field))),
+        HookCheck::SnapshotFn(f) => Ok(f(snapshot)),
     }
 }
 
@@ -301,7 +319,12 @@ fn evaluate_check(check: &HookCheck, field: &FieldContext) -> Result<bool> {
 ///
 /// - `Sparql(query)` → call field.graph.construct(), wrap in Construct8
 /// - `Fn(f)` → call f(field) directly
-fn evaluate_act(act: &HookAct, field: &FieldContext) -> Result<Construct8> {
+/// - `SnapshotFn(f)` → call f(snapshot) — O(1) HashMap path
+fn evaluate_act(
+    act: &HookAct,
+    field: &FieldContext,
+    snapshot: &CompiledFieldSnapshot,
+) -> Result<Construct8> {
     match act {
         HookAct::Sparql(query) => {
             let triples = field.graph.construct(query)?;
@@ -323,45 +346,49 @@ fn evaluate_act(act: &HookAct, field: &FieldContext) -> Result<Construct8> {
             }
             Ok(delta)
         }
+        HookAct::SnapshotFn(f) => f(snapshot),
     }
 }
 
 // ---------------------------------------------------------------------------
-// Built-in hook helpers — direct triple-pattern Fn pointers (no SPARQL parsing).
+// Built-in hook helpers — snapshot-driven (Phase 4 Stage 1).
 // ---------------------------------------------------------------------------
 
 /// Check: any `schema:DigitalDocument` instance lacking a `prov:value`.
 ///
-/// Direct iteration over typed subjects with short-circuit on first miss.
-fn check_any_doc_missing_value(field: &FieldContext) -> Result<bool> {
-    let dd = oxigraph::model::NamedNode::new("https://schema.org/DigitalDocument")?;
-    let pv = oxigraph::model::NamedNode::new("http://www.w3.org/ns/prov#value")?;
-    for d in field.graph.instances_of(&dd)? {
-        if !field.graph.has_value_for(&d, &pv)? {
-            return Ok(true);
+/// Iterates the snapshot's `instances_of` and short-circuits on first gap.
+fn check_any_doc_missing_value_snap(snap: &CompiledFieldSnapshot) -> bool {
+    let dd = oxigraph::model::NamedNode::new("https://schema.org/DigitalDocument")
+        .expect("Invalid schema:DigitalDocument IRI");
+    let pv = oxigraph::model::NamedNode::new("http://www.w3.org/ns/prov#value")
+        .expect("Invalid prov:value IRI");
+    for d in snap.instances_of(&dd) {
+        if !snap.has_value_for(d, &pv) {
+            return true;
         }
     }
-    Ok(false)
+    false
 }
 
 /// Act: emit a placeholder `prov:value` triple for each documented gap (≤8 triples).
-fn emit_missing_evidence_delta(field: &FieldContext) -> Result<Construct8> {
-    let dd = oxigraph::model::NamedNode::new("https://schema.org/DigitalDocument")?;
-    let pv = oxigraph::model::NamedNode::new("http://www.w3.org/ns/prov#value")?;
+fn emit_missing_evidence_delta_snap(snap: &CompiledFieldSnapshot) -> Result<Construct8> {
+    let dd = oxigraph::model::NamedNode::new("https://schema.org/DigitalDocument")
+        .expect("Invalid schema:DigitalDocument IRI");
+    let pv = oxigraph::model::NamedNode::new("http://www.w3.org/ns/prov#value")
+        .expect("Invalid prov:value IRI");
     let mut delta = Construct8::empty();
-    for d in field.graph.instances_of(&dd)? {
+    for d in snap.instances_of(&dd) {
         if delta.is_full() {
             break;
         }
-        if !field.graph.has_value_for(&d, &pv)? {
+        if !snap.has_value_for(d, &pv) {
             let triple = oxigraph::model::Triple::new(
-                d,
+                d.clone(),
                 pv.clone(),
                 oxigraph::model::Term::Literal(oxigraph::model::Literal::new_simple_literal(
                     "placeholder",
                 )),
             );
-            // Capacity bounded by Construct8 (≤8); push always succeeds here.
             let _ = delta.push(triple);
         }
     }
@@ -369,25 +396,28 @@ fn emit_missing_evidence_delta(field: &FieldContext) -> Result<Construct8> {
 }
 
 /// Check: any subject carries a `skos:prefLabel`.
-fn check_concept_with_label(field: &FieldContext) -> Result<bool> {
+fn check_concept_with_label_snap(snap: &CompiledFieldSnapshot) -> bool {
     let pref_label =
-        oxigraph::model::NamedNode::new("http://www.w3.org/2004/02/skos/core#prefLabel")?;
-    field.graph.pattern_exists(None, Some(&pref_label), None)
+        oxigraph::model::NamedNode::new("http://www.w3.org/2004/02/skos/core#prefLabel")
+            .expect("Invalid skos:prefLabel IRI");
+    snap.has_any_with_predicate(&pref_label)
 }
 
 /// Act: emit a `skos:definition` placeholder for each labeled concept (≤8 triples).
-fn emit_phrase_definition_delta(field: &FieldContext) -> Result<Construct8> {
+fn emit_phrase_definition_delta_snap(snap: &CompiledFieldSnapshot) -> Result<Construct8> {
     let pref_label =
-        oxigraph::model::NamedNode::new("http://www.w3.org/2004/02/skos/core#prefLabel")?;
+        oxigraph::model::NamedNode::new("http://www.w3.org/2004/02/skos/core#prefLabel")
+            .expect("Invalid skos:prefLabel IRI");
     let definition =
-        oxigraph::model::NamedNode::new("http://www.w3.org/2004/02/skos/core#definition")?;
+        oxigraph::model::NamedNode::new("http://www.w3.org/2004/02/skos/core#definition")
+            .expect("Invalid skos:definition IRI");
     let mut delta = Construct8::empty();
-    for (concept, _label) in field.graph.pairs_with_predicate(&pref_label)? {
+    for (concept, _label) in snap.pairs_with_predicate(&pref_label) {
         if delta.is_full() {
             break;
         }
         let triple = oxigraph::model::Triple::new(
-            concept,
+            concept.clone(),
             definition.clone(),
             oxigraph::model::Term::Literal(oxigraph::model::Literal::new_simple_literal(
                 "derived from prefLabel",
@@ -399,25 +429,30 @@ fn emit_phrase_definition_delta(field: &FieldContext) -> Result<Construct8> {
 }
 
 /// Check: any subject carries an `rdf:type` assertion.
-fn check_any_typed_subject(field: &FieldContext) -> Result<bool> {
+fn check_any_typed_subject_snap(snap: &CompiledFieldSnapshot) -> bool {
     let rdf_type =
-        oxigraph::model::NamedNode::new("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")?;
-    field.graph.pattern_exists(None, Some(&rdf_type), None)
+        oxigraph::model::NamedNode::new("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
+            .expect("Invalid rdf:type IRI");
+    snap.has_any_with_predicate(&rdf_type)
 }
 
 /// Act: emit two SHACL validity triples per typed subject (≤4 subjects, ≤8 triples).
-fn emit_validity_delta(field: &FieldContext) -> Result<Construct8> {
+fn emit_validity_delta_snap(snap: &CompiledFieldSnapshot) -> Result<Construct8> {
     let rdf_type =
-        oxigraph::model::NamedNode::new("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")?;
-    let target_class = oxigraph::model::NamedNode::new("http://www.w3.org/ns/shacl#targetClass")?;
-    let node_kind = oxigraph::model::NamedNode::new("http://www.w3.org/ns/shacl#nodeKind")?;
+        oxigraph::model::NamedNode::new("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
+            .expect("Invalid rdf:type IRI");
+    let target_class = oxigraph::model::NamedNode::new("http://www.w3.org/ns/shacl#targetClass")
+        .expect("Invalid sh:targetClass IRI");
+    let node_kind = oxigraph::model::NamedNode::new("http://www.w3.org/ns/shacl#nodeKind")
+        .expect("Invalid sh:nodeKind IRI");
     let blank_or_iri =
-        oxigraph::model::NamedNode::new("http://www.w3.org/ns/shacl#BlankNodeOrIRI")?;
+        oxigraph::model::NamedNode::new("http://www.w3.org/ns/shacl#BlankNodeOrIRI")
+            .expect("Invalid sh:BlankNodeOrIRI IRI");
     let blank_or_iri_term: oxigraph::model::Term = blank_or_iri.into();
 
     let mut delta = Construct8::empty();
     let mut subjects_emitted: u8 = 0;
-    for (subj, type_term) in field.graph.pairs_with_predicate(&rdf_type)? {
+    for (subj, type_term) in snap.pairs_with_predicate(&rdf_type) {
         if subjects_emitted >= 4 {
             break;
         }
@@ -428,11 +463,10 @@ fn emit_validity_delta(field: &FieldContext) -> Result<Construct8> {
                 type_term.clone(),
             );
             let t2 = oxigraph::model::Triple::new(
-                subj,
+                subj.clone(),
                 node_kind.clone(),
                 blank_or_iri_term.clone(),
             );
-            // Construct8 hard-caps at 8; both pushes succeed within the 4-subject loop bound.
             let _ = delta.push(t1);
             let _ = delta.push(t2);
             subjects_emitted += 1;
@@ -442,7 +476,7 @@ fn emit_validity_delta(field: &FieldContext) -> Result<Construct8> {
 }
 
 /// Act: emit a deterministic `prov:Activity` triple pair from a BLAKE3-derived URN.
-fn emit_receipt_activity_delta(_field: &FieldContext) -> Result<Construct8> {
+fn emit_receipt_activity_delta_snap(_snap: &CompiledFieldSnapshot) -> Result<Construct8> {
     let h = blake3::hash(b"receipt_hook");
     let activity_iri =
         oxigraph::model::NamedNode::new(&format!("urn:blake3:{}", h.to_hex()))?;
@@ -451,7 +485,6 @@ fn emit_receipt_activity_delta(_field: &FieldContext) -> Result<Construct8> {
     let prov_activity = oxigraph::model::NamedNode::new("http://www.w3.org/ns/prov#Activity")?;
     let prov_was_associated_with =
         oxigraph::model::NamedNode::new("http://www.w3.org/ns/prov#wasAssociatedWith")?;
-    // PROV-O canonical class: prov:Agent (prov:Service is not a real PROV-O class).
     let prov_agent = oxigraph::model::NamedNode::new("http://www.w3.org/ns/prov#Agent")?;
 
     let prov_activity_term: oxigraph::model::Term = prov_activity.into();
@@ -484,8 +517,8 @@ pub fn missing_evidence_hook() -> KnowledgeHook {
             oxigraph::model::NamedNode::new("https://schema.org/DigitalDocument")
                 .expect("Invalid schema:DigitalDocument IRI"),
         ),
-        check: HookCheck::Fn(check_any_doc_missing_value),
-        act: HookAct::Fn(emit_missing_evidence_delta),
+        check: HookCheck::SnapshotFn(check_any_doc_missing_value_snap),
+        act: HookAct::SnapshotFn(emit_missing_evidence_delta_snap),
         emit_receipt: true,
     }
 }
@@ -507,8 +540,8 @@ pub fn phrase_binding_hook() -> KnowledgeHook {
             predicate: Some(pref_label),
             object: None,
         },
-        check: HookCheck::Fn(check_concept_with_label),
-        act: HookAct::Fn(emit_phrase_definition_delta),
+        check: HookCheck::SnapshotFn(check_concept_with_label_snap),
+        act: HookAct::SnapshotFn(emit_phrase_definition_delta_snap),
         emit_receipt: true,
     }
 }
@@ -530,8 +563,8 @@ pub fn transition_admissibility_hook() -> KnowledgeHook {
             predicate: Some(rdf_type),
             object: None,
         },
-        check: HookCheck::Fn(check_any_typed_subject),
-        act: HookAct::Fn(emit_validity_delta),
+        check: HookCheck::SnapshotFn(check_any_typed_subject_snap),
+        act: HookAct::SnapshotFn(emit_validity_delta_snap),
         emit_receipt: true,
     }
 }
@@ -546,8 +579,8 @@ pub fn receipt_hook() -> KnowledgeHook {
     KnowledgeHook {
         name: "receipt",
         trigger: HookTrigger::Manual,
-        check: HookCheck::Fn(|_field| Ok(true)),
-        act: HookAct::Fn(emit_receipt_activity_delta),
+        check: HookCheck::SnapshotFn(|_snap| true),
+        act: HookAct::SnapshotFn(emit_receipt_activity_delta_snap),
         emit_receipt: true,
     }
 }
@@ -568,7 +601,8 @@ mod tests {
             query: "ASK { ?s rdf:type schema:DigitalDocument }".to_string(),
         };
 
-        let result = evaluate_trigger(&trigger, &field)?;
+        let snapshot = CompiledFieldSnapshot::from_field(&field)?;
+        let result = evaluate_trigger(&trigger, &field, &snapshot)?;
         assert!(result, "SPARQL ASK trigger should fire when query matches");
 
         Ok(())
@@ -583,7 +617,8 @@ mod tests {
             query: "ASK { ?s rdf:type schema:NonExistent }".to_string(),
         };
 
-        let result = evaluate_trigger(&trigger, &field)?;
+        let snapshot = CompiledFieldSnapshot::from_field(&field)?;
+        let result = evaluate_trigger(&trigger, &field, &snapshot)?;
         assert!(!result, "SPARQL ASK trigger should not fire when query does not match");
 
         Ok(())
