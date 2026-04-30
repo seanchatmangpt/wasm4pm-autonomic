@@ -2,7 +2,7 @@
 #![deny(missing_docs)]
 #![cfg_attr(
     feature = "nightly",
-    feature(portable_simd, generic_const_exprs, const_trait_impl, inline_const)
+    feature(portable_simd, generic_const_exprs, const_trait_impl)
 )]
 #![cfg_attr(feature = "nightly", allow(incomplete_features))]
 

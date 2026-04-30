@@ -40,13 +40,23 @@ pub struct CompiledFieldSnapshot {
 
 #[inline]
 fn hash_pair(subj: &str, pred: &str) -> u64 {
-    // Deterministic concatenation: subj || 0x00 || pred. The NUL byte cannot
-    // appear inside an IRI so the boundary is unambiguous.
-    let mut buf: Vec<u8> = Vec::with_capacity(subj.len() + 1 + pred.len());
-    buf.extend_from_slice(subj.as_bytes());
-    buf.push(0);
-    buf.extend_from_slice(pred.as_bytes());
-    fnv1a_64(&buf)
+    // Deterministic FNV-1a over `subj || 0x00 || pred` — alloc-free.
+    // The NUL byte cannot appear inside an IRI so the boundary is unambiguous.
+    // Fold byte-by-byte instead of building a temporary buffer.
+    const FNV_OFFSET: u64 = 0xcbf29ce484222325;
+    const FNV_PRIME: u64 = 0x100000001b3;
+    let mut h = FNV_OFFSET;
+    for &b in subj.as_bytes() {
+        h ^= b as u64;
+        h = h.wrapping_mul(FNV_PRIME);
+    }
+    h ^= 0;
+    h = h.wrapping_mul(FNV_PRIME);
+    for &b in pred.as_bytes() {
+        h ^= b as u64;
+        h = h.wrapping_mul(FNV_PRIME);
+    }
+    h
 }
 
 impl CompiledFieldSnapshot {

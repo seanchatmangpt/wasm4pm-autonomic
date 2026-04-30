@@ -40,31 +40,47 @@ pub mod Predicate {
 /// O(N) in the number of `schema:DigitalDocument` instances at worst, but
 /// runs once per fire and amortizes across all hooks.
 pub fn compute_present_mask(snap: &CompiledFieldSnapshot) -> u64 {
-    let dd = NamedNode::new("https://schema.org/DigitalDocument")
-        .expect("Invalid schema:DigitalDocument IRI");
-    let pv = NamedNode::new("http://www.w3.org/ns/prov#value")
-        .expect("Invalid prov:value IRI");
-    let pl = NamedNode::new("http://www.w3.org/2004/02/skos/core#prefLabel")
-        .expect("Invalid skos:prefLabel IRI");
-    let rt = NamedNode::new("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
-        .expect("Invalid rdf:type IRI");
+    use std::sync::OnceLock;
+    static DD: OnceLock<NamedNode> = OnceLock::new();
+    static PV: OnceLock<NamedNode> = OnceLock::new();
+    static PL: OnceLock<NamedNode> = OnceLock::new();
+    static RT: OnceLock<NamedNode> = OnceLock::new();
+    // Each predicate IRI heap-allocs once across the process. After warmup,
+    // `compute_present_mask` becomes alloc-free — load-bearing for the
+    // KernelFloor budget (gauntlet test
+    // `gauntlet_compute_present_mask_zero_alloc`).
+    let dd = DD.get_or_init(|| {
+        NamedNode::new("https://schema.org/DigitalDocument")
+            .expect("Invalid schema:DigitalDocument IRI")
+    });
+    let pv = PV.get_or_init(|| {
+        NamedNode::new("http://www.w3.org/ns/prov#value").expect("Invalid prov:value IRI")
+    });
+    let pl = PL.get_or_init(|| {
+        NamedNode::new("http://www.w3.org/2004/02/skos/core#prefLabel")
+            .expect("Invalid skos:prefLabel IRI")
+    });
+    let rt = RT.get_or_init(|| {
+        NamedNode::new("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
+            .expect("Invalid rdf:type IRI")
+    });
 
     let mut mask = 0u64;
 
-    let dd_instances = snap.instances_of(&dd);
+    let dd_instances = snap.instances_of(dd);
     if !dd_instances.is_empty() {
         mask |= 1u64 << Predicate::DD_PRESENT;
         for d in dd_instances {
-            if !snap.has_value_for(d, &pv) {
+            if !snap.has_value_for(d, pv) {
                 mask |= 1u64 << Predicate::DD_MISSING_PROV_VALUE;
                 break;
             }
         }
     }
-    if snap.has_any_with_predicate(&pl) {
+    if snap.has_any_with_predicate(pl) {
         mask |= 1u64 << Predicate::HAS_PREF_LABEL;
     }
-    if snap.has_any_with_predicate(&rt) {
+    if snap.has_any_with_predicate(rt) {
         mask |= 1u64 << Predicate::HAS_RDF_TYPE;
     }
     mask
