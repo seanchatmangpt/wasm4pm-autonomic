@@ -1,7 +1,20 @@
-//! `ainst` — AutoInstinct CLI per PRD §14.
+//! `ainst` — AutoInstinct CLI (canonical SPR grammar).
 //!
-//! All twelve commands surface the v30.1.1 trace-to-instinct compiler
-//! pipeline. Built only with `--features cli`.
+//! Verb-noun grammar matches SPR §"CLI Grammar":
+//!
+//! ```text
+//! ainst generate ocel | jtbd
+//! ainst validate ocel
+//! ainst ingest corpus
+//! ainst discover motifs
+//! ainst propose policy
+//! ainst run gauntlet
+//! ainst compile pack
+//! ainst publish pack
+//! ainst deploy edge
+//! ainst verify replay
+//! ainst export bundle
+//! ```
 
 use std::path::PathBuf;
 
@@ -24,103 +37,148 @@ use autoinstinct::AUTOINSTINCT_VERSION;
           about = "AutoInstinct: trace-to-instinct compiler for ccog")]
 struct Cli {
     #[command(subcommand)]
-    cmd: Cmd,
+    cmd: Verb,
 }
 
 #[derive(Subcommand)]
-enum Cmd {
-    /// Generate an OCEL world from a scenario spec JSON file.
-    GenerateOcel {
-        /// Scenario spec JSON file.
+enum Verb {
+    /// `ainst generate <ocel|jtbd>`
+    #[command(subcommand)]
+    Generate(Generate),
+    /// `ainst validate <ocel>`
+    #[command(subcommand)]
+    Validate(Validate),
+    /// `ainst ingest <corpus>`
+    #[command(subcommand)]
+    Ingest(Ingest),
+    /// `ainst discover <motifs>`
+    #[command(subcommand)]
+    Discover(Discover),
+    /// `ainst propose <policy>`
+    #[command(subcommand)]
+    Propose(Propose),
+    /// `ainst run <gauntlet>`
+    #[command(subcommand)]
+    Run(Run),
+    /// `ainst compile <pack>`
+    #[command(subcommand)]
+    Compile(Compile),
+    /// `ainst publish <pack>`
+    #[command(subcommand)]
+    Publish(Publish),
+    /// `ainst deploy <edge>`
+    #[command(subcommand)]
+    Deploy(Deploy),
+    /// `ainst verify <replay>`
+    #[command(subcommand)]
+    Verify(Verify),
+    /// `ainst export <bundle>`
+    #[command(subcommand)]
+    Export(Export),
+}
+
+#[derive(Subcommand)]
+enum Generate {
+    /// Generate an OCEL world from a scenario spec JSON.
+    Ocel {
         spec: PathBuf,
-        /// Output OCEL JSON file.
         #[arg(long)]
         out: PathBuf,
     },
-    /// Validate an OCEL JSON file (ontology purity, references, uniqueness).
-    ValidateOcel {
-        /// OCEL JSON file to validate.
-        path: PathBuf,
+    /// Generate JTBD scenarios from motifs JSON (counterfactual pairings).
+    Jtbd {
+        motifs: PathBuf,
+        #[arg(long)]
+        out: PathBuf,
     },
-    /// Ingest a trace corpus JSON and emit a one-line summary.
-    IngestCorpus {
-        /// Corpus JSON file.
-        path: PathBuf,
-    },
-    /// Discover motifs from a corpus JSON.
-    DiscoverMotifs {
-        /// Corpus JSON file.
+}
+
+#[derive(Subcommand)]
+enum Validate {
+    /// Validate an OCEL JSON file.
+    Ocel { path: PathBuf },
+}
+
+#[derive(Subcommand)]
+enum Ingest {
+    /// Print a one-line summary of a trace corpus JSON.
+    Corpus { path: PathBuf },
+}
+
+#[derive(Subcommand)]
+enum Discover {
+    /// Discover motifs from a trace corpus JSON.
+    Motifs {
         corpus: PathBuf,
-        /// Minimum support to count a motif.
         #[arg(long, default_value_t = 2)]
         min_support: u32,
-        /// Output motifs JSON.
         #[arg(long)]
         out: PathBuf,
     },
-    /// Propose a candidate policy from a motifs JSON.
-    ProposePolicy {
-        /// Motifs JSON file.
+}
+
+#[derive(Subcommand)]
+enum Propose {
+    /// Synthesize a candidate μ policy from motifs.
+    Policy {
         motifs: PathBuf,
-        /// Output candidate policy JSON.
         #[arg(long)]
         out: PathBuf,
     },
-    /// Generate JTBD scenarios from motifs (counterfactual pairings).
-    GenerateJtbd {
-        /// Motifs JSON file.
-        motifs: PathBuf,
-        /// Output JTBD scenarios JSON.
-        #[arg(long)]
-        out: PathBuf,
-    },
-    /// Run the gauntlet over a candidate policy + scenarios.
-    RunGauntlet {
-        /// Candidate policy JSON.
+}
+
+#[derive(Subcommand)]
+enum Run {
+    /// Run the gauntlet over a candidate + scenarios.
+    Gauntlet {
         candidate: PathBuf,
-        /// Scenarios JSON.
         scenarios: PathBuf,
     },
+}
+
+#[derive(Subcommand)]
+enum Compile {
     /// Compile an admitted candidate into a field-pack JSON.
-    CompilePack {
-        /// Candidate policy JSON.
+    Pack {
         candidate: PathBuf,
-        /// Pack name.
         #[arg(long)]
         name: String,
-        /// Domain (lifestyle | edge | enterprise | dev | supply-chain | healthcare | financial).
         #[arg(long)]
         domain: String,
-        /// Output pack JSON.
         #[arg(long)]
         out: PathBuf,
     },
-    /// Publish a compiled pack manifest (writes manifest JSON beside the pack).
-    PublishPack {
-        /// Compiled pack JSON.
-        pack: PathBuf,
-    },
+}
+
+#[derive(Subcommand)]
+enum Publish {
+    /// Publish a compiled pack manifest beside the pack JSON.
+    Pack { pack: PathBuf },
+}
+
+#[derive(Subcommand)]
+enum Deploy {
     /// Print a deployment descriptor for a pack at a tier+region.
-    DeployEdge {
-        /// Compiled pack JSON.
+    Edge {
         pack: PathBuf,
-        /// Tier (edge | fog | cloud).
         #[arg(long)]
         tier: String,
-        /// Region tag.
         #[arg(long)]
         region: String,
     },
+}
+
+#[derive(Subcommand)]
+enum Verify {
     /// Verify a manifest's `manifest_digest_urn`.
-    VerifyReplay {
-        /// Manifest JSON file.
-        manifest: PathBuf,
-    },
+    Replay { manifest: PathBuf },
+}
+
+#[derive(Subcommand)]
+enum Export {
     /// Export a portable bundle (pack + manifest as one JSON object).
-    ExportBundle {
-        /// Compiled pack JSON.
+    Bundle {
         pack: PathBuf,
-        /// Output bundle JSON.
         #[arg(long)]
         out: PathBuf,
     },
@@ -162,47 +220,47 @@ fn parse_tier(s: &str) -> Result<autoinstinct::bridge::Tier> {
 fn main() -> Result<()> {
     let cli = Cli::parse();
     match cli.cmd {
-        Cmd::GenerateOcel { spec, out } => {
+        Verb::Generate(Generate::Ocel { spec, out }) => {
             let s: ScenarioSpec = read_json(&spec)?;
             let log = generate_world(&s)?;
             write_json(&out, &log)?;
             println!("{} objects, {} events", log.objects.len(), log.events.len());
         }
-        Cmd::ValidateOcel { path } => {
-            let log: OcelLog = read_json(&path)?;
-            validate(&log)?;
-            println!("OK: {} objects, {} events", log.objects.len(), log.events.len());
-        }
-        Cmd::IngestCorpus { path } => {
-            let c: TraceCorpus = read_json(&path)?;
-            println!("episodes={}", c.len());
-        }
-        Cmd::DiscoverMotifs {
-            corpus,
-            min_support,
-            out,
-        } => {
-            let c: TraceCorpus = read_json(&corpus)?;
-            let m = discover(&c, min_support);
-            write_json(&out, &m)?;
-            println!("motifs={}", m.motifs.len());
-        }
-        Cmd::ProposePolicy { motifs, out } => {
-            let m: autoinstinct::motifs::Motifs = read_json(&motifs)?;
-            let p = synthesize(&m);
-            write_json(&out, &p)?;
-            println!("rules={}", p.rules.len());
-        }
-        Cmd::GenerateJtbd { motifs, out } => {
+        Verb::Generate(Generate::Jtbd { motifs, out }) => {
             let m: autoinstinct::motifs::Motifs = read_json(&motifs)?;
             let scenarios = autoinstinct::counterfactual::generate(&m);
             write_json(&out, &scenarios)?;
             println!("scenarios={}", scenarios.len());
         }
-        Cmd::RunGauntlet {
+        Verb::Validate(Validate::Ocel { path }) => {
+            let log: OcelLog = read_json(&path)?;
+            validate(&log)?;
+            println!("OK: {} objects, {} events", log.objects.len(), log.events.len());
+        }
+        Verb::Ingest(Ingest::Corpus { path }) => {
+            let c: TraceCorpus = read_json(&path)?;
+            println!("episodes={}", c.len());
+        }
+        Verb::Discover(Discover::Motifs {
+            corpus,
+            min_support,
+            out,
+        }) => {
+            let c: TraceCorpus = read_json(&corpus)?;
+            let m = discover(&c, min_support);
+            write_json(&out, &m)?;
+            println!("motifs={}", m.motifs.len());
+        }
+        Verb::Propose(Propose::Policy { motifs, out }) => {
+            let m: autoinstinct::motifs::Motifs = read_json(&motifs)?;
+            let p = synthesize(&m);
+            write_json(&out, &p)?;
+            println!("rules={}", p.rules.len());
+        }
+        Verb::Run(Run::Gauntlet {
             candidate,
             scenarios,
-        } => {
+        }) => {
             let policy: autoinstinct::synth::CandidatePolicy = read_json(&candidate)?;
             let s: Vec<autoinstinct::jtbd::JtbdScenario> = read_json(&scenarios)?;
             let report = gauntlet::run(&policy, &s);
@@ -216,12 +274,12 @@ fn main() -> Result<()> {
                 std::process::exit(1);
             }
         }
-        Cmd::CompilePack {
+        Verb::Compile(Compile::Pack {
             candidate,
             name,
             domain,
             out,
-        } => {
+        }) => {
             let policy: autoinstinct::synth::CandidatePolicy = read_json(&candidate)?;
             let dp = profile(parse_domain(&domain)?);
             let pack = compile(CompileInputs {
@@ -233,7 +291,7 @@ fn main() -> Result<()> {
             write_json(&out, &pack)?;
             println!("{}", pack.digest_urn);
         }
-        Cmd::PublishPack { pack } => {
+        Verb::Publish(Publish::Pack { pack }) => {
             let p: autoinstinct::compile::FieldPackArtifact = read_json(&pack)?;
             let manifest = build_manifest(&p);
             let mut manifest_path = pack.clone();
@@ -245,11 +303,11 @@ fn main() -> Result<()> {
             write_json(&manifest_path, &manifest)?;
             println!("{}", manifest.manifest_digest_urn);
         }
-        Cmd::DeployEdge {
+        Verb::Deploy(Deploy::Edge {
             pack,
             tier,
             region,
-        } => {
+        }) => {
             let p: autoinstinct::compile::FieldPackArtifact = read_json(&pack)?;
             let descriptor = autoinstinct::bridge::deploy(
                 &p,
@@ -260,7 +318,7 @@ fn main() -> Result<()> {
             )?;
             println!("{}", serde_json::to_string_pretty(&descriptor)?);
         }
-        Cmd::VerifyReplay { manifest } => {
+        Verb::Verify(Verify::Replay { manifest }) => {
             let m: autoinstinct::manifest::PackManifest = read_json(&manifest)?;
             if verify(&m) {
                 println!("OK: {}", m.manifest_digest_urn);
@@ -269,7 +327,7 @@ fn main() -> Result<()> {
                 std::process::exit(1);
             }
         }
-        Cmd::ExportBundle { pack, out } => {
+        Verb::Export(Export::Bundle { pack, out }) => {
             let p: autoinstinct::compile::FieldPackArtifact = read_json(&pack)?;
             let m = build_manifest(&p);
             let bundle = serde_json::json!({

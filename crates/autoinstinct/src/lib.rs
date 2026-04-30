@@ -86,6 +86,9 @@ pub mod compliance;
 pub mod scale;
 pub mod streaming;
 
+// Constitutional doctrine — programmatic invariants from `SPR.md`.
+pub mod doctrine;
+
 /// AutoInstinct semver string used in compiled field-pack metadata.
 pub const AUTOINSTINCT_VERSION: &str = "30.1.1";
 
