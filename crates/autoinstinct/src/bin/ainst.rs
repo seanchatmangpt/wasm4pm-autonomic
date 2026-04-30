@@ -308,11 +308,56 @@ fn main() -> Result<()> {
             println!("rules={}", p.rules.len());
         }
         Verb::Run(Run::Gauntlet {
+            mode,
+            evidence,
+            require_clean_git,
             candidate,
             scenarios,
         }) => {
-            let policy: autoinstinct::synth::CandidatePolicy = read_json(&candidate)?;
-            let s: Vec<autoinstinct::jtbd::JtbdScenario> = read_json(&scenarios)?;
+            if require_clean_git {
+                let status = std::process::Command::new("git")
+                    .arg("status")
+                    .arg("--short")
+                    .output()
+                    .with_context(|| "failed to run git status")?;
+                let stdout = String::from_utf8_lossy(&status.stdout);
+                if !stdout.trim().is_empty() {
+                    anyhow::bail!("git tree is not clean:\n{}", stdout);
+                }
+            }
+
+            if mode == "anti-fake" {
+                println!("Running Anti-Fake Gauntlet...");
+                let mut cmd = std::process::Command::new("cargo");
+                cmd.args(["test", "-p", "autoinstinct", "--features", "cli", "--", "--nocapture"]);
+                
+                let output = cmd.output().with_context(|| "failed to run cargo test")?;
+                let stdout = String::from_utf8_lossy(&output.stdout);
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                
+                if evidence {
+                    let branch = String::from_utf8_lossy(&std::process::Command::new("git").args(["rev-parse", "--abbrev-ref", "HEAD"]).output()?.stdout).trim().to_string();
+                    let commit = String::from_utf8_lossy(&std::process::Command::new("git").args(["rev-parse", "HEAD"]).output()?.stdout).trim().to_string();
+                    let evidence_log = format!("BRANCH: {}\nCOMMIT: {}\nSTDOUT:\n{}\nSTDERR:\n{}", branch, commit, stdout, stderr);
+                    std::fs::write("ANTI_FAKE_EVIDENCE.log", evidence_log)?;
+                    println!("Evidence saved to ANTI_FAKE_EVIDENCE.log");
+                }
+
+                if !output.status.success() {
+                    println!("{}", stdout);
+                    println!("{}", stderr);
+                    anyhow::bail!("Anti-Fake Gauntlet FAILED.");
+                }
+
+                println!("Anti-Fake Gauntlet PASSED.");
+                return Ok(());
+            }
+
+            let candidate_path = candidate.context("candidate path required for standard mode")?;
+            let scenarios_path = scenarios.context("scenarios path required for standard mode")?;
+
+            let policy: autoinstinct::synth::CandidatePolicy = read_json(&candidate_path)?;
+            let s: Vec<autoinstinct::jtbd::JtbdScenario> = read_json(&scenarios_path)?;
             let report = gauntlet::run(&policy, &s);
             if report.admitted() {
                 println!("ADMITTED");
@@ -336,62 +381,6 @@ fn main() -> Result<()> {
                 name: &name,
                 ontology_profile: dp.ontology_profile,
                 admitted_breeds: dp.admitted_breeds,
-                policy: &policy,
-            });
-            write_json(&out, &pack)?;
-            println!("{}", pack.digest_urn);
-        }
-        Verb::Publish(Publish::Pack { pack }) => {
-            let p: autoinstinct::compile::FieldPackArtifact = read_json(&pack)?;
-            let manifest = build_manifest(&p);
-            let mut manifest_path = pack.clone();
-            let stem = manifest_path
-                .file_stem()
-                .map(|s| s.to_string_lossy().into_owned())
-                .unwrap_or_else(|| "pack".into());
-            manifest_path.set_file_name(format!("{stem}.manifest.json"));
-            write_json(&manifest_path, &manifest)?;
-            println!("{}", manifest.manifest_digest_urn);
-        }
-        Verb::Deploy(Deploy::Edge {
-            pack,
-            tier,
-            region,
-        }) => {
-            let p: autoinstinct::compile::FieldPackArtifact = read_json(&pack)?;
-            let descriptor = autoinstinct::bridge::deploy(
-                &p,
-                parse_tier(&tier)?,
-                &region,
-                "",
-                &[],
-            )?;
-            println!("{}", serde_json::to_string_pretty(&descriptor)?);
-        }
-        Verb::Verify(Verify::Replay { manifest }) => {
-            let m: autoinstinct::manifest::PackManifest = read_json(&manifest)?;
-            if verify(&m) {
-                println!("OK: {}", m.manifest_digest_urn);
-            } else {
-                println!("TAMPER");
-                std::process::exit(1);
-            }
-        }
-        Verb::Export(Export::Bundle { pack, out }) => {
-            let p: autoinstinct::compile::FieldPackArtifact = read_json(&pack)?;
-            let m = build_manifest(&p);
-            let bundle = serde_json::json!({
-                "pack": p,
-                "manifest": m,
-                "autoinstinct_version": AUTOINSTINCT_VERSION,
-            });
-            write_json(&out, &bundle)?;
-            println!("bundle: {}", m.manifest_digest_urn);
-        }
-    }
-    Ok(())
-}
-               admitted_breeds: dp.admitted_breeds,
                 policy: &policy,
             });
             write_json(&out, &pack)?;

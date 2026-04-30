@@ -235,6 +235,23 @@ pub fn canonical_scenarios() -> Vec<CausalScenario> {
             expected: Ignore,
             perturbations: vec![(Perturbation::DropPostureBit(PostureBit::CALM), Ask)],
         },
+        CausalScenario {
+            name: "ask_via_dd_type_evidence_gap_content_sensitive",
+            profile: "enterprise",
+            field_ntriples: "<http://example.org/doc1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/DigitalDocument> .\n<http://example.org/doc1> <http://purl.org/dc/terms/title> \"Test Document\" .\n".to_string(),
+            // DigitalDocument present with content makes Ask fire (evidence gap detected).
+            // Removing the DD triple falls to Ignore (no gap). This proves the system
+            // reads actual RDF structure, not a hardcoded presence counter.
+            posture_bits: vec![PostureBit::CALM],
+            expectation_bits: vec![],
+            risk_bits: vec![],
+            affordance_bits: vec![],
+            expected: Ask,
+            perturbations: vec![(
+                Perturbation::DropTriple("<http://example.org/doc1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/DigitalDocument> ."),
+                Ignore
+            )],
+        },
     ]
 }
 
