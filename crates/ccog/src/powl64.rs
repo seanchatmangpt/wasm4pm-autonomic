@@ -510,15 +510,18 @@ mod tests {
     fn empty_universe_has_no_chain_head() {
         let p = Powl64::new();
         assert_eq!(p.cell_count(), 0);
+        assert_eq!(p.coord_count(), 0);
+        assert_eq!(p.chain_len(), 0);
         assert!(p.chain_head().is_none());
         assert_eq!(p.cursor(), GlobeCell::ORIGIN);
+        assert!(p.path().is_empty());
     }
 
     #[test]
     fn shape_match_succeeds_for_equal_cell_counts() {
         let a = Powl64::new();
         let b = Powl64::new();
-        assert!(a.shape_match(&b).is_ok());
+        assert!(a.shape_match_v0_cell_count(&b).is_ok());
     }
 
     #[test]
@@ -527,6 +530,212 @@ mod tests {
         let b = Powl64::new();
         let iri = GraphIri::from_iri("http://example.org/x").unwrap();
         a.extend(&iri, 1);
-        assert!(a.shape_match(&b).is_err());
+        assert!(a.shape_match_v0_cell_count(&b).is_err());
+    }
+
+    #[test]
+    fn extend_appends_to_path() {
+        let mut p = Powl64::new();
+        let iri1 = GraphIri::from_iri("http://example.org/a").unwrap();
+        let iri2 = GraphIri::from_iri("http://example.org/b").unwrap();
+        let iri3 = GraphIri::from_iri("http://example.org/c").unwrap();
+        p.extend(&iri1, 1);
+        p.extend(&iri2, 1);
+        p.extend(&iri3, 1);
+        assert_eq!(p.path().len(), 3);
+        assert_eq!(p.chain_len(), 3);
+    }
+
+    #[test]
+    fn chain_hash_folds_polarity() {
+        // Same iri sequence with a divergent polarity at step 2 must
+        // produce different chain heads — proving polarity is folded into
+        // the chain after genesis.
+        let iri1 = GraphIri::from_iri("http://example.org/a").unwrap();
+        let iri2 = GraphIri::from_iri("http://example.org/b").unwrap();
+
+        let mut p1 = Powl64::new();
+        p1.extend(&iri1, 1);
+        let cell1 = p1.extend(&iri2, 1);
+
+        let mut p2 = Powl64::new();
+        p2.extend(&iri1, 1);
+        let cell2 = p2.extend(&iri2, 2);
+
+        assert_ne!(
+            cell1.chain_hash.as_bytes(),
+            cell2.chain_hash.as_bytes(),
+            "polarity must affect chain_hash on non-genesis extends"
+        );
+    }
+
+    #[test]
+    fn genesis_uses_polarity() {
+        // Genesis with the same iri but different polarities must produce
+        // different chain hashes — proving polarity is folded in at the
+        // genesis step too.
+        let iri = GraphIri::from_iri("http://example.org/a").unwrap();
+
+        let mut p1 = Powl64::new();
+        let cell1 = p1.extend(&iri, 1);
+
+        let mut p2 = Powl64::new();
+        let cell2 = p2.extend(&iri, 2);
+
+        assert_ne!(
+            cell1.chain_hash.as_bytes(),
+            cell2.chain_hash.as_bytes(),
+            "genesis polarity must affect chain_hash"
+        );
+    }
+
+    #[test]
+    fn coord_collision_preserves_cells() {
+        // We can't easily force two distinct chain hashes to project to
+        // the same 18-bit coordinate without solving a hash preimage, so
+        // we directly synthesize the collision by pushing two cells at the
+        // same coord through the internal map and verify `cells_at`
+        // returns both.
+        let mut p = Powl64::new();
+        let iri = GraphIri::from_iri("http://example.org/a").unwrap();
+        let cell = p.extend(&iri, 1);
+        let coord = cell.coord;
+
+        // Manually inject a second cell at the same coord (synthetic
+        // collision). The `cells` field is private to this module so this
+        // uses internal access available only inside `tests`.
+        let synthetic_source = blake3::hash(b"synthetic");
+        #[allow(deprecated)]
+        let synthetic = Powl64Cell {
+            coord,
+            receipt_polarity: 7,
+            source_hash: synthetic_source,
+            source_receipt: synthetic_source,
+            semantic_receipt: None,
+            prior_receipt: Some(cell.chain_hash),
+            chain_hash: blake3::hash(b"synthetic-chain"),
+        };
+        p.cells.entry(coord).or_default().push(synthetic);
+
+        let bucket = p.cells_at(coord);
+        assert_eq!(bucket.len(), 2, "both cells survive the coord collision");
+        assert_eq!(bucket[0].receipt_polarity, 1);
+        assert_eq!(bucket[1].receipt_polarity, 7);
+        // cell_count sums collision buckets.
+        assert_eq!(p.cell_count(), 2);
+        // coord_count counts distinct coords (only one here).
+        assert_eq!(p.coord_count(), 1);
+        // cell_at returns the FIRST cell at coord for backward compat.
+        assert_eq!(
+            p.cell_at(coord).expect("cell present").receipt_polarity,
+            1
+        );
+    }
+
+    #[test]
+    fn cells_at_returns_empty_for_unknown_coord() {
+        let p = Powl64::new();
+        assert!(p.cells_at(GlobeCell::new(63, 63, 63)).is_empty());
+    }
+
+    #[test]
+    fn path_strong_match_succeeds_for_identical_extends() {
+        let iri1 = GraphIri::from_iri("http://example.org/a").unwrap();
+        let iri2 = GraphIri::from_iri("http://example.org/b").unwrap();
+
+        let mut p_a = Powl64::new();
+        p_a.extend(&iri1, 1);
+        p_a.extend(&iri2, 2);
+
+        let mut p_b = Powl64::new();
+        p_b.extend(&iri1, 1);
+        p_b.extend(&iri2, 2);
+
+        assert!(p_a.shape_match_v1_path(&p_b).is_ok());
+    }
+
+    #[test]
+    fn path_strong_match_fails_for_divergent_chains() {
+        let iri1 = GraphIri::from_iri("http://example.org/a").unwrap();
+        let iri2 = GraphIri::from_iri("http://example.org/b").unwrap();
+        let iri3 = GraphIri::from_iri("http://example.org/c").unwrap();
+
+        let mut p_a = Powl64::new();
+        p_a.extend(&iri1, 1);
+        p_a.extend(&iri2, 1);
+
+        let mut p_b = Powl64::new();
+        p_b.extend(&iri1, 1);
+        p_b.extend(&iri3, 1);
+
+        assert!(p_a.shape_match_v1_path(&p_b).is_err());
+    }
+
+    #[test]
+    fn try_new_rejects_oob_components() {
+        assert_eq!(
+            GlobeCell::try_new(64, 0, 0),
+            Err(CoordError::OutOfRange)
+        );
+        assert_eq!(
+            GlobeCell::try_new(0, 64, 0),
+            Err(CoordError::OutOfRange)
+        );
+        assert_eq!(
+            GlobeCell::try_new(0, 0, 64),
+            Err(CoordError::OutOfRange)
+        );
+        assert_eq!(
+            GlobeCell::try_new(255, 255, 255),
+            Err(CoordError::OutOfRange)
+        );
+    }
+
+    #[test]
+    fn try_new_accepts_valid() {
+        let g = GlobeCell::try_new(63, 63, 63).expect("63 is in range");
+        assert_eq!(g.domain(), 63);
+        assert_eq!(g.cell(), 63);
+        assert_eq!(g.place(), 63);
+
+        let zero = GlobeCell::try_new(0, 0, 0).expect("zero is valid");
+        assert_eq!(zero, GlobeCell::ORIGIN);
+    }
+
+    #[test]
+    fn deprecated_source_receipt_alias_returns_source_hash() {
+        let iri = GraphIri::from_iri("http://example.org/a").unwrap();
+        let mut p = Powl64::new();
+        let cell = p.extend(&iri, 1);
+        #[allow(deprecated)]
+        let alias = cell.source_receipt;
+        assert_eq!(alias.as_bytes(), cell.source_hash.as_bytes());
+    }
+
+    #[test]
+    fn deprecated_shape_match_alias_matches_v0() {
+        let mut a = Powl64::new();
+        let mut b = Powl64::new();
+        let iri = GraphIri::from_iri("http://example.org/a").unwrap();
+        a.extend(&iri, 1);
+        b.extend(&iri, 1);
+        #[allow(deprecated)]
+        let result = a.shape_match(&b);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn extend_with_semantic_receipt_populates_field() {
+        let iri = GraphIri::from_iri("http://example.org/a").unwrap();
+        let semantic = blake3::hash(b"semantic-payload");
+        let mut p = Powl64::new();
+        let cell = p.extend_with_semantic_receipt(&iri, 1, semantic);
+        assert_eq!(
+            cell.semantic_receipt.expect("semantic receipt populated").as_bytes(),
+            semantic.as_bytes()
+        );
+        // Plain extend leaves it as None.
+        let plain = p.extend(&iri, 1);
+        assert!(plain.semantic_receipt.is_none());
     }
 }

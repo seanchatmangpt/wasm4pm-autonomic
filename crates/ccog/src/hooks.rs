@@ -86,13 +86,6 @@ pub enum HookTrigger {
     /// during `fire_matching`. Use for hooks that must be explicitly named
     /// at the call site (e.g. operator-driven receipts).
     ManualOnly,
-
-    /// **Deprecated** — retained only for cross-crate compile compatibility
-    /// while the parallel `compiled_hook.rs` migration lands. New code must
-    /// use `Always` (for unconditional fire) or `ManualOnly` (for named
-    /// invocation). Behaves identically to `Always` in `evaluate_trigger`.
-    #[deprecated(note = "Use HookTrigger::Always or HookTrigger::ManualOnly instead")]
-    Manual,
 }
 
 /// Validation predicate for a hook condition.
@@ -294,6 +287,68 @@ impl HookRegistry {
 
         Ok(outcomes)
     }
+
+    /// Invoke a single hook by name, bypassing trigger-variant gating.
+    ///
+    /// Looks up the hook by `name` and runs check/act. Trigger evaluation is
+    /// still performed for non-`ManualOnly` variants so that data-dependent
+    /// triggers (e.g. `TypePresent`) gate correctly; for `ManualOnly` the
+    /// trigger is treated as fired so the hook always runs when explicitly
+    /// requested by name.
+    ///
+    /// Returns:
+    /// - `Ok(Some(outcome))` — hook ran and produced a delta
+    /// - `Ok(None)`           — no hook with `name` is registered, or its
+    ///                          non-`ManualOnly` trigger declined to fire,
+    ///                          or its check returned false
+    pub fn fire_one(
+        &self,
+        field: &FieldContext,
+        name: &str,
+    ) -> Result<Option<HookOutcome>> {
+        let hook = match self.hooks.iter().find(|h| h.name == name) {
+            Some(h) => h,
+            None => return Ok(None),
+        };
+
+        let snapshot = CompiledFieldSnapshot::from_field(field)?;
+
+        // Trigger: ManualOnly bypasses to true; everything else evaluates
+        // normally so data-dependent triggers still gate. `Always` naturally
+        // returns true.
+        let trigger_fired = match &hook.trigger {
+            HookTrigger::ManualOnly => true,
+            other => evaluate_trigger(other, field, &snapshot)?,
+        };
+        if !trigger_fired {
+            return Ok(None);
+        }
+
+        let check_passed = evaluate_check(&hook.check, field, &snapshot)?;
+        if !check_passed {
+            return Ok(None);
+        }
+
+        let delta = evaluate_act(&hook.act, field, &snapshot)?;
+
+        let receipt = if hook.emit_receipt {
+            let activity_iri = GraphIri::from_iri(&format!(
+                "http://example.org/hook/{}#{}",
+                hook.name,
+                Utc::now().timestamp()
+            ))?;
+            let hash = Receipt::blake3_hex(&delta.receipt_bytes());
+            Some(Receipt::new(activity_iri, hash, Utc::now()))
+        } else {
+            None
+        };
+
+        Ok(Some(HookOutcome {
+            hook_name: hook.name,
+            delta,
+            receipt,
+        }))
+    }
 }
 
 /// Evaluate a hook trigger against the field context.
@@ -303,7 +358,6 @@ impl HookRegistry {
 /// - `Pattern { subject: None, predicate: Some(p), object: None }` → snapshot.has_any_with_predicate(p)
 /// - `Always` → unconditionally true
 /// - `ManualOnly` → unconditionally false (use `HookRegistry::fire_one` to invoke)
-/// - `Manual` (deprecated) → unconditionally true (alias for `Always`)
 ///
 /// Other patterns fall back to the graph walk.
 fn evaluate_trigger(
@@ -326,9 +380,6 @@ fn evaluate_trigger(
         HookTrigger::TypePresent(class) => Ok(!snapshot.instances_of(class).is_empty()),
         HookTrigger::Always => Ok(true),
         HookTrigger::ManualOnly => Ok(false),
-        // Deprecated alias — preserves prior semantics while compiled_hook.rs migrates.
-        #[allow(deprecated)]
-        HookTrigger::Manual => Ok(true),
     }
 }
 
@@ -353,6 +404,7 @@ fn evaluate_check(
         }
         HookCheck::Admit(f) => Ok(crate::admit::admitted(f(field))),
         HookCheck::SnapshotFn(f) => Ok(f(snapshot)),
+        HookCheck::SnapshotAdmit(f) => Ok(crate::admit::admitted(f(snapshot))),
     }
 }
 
@@ -610,16 +662,16 @@ pub fn transition_admissibility_hook() -> KnowledgeHook {
     }
 }
 
-/// Receipt hook: manual trigger that emits a deterministic PROV activity receipt.
+/// Receipt hook: always-fires trigger that emits a deterministic PROV activity receipt.
 ///
-/// **Trigger:** `Manual` invocation only
+/// **Trigger:** `Always` — fires on every `fire_matching` call (preserves prior `Manual` semantics)
 /// **Check:** Always true
 /// **Act:** `Fn(emit_receipt_activity_delta)` — `urn:blake3:` activity IRI + `prov:Activity` + `prov:wasAssociatedWith prov:Agent`
 /// **Receipt:** Always emitted
 pub fn receipt_hook() -> KnowledgeHook {
     KnowledgeHook {
         name: "receipt",
-        trigger: HookTrigger::Manual,
+        trigger: HookTrigger::Always,
         check: HookCheck::SnapshotFn(|_snap| true),
         act: HookAct::SnapshotFn(emit_receipt_activity_delta_snap),
         emit_receipt: true,
@@ -754,6 +806,126 @@ mod tests {
         );
         let receipt = outcomes[0].receipt.as_ref().unwrap();
         assert_eq!(receipt.hash.len(), 64, "BLAKE3 hash should be 64 hex chars");
+
+        Ok(())
+    }
+
+    /// Verify that `HookTrigger::Always` evaluates to true in `fire_matching`.
+    #[test]
+    fn always_trigger_fires_in_registry() -> Result<()> {
+        let field = FieldContext::new("test");
+
+        let hook = KnowledgeHook {
+            name: "always_hook",
+            trigger: HookTrigger::Always,
+            check: HookCheck::SnapshotFn(|_snap| true),
+            act: HookAct::ConstantTriples(vec![]),
+            emit_receipt: false,
+        };
+
+        let mut registry = HookRegistry::new();
+        registry.register(hook);
+
+        let outcomes = registry.fire_matching(&field)?;
+        assert_eq!(outcomes.len(), 1, "Always trigger should fire in fire_matching");
+        assert_eq!(outcomes[0].hook_name, "always_hook");
+
+        Ok(())
+    }
+
+    /// Verify that `HookTrigger::ManualOnly` is skipped during `fire_matching`.
+    #[test]
+    fn manual_only_trigger_skipped_in_registry() -> Result<()> {
+        let field = FieldContext::new("test");
+
+        let hook = KnowledgeHook {
+            name: "manual_only_hook",
+            trigger: HookTrigger::ManualOnly,
+            check: HookCheck::SnapshotFn(|_snap| true),
+            act: HookAct::ConstantTriples(vec![]),
+            emit_receipt: false,
+        };
+
+        let mut registry = HookRegistry::new();
+        registry.register(hook);
+
+        let outcomes = registry.fire_matching(&field)?;
+        assert!(
+            outcomes.is_empty(),
+            "ManualOnly trigger must not fire via fire_matching; got {} outcomes",
+            outcomes.len()
+        );
+
+        Ok(())
+    }
+
+    /// Verify that `fire_one` invokes a `ManualOnly` hook by name.
+    #[test]
+    fn fire_one_invokes_manual_only_hook() -> Result<()> {
+        let field = FieldContext::new("test");
+
+        let hook = KnowledgeHook {
+            name: "manual_only_invoked",
+            trigger: HookTrigger::ManualOnly,
+            check: HookCheck::SnapshotFn(|_snap| true),
+            act: HookAct::ConstantTriples(vec![]),
+            emit_receipt: false,
+        };
+
+        let mut registry = HookRegistry::new();
+        registry.register(hook);
+
+        // fire_matching skips it
+        let warm = registry.fire_matching(&field)?;
+        assert!(warm.is_empty(), "ManualOnly hook must be skipped in warm path");
+
+        // fire_one runs it
+        let outcome = registry.fire_one(&field, "manual_only_invoked")?;
+        assert!(outcome.is_some(), "fire_one should invoke ManualOnly hook by name");
+        assert_eq!(outcome.unwrap().hook_name, "manual_only_invoked");
+
+        // Unknown name returns None
+        let missing = registry.fire_one(&field, "no_such_hook")?;
+        assert!(missing.is_none(), "fire_one should return None for unknown hook name");
+
+        Ok(())
+    }
+
+    /// Verify that `HookCheck::SnapshotAdmit` dispatches with denial polarity:
+    /// 0 = admitted (fires), nonzero = denied (does not fire).
+    #[test]
+    fn snapshot_admit_check_dispatches() -> Result<()> {
+        let field = FieldContext::new("test");
+
+        let admitted_hook = KnowledgeHook {
+            name: "admit_pass",
+            trigger: HookTrigger::Always,
+            check: HookCheck::SnapshotAdmit(|_snap| 0),
+            act: HookAct::ConstantTriples(vec![]),
+            emit_receipt: false,
+        };
+        let denied_hook = KnowledgeHook {
+            name: "admit_deny",
+            trigger: HookTrigger::Always,
+            check: HookCheck::SnapshotAdmit(|_snap| 1),
+            act: HookAct::ConstantTriples(vec![]),
+            emit_receipt: false,
+        };
+
+        let mut registry = HookRegistry::new();
+        registry.register(admitted_hook);
+        registry.register(denied_hook);
+
+        let outcomes = registry.fire_matching(&field)?;
+        assert_eq!(
+            outcomes.len(),
+            1,
+            "Only the admitted SnapshotAdmit hook should fire"
+        );
+        assert_eq!(
+            outcomes[0].hook_name, "admit_pass",
+            "Admitted hook (verdict=0) must be the one that fired"
+        );
 
         Ok(())
     }

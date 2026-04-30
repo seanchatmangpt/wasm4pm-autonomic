@@ -11,7 +11,9 @@ use ccog::graph::GraphIri;
 use ccog::powl64::Powl64;
 
 #[test]
-fn genesis_extend_has_no_prior_and_chain_equals_source() {
+fn genesis_extend_has_no_prior_and_polarity_folded_chain() {
+    // Phase 5 Track C: genesis chain hash now folds polarity into
+    // `blake3(source_hash || polarity)`, so it differs from source_hash.
     let iri = GraphIri::from_iri("http://example.org/breed/eliza/output/1").unwrap();
     let mut p = Powl64::new();
 
@@ -21,9 +23,10 @@ fn genesis_extend_has_no_prior_and_chain_equals_source() {
         cell.prior_receipt.is_none(),
         "genesis cell must have no prior receipt"
     );
-    assert_eq!(
-        cell.chain_hash, cell.source_receipt,
-        "genesis chain_hash must equal source_receipt"
+    assert_ne!(
+        cell.chain_hash,
+        cell.source_hash,
+        "genesis chain_hash now folds polarity → must differ from source_hash"
     );
     assert_eq!(
         p.chain_head(),

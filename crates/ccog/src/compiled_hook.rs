@@ -163,7 +163,7 @@ pub fn compile_builtin(hook: &KnowledgeHook) -> Option<CompiledHook> {
         (HookTrigger::Pattern { .. }, HookCheck::SnapshotFn(_), "transition_admissibility") => {
             1u64 << Predicate::HAS_RDF_TYPE
         }
-        (HookTrigger::Manual, HookCheck::SnapshotFn(_), "receipt") => 0u64,
+        (HookTrigger::Always, HookCheck::SnapshotFn(_), "receipt") => 0u64,
         _ => return None,
     };
     Some(CompiledHook {
