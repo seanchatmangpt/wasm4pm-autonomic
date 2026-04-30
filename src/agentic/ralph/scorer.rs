@@ -85,7 +85,7 @@ mod tests {
     fn make_state(active_projects: usize, artifacts: &[&str]) -> PortfolioState {
         PortfolioState {
             active_projects,
-            known_artifacts: artifacts.iter().map(|s| PathBuf::from(s)).collect(),
+            known_artifacts: artifacts.iter().copied().map(PathBuf::from).collect(),
         }
     }
 
@@ -142,7 +142,13 @@ mod tests {
         let scorer = MaturityScorer::new();
         // Construct an extreme state
         let artifacts: Vec<&str> = (0..50)
-            .map(|i| if i % 2 == 0 { "/root/plans/x.md" } else { "/root/ontologies/y.nt" })
+            .map(|i| {
+                if i % 2 == 0 {
+                    "/root/plans/x.md"
+                } else {
+                    "/root/ontologies/y.nt"
+                }
+            })
             .collect();
         let state = make_state(100, &artifacts);
         assert!(scorer.evaluate(&state).unwrap() <= 5);

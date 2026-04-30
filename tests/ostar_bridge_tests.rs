@@ -46,12 +46,17 @@ fn run_bridge(payload: Value) -> (Value, bool) {
 
     if let Some(stdin) = child.stdin.take() {
         let mut stdin = stdin;
-        stdin.write_all(input.as_bytes()).expect("Failed to write stdin");
+        stdin
+            .write_all(input.as_bytes())
+            .expect("Failed to write stdin");
     }
 
-    let output = child.wait_with_output().expect("Failed to wait for ostar_bridge");
+    let output = child
+        .wait_with_output()
+        .expect("Failed to wait for ostar_bridge");
     let stdout = String::from_utf8_lossy(&output.stdout).to_string();
-    let response: Value = serde_json::from_str(stdout.trim()).unwrap_or(json!({"ok": false, "error": stdout}));
+    let response: Value =
+        serde_json::from_str(stdout.trim()).unwrap_or(json!({"ok": false, "error": stdout}));
     (response, output.status.success())
 }
 
@@ -64,12 +69,12 @@ fn discover_returns_real_petri_net() {
 
     let (response, exited_ok) = run_bridge(payload);
 
-    assert!(
-        exited_ok,
-        "ostar_bridge exited with error: {}",
+    assert!(exited_ok, "ostar_bridge exited with error: {}", response);
+    assert_eq!(
+        response["ok"], true,
+        "response ok must be true: {}",
         response
     );
-    assert_eq!(response["ok"], true, "response ok must be true: {}", response);
 
     // The engine may produce nets with 0 places (topology varies by RL policy)
     // but must always produce at least one transition when activities are present.
@@ -100,7 +105,11 @@ fn conform_returns_real_fitness() {
         "log": minimal_xes_json()
     });
     let (discover_response, _) = run_bridge(discover_payload);
-    assert_eq!(discover_response["ok"], true, "discover must succeed: {}", discover_response);
+    assert_eq!(
+        discover_response["ok"], true,
+        "discover must succeed: {}",
+        discover_response
+    );
 
     // Build a minimal PetriNet that matches the A→B→C / A→C traces.
     // initial_marking and final_markings use the PackedKeyTable serialization format.
@@ -137,12 +146,12 @@ fn conform_returns_real_fitness() {
 
     let (response, exited_ok) = run_bridge(conform_payload);
 
-    assert!(
-        exited_ok,
-        "ostar_bridge exited with error: {}",
+    assert!(exited_ok, "ostar_bridge exited with error: {}", response);
+    assert_eq!(
+        response["ok"], true,
+        "response ok must be true: {}",
         response
     );
-    assert_eq!(response["ok"], true, "response ok must be true: {}", response);
 
     let overall_fitness = response["overall_fitness"]
         .as_f64()
@@ -162,6 +171,34 @@ fn conform_returns_real_fitness() {
 }
 
 #[test]
+fn discover_powl_returns_valid_result() {
+    let payload = json!({
+        "op": "discover_powl",
+        "log": minimal_xes_json()
+    });
+
+    let (response, exited_ok) = run_bridge(payload);
+
+    assert!(exited_ok, "ostar_bridge exited with error: {}", response);
+    assert_eq!(
+        response["ok"], true,
+        "response ok must be true: {}",
+        response
+    );
+
+    // The handle_discover_powl handler returns petri_net.{places_count, transitions_count, arcs_count}.
+    // Assert transitions_count > 0 to confirm a valid result was returned.
+    let transitions_count = response["transitions_count"]
+        .as_u64()
+        .expect("transitions_count must be a number");
+    assert!(
+        transitions_count > 0,
+        "transitions_count must be > 0, got {} — POWL discovery returned empty net",
+        transitions_count
+    );
+}
+
+#[test]
 fn autonomic_returns_measured_latency() {
     let payload = json!({
         "op": "autonomic"
@@ -169,12 +206,12 @@ fn autonomic_returns_measured_latency() {
 
     let (response, exited_ok) = run_bridge(payload);
 
-    assert!(
-        exited_ok,
-        "ostar_bridge exited with error: {}",
+    assert!(exited_ok, "ostar_bridge exited with error: {}", response);
+    assert_eq!(
+        response["ok"], true,
+        "response ok must be true: {}",
         response
     );
-    assert_eq!(response["ok"], true, "response ok must be true: {}", response);
 
     let results = response["results"]
         .as_array()

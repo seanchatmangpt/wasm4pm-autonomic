@@ -1,10 +1,10 @@
-# Compiled Cognition: Machine Intelligence as Deterministic Executable Substrate
+# Compiled Cognition: Working Cognition Artifacts as Deterministic Executable Substrate
 
-**How Latency Collapse Moves Symbolic and Learned AI from Runtime Services into Auditable Artifacts**
+**How Latency Collapse Moves Symbolic and Learned AI from Runtime Services into Auditable Working Cognition Artifacts**
 
 ## Abstract
 
-This paper introduces **Compiled Cognition**, a deployment architecture and theoretical framework in which the complete inference graph — symbolic rules, learned model weights, deterministic evaluation order, and cryptographic provenance — is embedded as immutable `const` data inside the executable artifact at build time. The result is a class of AI system that produces fully deterministic output, performs zero runtime allocation, requires no model loading, and carries structural auditability by construction. Compiled Cognition is the engineering consequence of the **Latency Collapse**: a 5–7 order-of-magnitude reduction in reasoning latency that drives the ratio $R = T_\text{reason} / T_\text{event}$ from $\gg 1$ (the Advisory Regime that defeated symbolic AI in the 1980s) to $\ll 1$, making pre-materialization economically rational.
+This paper introduces **Compiled Cognition**, a deployment architecture and theoretical framework in which the complete verdict pathway — symbolic rules, learned model weights, deterministic evaluation order, and cryptographic provenance — is embedded as immutable `const` data inside the executable artifact at build time. The result is a class of working cognition artifact that produces fully deterministic output, performs zero runtime allocation, requires no model loading, and carries structural auditability by construction. Compiled Cognition is the engineering consequence of the **Latency Collapse**: a 5–7 order-of-magnitude reduction in reasoning latency that drives the ratio $R = T_\text{reason} / T_\text{event}$ from $\gg 1$ (the Advisory Regime that defeated symbolic AI in the 1980s) to $\ll 1$, making pre-materialization economically rational.
 
 We formalize the architecture as $C_\text{compiled} = S_\text{symbolic} \oplus L_\text{learned} \oplus D_\text{deterministic} \oplus P_\text{provenant}$ and the action law as $A_t = \mu(\mathcal{O}^*_t, C_\text{compiled})$, where $\mathcal{O}^*$ is the semantically closed, enumerable output set fixed before deployment. The mechanism that produces $C_\text{compiled}$ is **Compile-Time AutoML**: training is performed offline; weights, rules, and conformance graphs are frozen into the binary; runtime is reduced to branchless bit-packed evaluation. Auditability ceases to be a post-hoc interpretability problem and becomes a structural property: regulators inspect $\mathcal{O}^*$ once, before deployment, instead of monitoring drift forever after.
 
@@ -53,11 +53,15 @@ Runtime AI answers "what could be said about this input?" — an unbounded gener
 
 Three implications follow. First, intelligence is **local** — the shepherd does not phone home. Second, intelligence is **bounded** — $\mathcal{O}^*$ is the pasture fence, enumerated at compile time. Third, intelligence is **lawful** — every action is auditable against the compiled rule set. Sections 3–6 give the formal apparatus (definition, latency mechanics, symbolic/learned fusion, compile-time AutoML). Sections 7–9 give governance, post-serving deployment, and productization. Section 10 returns to the shepherd: an angel in the field, present at the moment of action, bounded by the law compiled into its bones.
 
+**Pre-Inference Completion.** Because $C_\text{compiled}$ is materialized at build time, the verdict pathway has already closed before the first event arrives: $T_{CC} < T_\text{API\_setup}$. **We finish before they dial.** The shepherd does not race the wolf to the phone; the shepherd is already in the field.
+
 ---
 
 ## 3. Definition of Compiled Cognition
 
-**Compiled Cognition** is a cognitive system architecture in which the complete inference graph — symbolic rules, learned model weights, deterministic evaluation order, and cryptographic provenance links — is embedded as immutable `const` data in the executable binary at build time. The system produces deterministic output with no runtime allocation, no model loading, and no parameter modification.
+**Compiled Cognition manufactures guard dogs for digital fields:** small, fast, field-present working cognitions that decide what belongs before action is allowed. Each guard dog protects a bounded field by sensing posture, checking belonging, refusing unsafe transitions, barking on probes, recording receipts, and releasing only admissible action.
+
+**Compiled Cognition** is a cognitive system architecture in which the complete verdict pathway — symbolic rules, learned model weights, deterministic evaluation order, and cryptographic provenance links — is embedded as immutable `const` data in the executable binary at build time. The system produces deterministic output with no runtime allocation, no model loading, and no parameter modification.
 
 Formally:
 
@@ -85,6 +89,30 @@ An autonomous agent with self-modifying goals and unbounded learning capability.
 A system bounded by compile-time construction, fully present at the moment of action, and lawful by structural constraint. Compiled Cognition is the architecture that produces AngelicAI. The system cannot exceed $\mathcal{O}^*$ because $\mathcal{O}^*$ is compiled in. It cannot self-modify because all data is `const`. It is always attributable because every output carries provenance.
 
 The three archetypes form a spectrum. OracleAI trades autonomy for information richness; SovereignAI trades safety for adaptation; AngelicAI trades adaptation for safety and auditability.
+
+> *Logic proves. Symbols orient. Compiled Cognition acts.*
+>
+> The three archetypes form a spectrum, but only AngelicAI is admissible at the moment of action.
+
+**Mark-and-Chicken admissibility.** The shepherd's flock has a guardian named Mark; chickens past Mark are *not admitted*. Formally, an input $x$ enters $\mu$ only if the admissibility predicate $\mathrm{Mark}(x, \mathcal{O}^*) = \top$ holds — every disallowed token is rejected at the gate, not weighed at the verdict. The slogan: **You cannot talk chicken past Mark.** Admissibility is structural, like $\mathcal{O}^*$ itself; it is compiled, not negotiated.
+
+**Guard Cognition is the operating primitive.** Compiled Cognition does not begin from helpfulness; it begins from belonging. Before a system can serve, retrieve, summarize, route, classify, recommend, or automate, it must decide $\operatorname{Belongs}(x, F_t)$ — does this action, request, packet, chart access, tool call, workflow transition, or response belong in the lawful field right now? Service, retrieval, detection, herding, tracking, and recording are downstream breeds. The first dog at every digital field is the guard dog.
+
+A lock is a guard dog. A car alarm is a guard dog. A password is a guard dog. A type checker is a guard dog. A router ACL is a guard dog. A HIPAA policy gate is a guard dog. A BLAKE3 receipt chain is a guard dog. Civilization runs on guard cognition; Compiled Cognition manufactures it.
+
+### 3.1 Helpfulness Must Pass Through Guarding
+
+The universal failure mode of AI assistants is optimization for help before optimization for protection — the *helpfulness exploit*. Hackers do not always attack the wall; they attack the helpful channel.
+
+$$\operatorname{Serve}(x, F_t) \;=\; \operatorname{Belongs}(x, F_t) \;\land\; \operatorname{Admissible}(x, O^*) \;\land\; \operatorname{Useful}(x)$$
+
+A request can be useful and unlawful. A response accurate and inadmissible. A retrieval relevant and unauthorized. A packet well-formed and hostile. A prompt polite and malicious. The guard asks first: *does this belong?* Only then may the service dog ask: *how can I help?*
+
+### 3.2 The Operating Cycle
+
+$$F_t \to O_t \to O_t^* \to B_i(O_t^*) \to b_t \to A_t \to r_t \to F_{t+1}$$
+
+Field becomes closure. Closure becomes breed projections. Breed projections become verdict bits. Bits become admissible actions. Actions become receipts. Receipts reshape the field. The pack adds intersectionality: $\operatorname{Accept}_\text{pack}(x, O^*) = \bigwedge_i B_i(x, O^*)$.
 
 ---
 
@@ -169,9 +197,11 @@ The mechanism has three phases:
 
 3. **Deployment Phase (Runtime)** — The compiled binary ships. No model loading occurs. No parameter updates occur. The binary *is* the model. Every invocation is a deterministic lookup into const data.
 
-The key inversion: **a model is not mature until it can be compiled into deterministic execution.** In the traditional supervised-learning mindset, a model is mature when it achieves a target accuracy metric and is deployed as a loadable artifact (pickle, ONNX, SavedModel). In the Compiled Cognition mindset, a model is mature only when it has been run through the HDIT loop, simplified to Pareto-optimal components, and frozen into the binary. The model has *graduated from research to physics*.
+The key inversion: **an artifact is not mature until it can be compiled into deterministic execution.** In the traditional supervised-learning mindset, an artifact is mature when it achieves a target accuracy metric and is deployed as a loadable artifact (pickle, ONNX, SavedModel). In the Compiled Cognition mindset, an artifact is mature only when it has been run through the HDIT loop, simplified to Pareto-optimal components, and frozen into the binary. The model has *graduated from research to physics*.
 
-The benefit is decisive: zero model drift (the binary never changes without a rebuild), zero loading latency, zero parameter-fetch overhead, and perfect auditability (the binary is the model and the proof of its origin).
+The benefit is decisive: zero model drift (the binary never changes without a rebuild), zero materialization latency, zero parameter-fetch overhead, and perfect auditability (the binary is the model and the proof of its origin).
+
+**Sensing precedes explanation.** A dog does not need a paragraph to bark; the system does not need a model explanation to tighten posture. Receipts provide post-action audit without requiring pre-action human-language explanation — separating sensing from reporting and resolving the tension between nanosecond speed and full accountability.
 
 ---
 
@@ -216,7 +246,7 @@ These measurements describe the artifact. The next section addresses what the ar
 
 ### 8.1 The Dependency Tax
 
-Runtime AI serving imposes five compounding taxes:
+**Stop buying military drones for guard-dog work.** Runtime AI serving imposes five compounding taxes:
 
 - **Latency tax** — every decision pays a network round trip (10–500 ms vs. 1–100 ns for compiled artifacts).
 - **Opacity tax** — the model is opaque even to the operator who depends on it.
@@ -226,6 +256,22 @@ Runtime AI serving imposes five compounding taxes:
 
 Each tax compounds the others: opacity makes lock-in tolerable, lock-in makes non-determinism unappealable, and the audit gap legitimizes the whole stack.
 
+#### 8.1.1 Dog-Pack Defense
+
+Multiple bounded artifacts compose into a pack. Pack admission (`Accept_pack`) is the conjunction of per-breed admissibilities: $\mathrm{Accept}_\text{pack}(x) = \bigwedge_i \mathrm{Breed}_i(x, \mathcal{O}^*)$. A *bark event* — a single breed's rejection — propagates as a typed signal across the pack so siblings raise their threshold without re-querying an oracle.
+
+Each layer removes an attacker affordance: branchless execution removes control-flow landmarks; semantic bits remove obvious meaning; OCEL removes single-trace simplification; BLAKE3 removes forgettable probes; pack behavior removes single-detector bypass; nanosecond execution removes interactive negotiation time. The result is not one stronger wall — it is a different security ecology.
+
+| Dog Behavior    | Compiled Cognition Runtime          |
+| --------------- | ----------------------------------- |
+| Scent           | latent signal detection             |
+| Bark            | typed state transition              |
+| Leash           | governance & release control        |
+| Field           | bounded operational context         |
+| Stranger        | non-belonging input                 |
+| Pack            | overlapping conformance projections |
+| Memory of scent | receipt chain                       |
+
 ### 8.2 Frontier vs. Bounded — A Division of Labor
 
 Frontier models (large transformers) are the correct tool for *discovery, generation, open-world reasoning, and novel synthesis*. Compiled Cognition is the correct tool for *stable, repeated, auditable operational decisions*. The two are complements, not competitors. **Frontier AI is for the questions you have not yet asked; Compiled Cognition is for the questions you must answer the same way every time.** The decision filter (Section 9) makes the boundary explicit.
@@ -234,9 +280,21 @@ Frontier models (large transformers) are the correct tool for *discovery, genera
 
 Runtime AI is OPEX scaling linearly with traffic; every successful product punishes its operator. Compiled Cognition is CAPEX once at compile, with marginal cost per decision approaching zero.
 
-*Illustrative vignette (numbers not from a measured deployment):* a hypothetical auto insurer running millions of quote decisions per day on a metered LLM API faces order-of-magnitude annual costs that, in our model, can be eliminated by compiling the same bounded classifier into a small const blob deployed to every quote endpoint. The argument here is structural — once-paid build-time cost vs. per-call rent — not a benchmarked TCO. A worked TCO methodology with assumptions and sensitivity formulas appears in §9.4.1; a measured deployment study is future work and is acknowledged in Appendix D.5.
+*Illustrative vignette (numbers not from a measured deployment):* a hypothetical auto insurer running millions of quote decisions per day on an oracle service rent faces order-of-magnitude annual costs that, in our model, can be eliminated by compiling the same bounded classifier into a small const blob deployed to every quote endpoint. The argument here is structural — once-paid build-time cost vs. per-call rent — not a benchmarked TCO. A worked TCO methodology with assumptions and sensitivity formulas appears in §9.4.1; a measured deployment study is future work and is acknowledged in Appendix D.5.
 
-### 8.4 Three Enterprise Implications
+This is the **Blue River Dam** framing for revenue-defensive deployment (RDD): the dam is poured once at compile, the river of traffic flows past for free, and the toll-booth operators upstream lose their rent.
+
+### 8.4 Non-Newtonian Security
+
+A compiled artifact has no two identical evaluation paths under adversarial probing: the verdict pathway is dispatched on bit-packed state with provenance-stamped ordering. **No two photons take the same path; no two probes hit the same field.** An attacker who replays input $x$ does not replay the artifact's defensive geometry, because admissibility, dispatch order, and provenance hash co-vary with the build.
+
+**The hacker is not attacking a wall — the hacker is trying to become lawful.** $\operatorname{Exploit}(x) = \operatorname{Malicious}(x) \land \operatorname{Belongs}(x, F_t) \land \operatorname{Admissible}(x, O^*)$. The proof target is $\operatorname{Malicious} \cap \operatorname{Admissible} = \varnothing$ within declared scope. The attacker's burden is *global conformance forgery*: appear lawful across type, role, tenant, policy, object graph, session, time, provenance, receipt chain, workflow state, field posture, and every breed projection simultaneously.
+
+### 8.5 Every Interface Is a Door
+
+An API endpoint is a door. A model context window is a door. A tool call, router interface, medical chart, build pipeline, database query, tenant boundary, workflow transition, policy update, prompt input, generated artifact — all doors. Where there is a door there must be a guard. Traditional systems guard infrastructure; Compiled Cognition guards *action*. The question is not "who can access this system?" but **"can this action belong in this field, now?"**
+
+### 8.6 Three Enterprise Implications
 
 **Auditability is structural, not procedural.** Regulators inspecting a Compiled Cognition system do not ask "Does the model do what you claim?" They ask "Enumerate $\mathcal{O}^*$." If every element is acceptable, the system is approved. The model cannot surprise the regulator because possible outputs are known before deployment.
 
@@ -306,6 +364,12 @@ The BLAKE3 chain — training data hash → HDIT plan hash → generated code ha
 | Failure mode | Provider outage = product outage | Provider outage = no effect on shipped binaries |
 | Lock-in vector | API surface and weights opacity | None: source escrowed under BUSL Change Date |
 
+**Lawful action value per bit.** Capability tier price is bounded below by $V_\text{lawful}/|C_\text{compiled}|$ — the certified-lawful-action value divided by artifact size in bits. nDim pricing tracks $V/\text{bit}$, not calls per second.
+
+Lawful action value per bit is the deepest technical metric because it connects Shannon information theory, hyperdimensional information theory, security impossibility, and economics. A model call expands context to resolve uncertainty; a compiled bit carries closure that already resolved uncertainty. They sell computation over uncertainty; Compiled Cognition sells manufactured closure.
+
+**Healthcare makes the pattern obvious.** A healthcare AI assistant optimized from helpfulness is a liability — it may answer correctly while violating HIPAA, retrieve real PHI for the wrong patient, wrong clinician, wrong purpose, wrong consent state, or wrong audit context. The healthcare field is not `doctor + model + question`; it is `clinician + patient + PHI + role + purpose + consent + policy + session + chart + audit + time + care context`. The product is not "AI assistant for healthcare." The product is **a guard dog at the chart**. Before healthcare needs helpful AI, healthcare needs guard cognition around PHI.
+
 ### 9.5 Why the Mission Covenant Matters
 
 A marketplace that allowed per-inference resale would re-create OracleAI economics on top of AngelicAI artifacts — the dependency tax laundered through a friendlier substrate. The BUSL Mission Covenant (`COMMERCIAL.md`) forecloses this contractually: every commercial license forbids per-inference pricing and prohibits the operator from re-introducing the dependency tax downstream. Material breach is grounds for license termination. See `SCOPE_AND_FORBIDDEN_USE.md` for the explicit forbidden-use enumeration.
@@ -342,7 +406,7 @@ Compiled Cognition is structured as a seven-layer brand stack, each layer answer
 
 ## 10. Conclusion
 
-Compiled Cognition is the inevitable engineering consequence of the Latency Collapse. When reasoning becomes fast enough to accompany action, pre-materialization becomes rational. When pre-materialization is combined with deterministic execution and process-mining auditability, the result is a new class of AI system: bounded, present, and lawful.
+Compiled Cognition is the inevitable engineering consequence of the Latency Collapse. When reasoning becomes fast enough to accompany action, pre-materialization becomes rational. When pre-materialization is combined with deterministic execution and process-mining auditability, the result is a new class of working cognition artifact: bounded, present, and lawful.
 
 The AngelicAI archetype is not a fantasy. It is a concrete design pattern implemented, measured, and audited in the dteam system. The pattern produces systems that are:
 
@@ -374,6 +438,22 @@ Lawful action at time $t$ is selection from the closed output set, parameterized
 The expert systems of the 1970s were not failures. They were prototypes for a substrate that the hardware of their day could not afford. The substrate is now affordable. The prototypes are ready to be resurrected as substrate primitives. AI shifts from service to substrate.
 
 This is how civilization benefits from AI without surrendering determinism, auditability, or control.
+
+### Slogan Stack
+
+- Every field needs a guard dog.
+- The first AI feature is not assistance. The first AI feature is admissibility.
+- A helpful system without guard cognition is an unlocked door with a pleasant voice.
+- Compiled Cognition does not ask whether the request is convincing. It asks whether the request belongs.
+- Stop buying military drones for guard-dog work.
+
+### Meta-Theorem
+
+Compiled Cognition wins when it controls the field in which comparison occurs. The strategic task is to move every conversation onto: *what kind of working cognition does this job need?*
+
+### Final Closure
+
+Compiled Cognition is the manufacturing of guard cognition from lawful closure. Its primitive is not intelligence, service, logic, or automation. Its primitive is belonging. A field becomes safe when every meaningful action must pass through guard cognition: does this belong, now, here, under this role, policy, object graph, receipt chain, and posture? Service, retrieval, detection, herding, tracking, recording, and assistance are downstream breeds. The first dog at every digital field is the guard dog.
 
 ---
 

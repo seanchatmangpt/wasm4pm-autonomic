@@ -47,10 +47,12 @@ impl<S: WorkflowState, A: WorkflowAction> SARSAAgent<S, A> {
         let episode = *self.episode_count.borrow();
         if episode % 3 == 1 {
             // Exploratory action 1
-            A::from_index(0).unwrap()
+            A::from_index(0)
+                .expect("valid action index — out-of-bounds is a caller contract violation")
         } else if episode % 3 == 2 {
             // Exploratory action 2
-            A::from_index(1).unwrap()
+            A::from_index(1)
+                .expect("valid action index — out-of-bounds is a caller contract violation")
         } else {
             // Greedy
             self.greedy_action(state)
@@ -67,7 +69,8 @@ impl<S: WorkflowState, A: WorkflowAction> SARSAAgent<S, A> {
             .max_by(|a, b| a.1.partial_cmp(b.1).unwrap_or(std::cmp::Ordering::Equal))
             .map(|(idx, _)| idx)
             .unwrap_or(0);
-        A::from_index(idx).unwrap()
+        A::from_index(idx)
+            .expect("valid action index — out-of-bounds is a caller contract violation")
     }
 
     #[allow(dead_code)]
@@ -91,9 +94,14 @@ impl<S: WorkflowState, A: WorkflowAction> SARSAAgent<S, A> {
 
         let action_idx = action.to_index();
         let h = hash_state(&state);
-        let current_q = q_table.get_mut(h).unwrap()[action_idx];
+        let current_q = q_table
+            .get_mut(h)
+            .expect("state previously ensured to exist")[action_idx];
         let target = reward + self.discount_factor * next_q;
-        q_table.get_mut(h).unwrap()[action_idx] += self.learning_rate * (target - current_q);
+        q_table
+            .get_mut(h)
+            .expect("state previously ensured to exist")[action_idx] +=
+            self.learning_rate * (target - current_q);
     }
 }
 

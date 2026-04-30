@@ -25,8 +25,83 @@ fn trace_to_seq(trace: &dteam::models::Trace) -> Vec<String> {
 }
 
 #[test]
-#[ignore]
 fn hdc_quick_accuracy() {
+    // Synthetic smoke test (no PDC data required)
+    {
+        let training = vec![
+            dteam::models::Trace {
+                id: "t1".into(),
+                events: vec![dteam::models::Event {
+                    attributes: vec![dteam::models::Attribute {
+                        key: "concept:name".to_string(),
+                        value: AttributeValue::String("a".into()),
+                    }],
+                }],
+                attributes: vec![],
+            },
+            dteam::models::Trace {
+                id: "t2".into(),
+                events: vec![
+                    dteam::models::Event {
+                        attributes: vec![dteam::models::Attribute {
+                            key: "concept:name".to_string(),
+                            value: AttributeValue::String("a".into()),
+                        }],
+                    },
+                    dteam::models::Event {
+                        attributes: vec![dteam::models::Attribute {
+                            key: "concept:name".to_string(),
+                            value: AttributeValue::String("b".into()),
+                        }],
+                    },
+                ],
+                attributes: vec![],
+            },
+            dteam::models::Trace {
+                id: "t3".into(),
+                events: vec![dteam::models::Event {
+                    attributes: vec![dteam::models::Attribute {
+                        key: "concept:name".to_string(),
+                        value: AttributeValue::String("b".into()),
+                    }],
+                }],
+                attributes: vec![],
+            },
+        ];
+        let test = vec![
+            dteam::models::Trace {
+                id: "test1".into(),
+                events: vec![dteam::models::Event {
+                    attributes: vec![dteam::models::Attribute {
+                        key: "concept:name".to_string(),
+                        value: AttributeValue::String("a".into()),
+                    }],
+                }],
+                attributes: vec![],
+            },
+            dteam::models::Trace {
+                id: "test2".into(),
+                events: vec![dteam::models::Event {
+                    attributes: vec![dteam::models::Attribute {
+                        key: "concept:name".to_string(),
+                        value: AttributeValue::String("b".into()),
+                    }],
+                }],
+                attributes: vec![],
+            },
+        ];
+        let train_seqs: Vec<Vec<String>> = training.iter().map(trace_to_seq).collect();
+        let classifier = hdc::fit(&train_seqs);
+        let test_seqs: Vec<Vec<String>> = test.iter().map(trace_to_seq).collect();
+        let preds = hdc::classify(&classifier, &test_seqs, 1);
+        assert_eq!(preds.len(), test.len());
+        assert_eq!(preds.iter().filter(|&&x| x).count(), 1);
+        println!(
+            "HDC Smoke Test passed: {} predictions correct (1 out of 2 expected)",
+            preds.iter().filter(|&&x| x).count()
+        );
+    }
+
     let reader = XESReader::new();
     let test_path = PathBuf::from("data/pdc2025/test_logs/pdc2025_000000.xes");
     let train_path = PathBuf::from("data/pdc2025/training_logs/pdc2025_000000_11.xes");

@@ -6,6 +6,7 @@ use crate::utils::bitset::select_u64;
 const REWARD_REPAIR: f32 = 0.8;
 const REWARD_RECOMMEND: f32 = 0.2;
 const REWARD_ESCALATE: f32 = 0.05;
+const REWARD_RECOVER: f32 = 0.5;
 
 pub struct Simulator {
     baseline_state: AutonomicState,
@@ -25,9 +26,10 @@ impl Simulator {
 
         let is_repair = (action.action_type == ActionType::Repair) as u64;
         let is_recommend = (action.action_type == ActionType::Recommend) as u64;
+        let is_recover = (action.action_type == ActionType::Recover) as u64;
 
         // Use select_u64 for boolean-like drift reset
-        projected.drift_detected = select_u64(is_repair, 0, projected.drift_detected as u64) != 0;
+        projected.drift_detected = select_u64(is_repair | is_recover, 0, projected.drift_detected as u64) != 0;
 
         // Branchless reward selection (mapped to discrete values)
         let mut reward = REWARD_ESCALATE; // Default Escalate/Other
@@ -35,6 +37,8 @@ impl Simulator {
             REWARD_REPAIR
         } else if is_recommend != 0 {
             REWARD_RECOMMEND
+        } else if is_recover != 0 {
+            REWARD_RECOVER
         } else {
             reward
         };

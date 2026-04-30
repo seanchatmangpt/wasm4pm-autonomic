@@ -52,3 +52,78 @@ jobs:
       - name: Run DoD (soft fail = ok, hard fail = block)
         run: cargo make dod || { code=$?; [ $code -eq 1 ] && exit 0 || exit $code; }
         timeout-minutes: 15
+
+  ccog-nightly-gate:
+    name: ccog nightly gate (Phase 12 + cross-cutting)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pinned nightly toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-04-15
+          components: rustfmt, clippy, miri, rust-src, llvm-tools-preview
+
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-nightly-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-nightly-
+
+      - name: Install cargo-make
+        run: cargo install cargo-make --locked
+
+      - name: ccog conformance-replay
+        run: cargo make conformance-replay
+        timeout-minutes: 10
+
+      - name: ccog boundary-tests
+        run: cargo make boundary-tests
+        timeout-minutes: 10
+
+      - name: ccog pack-coverage
+        run: cargo make pack-coverage
+        timeout-minutes: 10
+
+      - name: ccog claude-md-fresh
+        run: cargo make claude-md-fresh
+
+      - name: ccog dendral-bundle-roundtrip
+        run: cargo make dendral-bundle-roundtrip
+        timeout-minutes: 10
+
+      - name: ccog bench-baseline-compare
+        run: cargo make bench-baseline-compare
+        timeout-minutes: 15
+
+  ccog-stable-still-builds:
+    name: ccog stable build escape hatch
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install stable toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-stable-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-stable-
+
+      - name: Build ccog on stable (no default features)
+        run: cargo +stable build -p ccog --no-default-features
+        timeout-minutes: 10

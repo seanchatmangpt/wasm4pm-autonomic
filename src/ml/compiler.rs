@@ -38,10 +38,12 @@ pub fn compile_plan_to_motion(plan: &AutomlPlan) -> Result<Motion, String> {
             Tier::Warm => (FieldLane::Prereq, Intensity::Feel), // Warm external calls
         };
 
-        let node_k = k.push(Powl8Node::Activity(lane, intensity))
+        let node_k = k
+            .push(Powl8Node::Activity(lane, intensity))
             .ok_or("Failed to push")?;
-        
-        let node_g = g.push(Powl64Node::Place(GlobeCell::new(10, i as u16, 0)))
+
+        let node_g = g
+            .push(Powl64Node::Place(GlobeCell::new(10, i as u16, 0)))
             .ok_or("Failed to push")?;
 
         signal_nodes_k.push(node_k);
@@ -57,30 +59,39 @@ pub fn compile_plan_to_motion(plan: &AutomlPlan) -> Result<Motion, String> {
         FusionOp::WeightedVote | FusionOp::BordaCount | FusionOp::Stack => {
             // Ensembles evaluate all signals in Parallel (Concur), then execute
             // the fusion operation as a sequential causal capability.
-            
+
             // Build the parallel execution block for the signals
             let mut current_par_k = signal_nodes_k[0];
             let mut current_par_g = signal_nodes_g[0];
-            
+
             for i in 1..signal_nodes_k.len() {
-                current_par_k = k.push(Powl8Node::OperatorParallel(current_par_k, signal_nodes_k[i]))
+                current_par_k = k
+                    .push(Powl8Node::OperatorParallel(
+                        current_par_k,
+                        signal_nodes_k[i],
+                    ))
                     .ok_or("Failed to push")?;
-                current_par_g = g.push(Powl64Node::Concur(current_par_g, signal_nodes_g[i]))
+                current_par_g = g
+                    .push(Powl64Node::Concur(current_par_g, signal_nodes_g[i]))
                     .ok_or("Failed to push")?;
             }
 
             // Create the fusion operator atom
-            let fusion_k = k.push(Powl8Node::Activity(FieldLane::Causality, Intensity::Run))
+            let fusion_k = k
+                .push(Powl8Node::Activity(FieldLane::Causality, Intensity::Run))
                 .ok_or("Failed to push")?;
-            let fusion_g = g.push(Powl64Node::Place(GlobeCell::new(11, 0, 0)))
+            let fusion_g = g
+                .push(Powl64Node::Place(GlobeCell::new(11, 0, 0)))
                 .ok_or("Failed to push")?;
 
             // Sequence the parallel evaluation into the fusion operator
-            let seq_k = k.push(Powl8Node::OperatorSequence(current_par_k, fusion_k))
+            let seq_k = k
+                .push(Powl8Node::OperatorSequence(current_par_k, fusion_k))
                 .ok_or("Failed to push")?;
-            let seq_g = g.push(Powl64Node::Geodesic(current_par_g, fusion_g))
+            let seq_g = g
+                .push(Powl64Node::Geodesic(current_par_g, fusion_g))
                 .ok_or("Failed to push")?;
-            
+
             (seq_k, seq_g)
         }
     };
@@ -94,10 +105,10 @@ pub fn compile_plan_to_motion(plan: &AutomlPlan) -> Result<Motion, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ml::hdit_automl::run_hdit_automl;
     use crate::ml::classic_ai_signals::{mycin_automl_signal, strips_automl_signal};
+    use crate::ml::hdit_automl::run_hdit_automl;
     use crate::ml::mycin::{fact, org};
-    use crate::ml::strips::{CLEAR_A, ON_TABLE_A, ARM_EMPTY, HOLDING_A, CLEAR_B, ON_TABLE_B};
+    use crate::ml::strips::{ARM_EMPTY, CLEAR_A, CLEAR_B, HOLDING_A, ON_TABLE_A, ON_TABLE_B};
     use oxigraph::store::Store;
     use unibit_graph::construct8_to_oxigraph;
 
@@ -131,20 +142,28 @@ mod tests {
         // 3. EXECUTE (Semantic-to-Kinetic Compilation)
         // Physically lower the abstract plan into a branchless POWL8/POWL64 Motion
         let motion = compile_plan_to_motion(&plan).expect("Failed to compile plan");
-        
-        assert!(motion.kinetic.len >= 1, "Motion must contain kinetic topology");
-        assert!(motion.geometric.len >= 1, "Motion must contain geometric placement");
+
+        assert!(
+            motion.kinetic.len >= 1,
+            "Motion must contain kinetic topology"
+        );
+        assert!(
+            motion.geometric.len >= 1,
+            "Motion must contain geometric placement"
+        );
 
         // 4. KNOWLEDGE (CONSTRUCT8 Persistence)
-        // Close the MAPE-K loop by writing the verified structural footprint 
+        // Close the MAPE-K loop by writing the verified structural footprint
         // to the durable Oxigraph causal ledger.
         let store = Store::new().expect("Failed to create Oxigraph store");
-        
+
         // This exercises the end-to-end bridge built in unibit-graph
         construct8_to_oxigraph(&store, &motion).expect("CONSTRUCT8 RDF emission failed");
-        
+
         let triples_count = store.len().expect("Failed to count Oxigraph triples");
-        assert!(triples_count > 0, "Oxigraph store must contain the compiled AutomlPlan knowledge");
+        assert!(
+            triples_count > 0,
+            "Oxigraph store must contain the compiled AutomlPlan knowledge"
+        );
     }
 }
-

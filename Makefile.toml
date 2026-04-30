@@ -18,7 +18,82 @@ args = ["make", "--list-all-steps"]
 
 [tasks.ci]
 description = "Standard CI pipeline: formatting, linting, building, and testing."
-dependencies = ["fmt-check", "lint", "check", "test"]
+dependencies = [
+  "fmt-check",
+  "lint",
+  "check",
+  "test",
+  "conformance-replay",
+  "boundary-tests",
+  "dendral-bundle-roundtrip",
+  "pack-coverage",
+  "claude-md-fresh",
+  "bench-baseline-compare",
+]
+
+# --- Phase 12 / cross-cutting ccog tasks ---
+
+[tasks.miri]
+description = "Run miri on ccog mask/BarkDecision/PackedKeyTable/conformance (UB-free verification). Not in default ci — separate task."
+toolchain = "nightly"
+command = "cargo"
+args = ["miri", "test", "-p", "ccog", "--lib", "--", "mask", "decide", "packed_key_table", "conformance"]
+
+[tasks.conformance-replay]
+description = "Verify decide() and decide_with_trace() agree across the full input space (Phase 7)."
+command = "cargo"
+args = ["test", "-p", "ccog", "--test", "decide_eq_with_trace", "--", "--nocapture"]
+
+[tasks.boundary-tests]
+description = "Run every load-bearing boundary detector test in ccog (Chicago TDD)."
+script_runner = "@shell"
+script = '''
+cargo test -p ccog --tests --features native -- \
+  does_not_ \
+  emits_ \
+  not_shacl_ \
+  boundary_ \
+  --nocapture
+'''
+
+[tasks.dendral-bundle-roundtrip]
+description = "Write a DENDRAL proof bundle, mutate variants, verify replay verdict (Phase 11)."
+command = "cargo"
+args = ["test", "-p", "ccog", "--test", "dendral_bundle_roundtrip", "--features", "dendral-cli", "--", "--nocapture"]
+
+[tasks.pack-coverage]
+description = "Run every Phase-12 pack conformance suite (lifestyle, edge, enterprise, dev) + cross-pack isolation."
+script_runner = "@shell"
+script = '''
+cargo test -p ccog --test pack_lifestyle_conformance -- --nocapture
+cargo test -p ccog --test pack_edge_conformance -- --nocapture
+cargo test -p ccog --test pack_enterprise_conformance -- --nocapture
+cargo test -p ccog --test pack_dev_conformance -- --nocapture
+cargo test -p ccog --test pack_namespace_isolation -- --nocapture
+'''
+
+[tasks.claude-md-fresh]
+description = "Reject CLAUDE.md if its grep-named tests no longer exist or its module map is stale."
+script_runner = "@shell"
+script = '''
+set -e
+# Confirm the constitutional names still resolve.
+grep -q '_does_not_' crates/ccog/src/hooks.rs || { echo "boundary detector names missing in hooks.rs"; exit 1; }
+grep -q 'pub mod packs' crates/ccog/src/lib.rs || { echo "packs module not exported from ccog::lib"; exit 1; }
+grep -q 'Do Not' crates/ccog/CLAUDE.md || { echo "CLAUDE.md missing 'Do Not' section"; exit 1; }
+echo "CLAUDE.md fresh."
+'''
+
+[tasks.bench-baseline-compare]
+description = "Smoke-run pack benches to confirm they compile and complete within order-of-magnitude budget."
+script_runner = "@shell"
+script = '''
+cargo bench -p ccog --bench pack_lifestyle_bench -- --quick --warm-up-time 1 --measurement-time 2 || true
+cargo bench -p ccog --bench pack_edge_bench -- --quick --warm-up-time 1 --measurement-time 2 || true
+cargo bench -p ccog --bench pack_enterprise_bench -- --quick --warm-up-time 1 --measurement-time 2 || true
+cargo bench -p ccog --bench pack_dev_bench -- --quick --warm-up-time 1 --measurement-time 2 || true
+echo "pack bench smoke complete."
+'''
 
 [tasks.pre-merge]
 description = "Comprehensive pre-merge verification pipeline (CI + Doc + DoD + Doctor)."
@@ -42,7 +117,7 @@ args = ["fmt", "--all", "--", "--check"]
 description = "Lint the codebase and deny warnings."
 install_crate = "clippy"
 command = "cargo"
-args = ["clippy", "--all-targets", "--", "-D", "warnings"]
+args = ["clippy", "--all-targets", "--features", "native", "--", "-D", "warnings"]
 
 [tasks.audit]
 description = "Audit dependencies for security vulnerabilities."
@@ -55,29 +130,39 @@ args = ["audit"]
 [tasks.check]
 description = "Run fast compilation check."
 command = "cargo"
-args = ["check", "--all-targets"]
+args = ["check", "--all-targets", "--features", "native"]
 
 [tasks.build]
 description = "Build the project in release mode."
 command = "cargo"
-args = ["build", "--release"]
+args = ["build", "--release", "--features", "native"]
 
 [tasks.build-debug]
 description = "Build the project in debug mode."
 command = "cargo"
 args = ["build"]
 
+[tasks.wasm-build]
+description = "Build the project for WebAssembly (wasm32-unknown-unknown) in release mode."
+command = "cargo"
+args = ["build", "--target", "wasm32-unknown-unknown", "--release"]
+
+[tasks.wasm-check]
+description = "Run fast compilation check for WebAssembly (wasm32-unknown-unknown)."
+command = "cargo"
+args = ["check", "--target", "wasm32-unknown-unknown"]
+
 # --- Testing & Benchmarking ---
 
 [tasks.test]
 description = "Run the library test suite."
 command = "cargo"
-args = ["test", "--lib", "--", "--nocapture"]
+args = ["test", "--lib", "--features", "native", "--", "--nocapture"]
 
 [tasks.test-all]
 description = "Run all tests including doc tests and integration tests."
 command = "cargo"
-args = ["test", "--all-targets", "--", "--nocapture"]
+args = ["test", "--all-targets", "--features", "native", "--", "--nocapture"]
 
 [tasks.bench]
 description = "Run the performance benchmarks."

@@ -437,4 +437,104 @@ mod tests {
             "Throughput maintained during prescriptive tracking"
         );
     }
+
+    #[test]
+    fn jtbd_19_evidence_recovery() {
+        use crate::autonomic::AutonomicAction;
+        use crate::io::prediction_log::blake3_input_hash;
+
+        println!("\n--- JTBD-19: Evidence Recovery (Retriever Cognitive Breed) ---");
+
+        let mut kernel = Vision2030Kernel::<1>::new();
+
+        // Pre-seed prediction log with 4 positive entries encoding high conformance
+        let current_time_us = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_micros() as u64)
+            .unwrap_or(0);
+
+        // Encode conformance as provenance_hash: (conformance as f32 / 1.0) * u32::MAX as f32
+        let high_conformance_hash = (0.95f32 * u32::MAX as f32) as u64;
+
+        for i in 0..4 {
+            let input_bytes = format!("recovery_entry_{}", i).into_bytes();
+            let input_hash_bytes = blake3_input_hash(&input_bytes);
+
+            kernel.prediction_log.log_prediction(
+                input_hash_bytes,
+                current_time_us + i as u64 * 1000,
+                true, // decision=true (positive entries)
+                0,    // tier_fired=0
+                high_conformance_hash,
+            );
+        }
+
+        // Run clean sequence to establish healthy state
+        let clean_events = vec![
+            "Start: System Boot order creates",
+            "Normal: Valve Open item updates",
+            "End: Finish order",
+        ];
+
+        for (i, payload) in clean_events.iter().enumerate() {
+            let event = AutonomicEvent {
+                source: format!("recovery_agent_{}", i),
+                payload: payload.to_string(),
+                timestamp: SystemTime::now(),
+            };
+            kernel.observe(event);
+        }
+
+        let healthy_state = kernel.infer();
+        println!(
+            "  Healthy State: health={:.2}, conformance={:.2}, drift={}",
+            healthy_state.process_health, healthy_state.conformance_score, healthy_state.drift_detected
+        );
+
+        // Inject drift by triggering Bypass violations 3 times
+        for _ in 0..3 {
+            kernel.observe(AutonomicEvent {
+                source: "drift_injector".to_string(),
+                payload: "Bypass: Emergency Skip critical".to_string(),
+                timestamp: SystemTime::now(),
+            });
+        }
+
+        let drifted_state = kernel.infer();
+        assert!(
+            drifted_state.drift_detected,
+            "Drift must be detected after 3 Bypass violations"
+        );
+        let pre_recover_score = drifted_state.conformance_score;
+        println!(
+            "  Drifted State: health={:.2}, conformance={:.2}, drift={}",
+            drifted_state.process_health, drifted_state.conformance_score, drifted_state.drift_detected
+        );
+
+        // Execute Recover action
+        let recover_action = AutonomicAction::recover(200, "Evidence recovery from audit log");
+        let result = kernel.execute(recover_action);
+
+        // Verify recovery
+        let recovered_state = kernel.infer();
+        println!(
+            "  Recovered State: health={:.2}, conformance={:.2}, drift={}",
+            recovered_state.process_health, recovered_state.conformance_score, recovered_state.drift_detected
+        );
+
+        assert!(
+            recovered_state.conformance_score > pre_recover_score,
+            "Conformance score must improve after recovery"
+        );
+        assert!(
+            !recovered_state.drift_detected,
+            "Drift must be cleared after recovery action"
+        );
+
+        let manifest = kernel.manifest(&result);
+        assert!(
+            manifest.contains("VISION_2030_MANIFEST"),
+            "Recovery must produce a valid manifest"
+        );
+    }
 }

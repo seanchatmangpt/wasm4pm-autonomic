@@ -86,12 +86,16 @@ impl WorkSelector {
         }
 
         // Mature portfolio — propose optimisation based on current size.
-        let plan_count = state.known_artifacts.iter().filter(|p| {
-            p.parent()
-                .and_then(|d| d.file_name())
-                .map(|d| d == "plans")
-                .unwrap_or(false)
-        }).count();
+        let plan_count = state
+            .known_artifacts
+            .iter()
+            .filter(|p| {
+                p.parent()
+                    .and_then(|d| d.file_name())
+                    .map(|d| d == "plans")
+                    .unwrap_or(false)
+            })
+            .count();
 
         Ok(format!(
             "Optimise: {} project(s), {} artifact(s), {} plan(s) — run meta-analysis to refine topology and close ontology gaps.",
@@ -110,7 +114,7 @@ mod tests {
     fn make_state(active_projects: usize, artifacts: &[&str]) -> PortfolioState {
         PortfolioState {
             active_projects,
-            known_artifacts: artifacts.iter().map(|s| PathBuf::from(s)).collect(),
+            known_artifacts: artifacts.iter().copied().map(PathBuf::from).collect(),
         }
     }
 
@@ -150,10 +154,7 @@ mod tests {
     #[test]
     fn test_select_next_no_receipt_does_emission() {
         let sel = WorkSelector::new();
-        let state = make_state(
-            1,
-            &["/root/plans/001.md", "/root/ontologies/core.nt"],
-        );
+        let state = make_state(1, &["/root/plans/001.md", "/root/ontologies/core.nt"]);
         let unit = sel.select_next(&state).unwrap();
         assert!(
             unit.to_lowercase().contains("receipt"),
@@ -207,7 +208,10 @@ mod tests {
             let artifact_strs: Vec<&str> = artifacts.iter().map(|s| s.as_str()).collect();
             let state = make_state(n, &artifact_strs);
             let unit = sel.select_next(&state).unwrap();
-            assert!(!unit.is_empty(), "select_next must never return empty string");
+            assert!(
+                !unit.is_empty(),
+                "select_next must never return empty string"
+            );
         }
     }
 }

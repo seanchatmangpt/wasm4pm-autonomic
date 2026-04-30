@@ -87,7 +87,8 @@ pub const ARM_EMPTY: u64 = 1 << 15;
 pub type State = u64;
 
 /// Standard initial state: all blocks on table, all clear, arm empty.
-pub const INITIAL_STATE: State = CLEAR_A | CLEAR_B | CLEAR_C | ON_TABLE_A | ON_TABLE_B | ON_TABLE_C | ARM_EMPTY;
+pub const INITIAL_STATE: State =
+    CLEAR_A | CLEAR_B | CLEAR_C | ON_TABLE_A | ON_TABLE_B | ON_TABLE_C | ARM_EMPTY;
 
 // =============================================================================
 // OPERATORS — all 12 ground operators (3-block world)
@@ -106,20 +107,80 @@ pub struct Op {
 /// All 12 ground operators for the 3-block world.
 pub const OPERATORS: [Op; 12] = [
     // PICKUP_x: pick up block x from table
-    Op { name: "pickup_A", pre: CLEAR_A | ON_TABLE_A | ARM_EMPTY, del: CLEAR_A | ON_TABLE_A | ARM_EMPTY, add: HOLDING_A },
-    Op { name: "pickup_B", pre: CLEAR_B | ON_TABLE_B | ARM_EMPTY, del: CLEAR_B | ON_TABLE_B | ARM_EMPTY, add: HOLDING_B },
-    Op { name: "pickup_C", pre: CLEAR_C | ON_TABLE_C | ARM_EMPTY, del: CLEAR_C | ON_TABLE_C | ARM_EMPTY, add: HOLDING_C },
+    Op {
+        name: "pickup_A",
+        pre: CLEAR_A | ON_TABLE_A | ARM_EMPTY,
+        del: CLEAR_A | ON_TABLE_A | ARM_EMPTY,
+        add: HOLDING_A,
+    },
+    Op {
+        name: "pickup_B",
+        pre: CLEAR_B | ON_TABLE_B | ARM_EMPTY,
+        del: CLEAR_B | ON_TABLE_B | ARM_EMPTY,
+        add: HOLDING_B,
+    },
+    Op {
+        name: "pickup_C",
+        pre: CLEAR_C | ON_TABLE_C | ARM_EMPTY,
+        del: CLEAR_C | ON_TABLE_C | ARM_EMPTY,
+        add: HOLDING_C,
+    },
     // PUTDOWN_x: put block x on table
-    Op { name: "putdown_A", pre: HOLDING_A, del: HOLDING_A, add: CLEAR_A | ON_TABLE_A | ARM_EMPTY },
-    Op { name: "putdown_B", pre: HOLDING_B, del: HOLDING_B, add: CLEAR_B | ON_TABLE_B | ARM_EMPTY },
-    Op { name: "putdown_C", pre: HOLDING_C, del: HOLDING_C, add: CLEAR_C | ON_TABLE_C | ARM_EMPTY },
+    Op {
+        name: "putdown_A",
+        pre: HOLDING_A,
+        del: HOLDING_A,
+        add: CLEAR_A | ON_TABLE_A | ARM_EMPTY,
+    },
+    Op {
+        name: "putdown_B",
+        pre: HOLDING_B,
+        del: HOLDING_B,
+        add: CLEAR_B | ON_TABLE_B | ARM_EMPTY,
+    },
+    Op {
+        name: "putdown_C",
+        pre: HOLDING_C,
+        del: HOLDING_C,
+        add: CLEAR_C | ON_TABLE_C | ARM_EMPTY,
+    },
     // STACK_x_on_y: stack held block x onto clear block y
-    Op { name: "stack_A_on_B", pre: HOLDING_A | CLEAR_B, del: HOLDING_A | CLEAR_B, add: ON_A_B | CLEAR_A | ARM_EMPTY },
-    Op { name: "stack_A_on_C", pre: HOLDING_A | CLEAR_C, del: HOLDING_A | CLEAR_C, add: ON_A_C | CLEAR_A | ARM_EMPTY },
-    Op { name: "stack_B_on_A", pre: HOLDING_B | CLEAR_A, del: HOLDING_B | CLEAR_A, add: ON_B_A | CLEAR_B | ARM_EMPTY },
-    Op { name: "stack_B_on_C", pre: HOLDING_B | CLEAR_C, del: HOLDING_B | CLEAR_C, add: ON_B_C | CLEAR_B | ARM_EMPTY },
-    Op { name: "stack_C_on_A", pre: HOLDING_C | CLEAR_A, del: HOLDING_C | CLEAR_A, add: ON_C_A | CLEAR_C | ARM_EMPTY },
-    Op { name: "stack_C_on_B", pre: HOLDING_C | CLEAR_B, del: HOLDING_C | CLEAR_B, add: ON_C_B | CLEAR_C | ARM_EMPTY },
+    Op {
+        name: "stack_A_on_B",
+        pre: HOLDING_A | CLEAR_B,
+        del: HOLDING_A | CLEAR_B,
+        add: ON_A_B | CLEAR_A | ARM_EMPTY,
+    },
+    Op {
+        name: "stack_A_on_C",
+        pre: HOLDING_A | CLEAR_C,
+        del: HOLDING_A | CLEAR_C,
+        add: ON_A_C | CLEAR_A | ARM_EMPTY,
+    },
+    Op {
+        name: "stack_B_on_A",
+        pre: HOLDING_B | CLEAR_A,
+        del: HOLDING_B | CLEAR_A,
+        add: ON_B_A | CLEAR_B | ARM_EMPTY,
+    },
+    Op {
+        name: "stack_B_on_C",
+        pre: HOLDING_B | CLEAR_C,
+        del: HOLDING_B | CLEAR_C,
+        add: ON_B_C | CLEAR_B | ARM_EMPTY,
+    },
+    Op {
+        name: "stack_C_on_A",
+        pre: HOLDING_C | CLEAR_A,
+        del: HOLDING_C | CLEAR_A,
+        add: ON_C_A | CLEAR_C | ARM_EMPTY,
+    },
+    Op {
+        name: "stack_C_on_B",
+        pre: HOLDING_C | CLEAR_B,
+        del: HOLDING_C | CLEAR_B,
+        add: ON_C_B | CLEAR_C | ARM_EMPTY,
+    },
 ];
 
 // Note: unstack operators are derivable as inverse of stack but for full STRIPS
@@ -130,15 +191,55 @@ pub const OPERATORS: [Op; 12] = [
 /// Extended operator set with unstacking (12 + 6 = 18 operators).
 pub const OPERATORS_EXT: [Op; 18] = [
     // First 12: same as OPERATORS
-    OPERATORS[0], OPERATORS[1], OPERATORS[2], OPERATORS[3], OPERATORS[4], OPERATORS[5],
-    OPERATORS[6], OPERATORS[7], OPERATORS[8], OPERATORS[9], OPERATORS[10], OPERATORS[11],
+    OPERATORS[0],
+    OPERATORS[1],
+    OPERATORS[2],
+    OPERATORS[3],
+    OPERATORS[4],
+    OPERATORS[5],
+    OPERATORS[6],
+    OPERATORS[7],
+    OPERATORS[8],
+    OPERATORS[9],
+    OPERATORS[10],
+    OPERATORS[11],
     // UNSTACK_x_from_y: pick up x that is currently on y
-    Op { name: "unstack_A_from_B", pre: ON_A_B | CLEAR_A | ARM_EMPTY, del: ON_A_B | CLEAR_A | ARM_EMPTY, add: HOLDING_A | CLEAR_B },
-    Op { name: "unstack_A_from_C", pre: ON_A_C | CLEAR_A | ARM_EMPTY, del: ON_A_C | CLEAR_A | ARM_EMPTY, add: HOLDING_A | CLEAR_C },
-    Op { name: "unstack_B_from_A", pre: ON_B_A | CLEAR_B | ARM_EMPTY, del: ON_B_A | CLEAR_B | ARM_EMPTY, add: HOLDING_B | CLEAR_A },
-    Op { name: "unstack_B_from_C", pre: ON_B_C | CLEAR_B | ARM_EMPTY, del: ON_B_C | CLEAR_B | ARM_EMPTY, add: HOLDING_B | CLEAR_C },
-    Op { name: "unstack_C_from_A", pre: ON_C_A | CLEAR_C | ARM_EMPTY, del: ON_C_A | CLEAR_C | ARM_EMPTY, add: HOLDING_C | CLEAR_A },
-    Op { name: "unstack_C_from_B", pre: ON_C_B | CLEAR_C | ARM_EMPTY, del: ON_C_B | CLEAR_C | ARM_EMPTY, add: HOLDING_C | CLEAR_B },
+    Op {
+        name: "unstack_A_from_B",
+        pre: ON_A_B | CLEAR_A | ARM_EMPTY,
+        del: ON_A_B | CLEAR_A | ARM_EMPTY,
+        add: HOLDING_A | CLEAR_B,
+    },
+    Op {
+        name: "unstack_A_from_C",
+        pre: ON_A_C | CLEAR_A | ARM_EMPTY,
+        del: ON_A_C | CLEAR_A | ARM_EMPTY,
+        add: HOLDING_A | CLEAR_C,
+    },
+    Op {
+        name: "unstack_B_from_A",
+        pre: ON_B_A | CLEAR_B | ARM_EMPTY,
+        del: ON_B_A | CLEAR_B | ARM_EMPTY,
+        add: HOLDING_B | CLEAR_A,
+    },
+    Op {
+        name: "unstack_B_from_C",
+        pre: ON_B_C | CLEAR_B | ARM_EMPTY,
+        del: ON_B_C | CLEAR_B | ARM_EMPTY,
+        add: HOLDING_B | CLEAR_C,
+    },
+    Op {
+        name: "unstack_C_from_A",
+        pre: ON_C_A | CLEAR_C | ARM_EMPTY,
+        del: ON_C_A | CLEAR_C | ARM_EMPTY,
+        add: HOLDING_C | CLEAR_A,
+    },
+    Op {
+        name: "unstack_C_from_B",
+        pre: ON_C_B | CLEAR_C | ARM_EMPTY,
+        del: ON_C_B | CLEAR_C | ARM_EMPTY,
+        add: HOLDING_C | CLEAR_B,
+    },
 ];
 
 // =============================================================================
@@ -155,6 +256,12 @@ pub fn apply(state: State, op: &Op) -> Option<State> {
     Some((state & !op.del) | op.add)
 }
 
+#[inline(always)]
+#[must_use]
+pub const fn select_u64(mask: u64, a: u64, b: u64) -> u64 {
+    (a & mask) | (b & !mask)
+}
+
 /// Branchless apply: returns `state` unchanged if precondition unmet.
 #[inline(always)]
 #[must_use]
@@ -162,7 +269,7 @@ pub fn apply_fast(state: State, op: &Op) -> State {
     let satisfied = ((op.pre & state) == op.pre) as u64;
     let mask = satisfied.wrapping_neg();
     let next = (state & !op.del) | op.add;
-    (next & mask) | (state & !mask)
+    select_u64(mask, next, state)
 }
 
 /// Goal test: all goal bits must be set in state.
@@ -198,7 +305,13 @@ pub fn plan(initial: State, goal: State, max_depth: usize) -> Option<Vec<usize>>
     None
 }
 
-fn dfs(state: State, goal: State, depth: usize, visited: &mut BTreeSet<State>, path: &mut Vec<usize>) -> bool {
+fn dfs(
+    state: State,
+    goal: State,
+    depth: usize,
+    visited: &mut BTreeSet<State>,
+    path: &mut Vec<usize>,
+) -> bool {
     if is_goal(state, goal) {
         return true;
     }
@@ -230,9 +343,8 @@ pub fn plan_default(initial: State, goal: State) -> Option<Vec<usize>> {
 /// Render a plan as a sequence of operator names.
 #[must_use]
 pub fn plan_names(initial: State, goal: State, max_depth: usize) -> Option<Vec<&'static str>> {
-    plan(initial, goal, max_depth).map(|indices| {
-        indices.iter().map(|&i| OPERATORS_EXT[i].name).collect()
-    })
+    plan(initial, goal, max_depth)
+        .map(|indices| indices.iter().map(|&i| OPERATORS_EXT[i].name).collect())
 }
 
 // =============================================================================
@@ -252,9 +364,9 @@ pub fn strips_automl_signal(
     let mut total_ns = 0u64;
     for &init in initial_states {
         // Quick branchless test: try a single-operator plan first
-        let single_step_works = OPERATORS_EXT.iter().any(|op| {
-            apply(init, op).is_some_and(|s| is_goal(s, goal))
-        });
+        let single_step_works = OPERATORS_EXT
+            .iter()
+            .any(|op| apply(init, op).is_some_and(|s| is_goal(s, goal)));
         if single_step_works {
             predictions.push(true);
             total_ns += 50;
@@ -415,8 +527,8 @@ mod tests {
     #[test]
     fn strips_automl_signal_detects_reachable_goal() {
         let states = [
-            INITIAL_STATE,                                       // can plan to HOLDING_A
-            HOLDING_B,                                           // cannot reach HOLDING_A directly, must put B down first
+            INITIAL_STATE, // can plan to HOLDING_A
+            HOLDING_B,     // cannot reach HOLDING_A directly, must put B down first
             CLEAR_A | ON_TABLE_A | ARM_EMPTY | CLEAR_B | ON_TABLE_B | CLEAR_C | ON_TABLE_C, // pickup A
         ];
         let anchor = [true, true, true];

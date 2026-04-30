@@ -1,0 +1,12 @@
+[package]
+name = "ccog-bridge"
+version = "0.1.0"
+edition = "2021"
+license = "BUSL-1.1"
+authors = ["Sean Chatman <xpointsh@gmail.com>"]
+description = "Bridge crate translating ccog values into dteam runtime types — keeps ccog dep-light"
+
+[dependencies]
+ccog = { path = "../ccog", default-features = false }
+dteam = { path = "../.." }
+blake3 = "1.5"

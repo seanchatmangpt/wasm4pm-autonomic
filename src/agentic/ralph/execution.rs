@@ -1,3 +1,5 @@
+#![cfg(feature = "native")]
+
 use anyhow::Result;
 use std::sync::Arc;
 use tokio::sync::{mpsc, Mutex};

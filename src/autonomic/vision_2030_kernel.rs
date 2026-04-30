@@ -3,7 +3,10 @@ use crate::autonomic::{
     ActionRisk, ActionType, AutonomicAction, AutonomicEvent, AutonomicFeedback, AutonomicKernel,
     AutonomicResult, AutonomicState,
 };
+use crate::autonomic::bark::{BarkEvent, BarkKind};
+use crate::autonomic::types::PackPosture;
 use crate::config::AutonomicConfig;
+use crate::io::prediction_log::PredictionLogBuffer;
 use crate::ml::LinUcb;
 use crate::ocpm::StreamingOcDfg;
 use crate::powl::core::PowlModel;
@@ -23,6 +26,8 @@ const HEALTH_PENALTY_SWAR_VIOLATION: f32 = 0.05;
 const OCPM_DIVERGENCE_THRESHOLD: u32 = 5;
 const CONFORMANCE_REWARD_REPAIR: f32 = 0.2;
 const HEALTH_REWARD_REPAIR: f32 = 0.1;
+const CONFORMANCE_REWARD_RECOVER: f32 = 0.15;
+const HEALTH_REWARD_RECOVER: f32 = 0.05;
 const HEALTH_DECAY_NEGATIVE_REWARD: f32 = 0.02;
 const HEALTH_IMPROVEMENT_POSITIVE_REWARD: f32 = 0.01;
 const FNV_MIX_PRIME: u64 = 0x9E3779B185EBCA87;
@@ -50,6 +55,15 @@ pub struct Vision2030Kernel<const WORDS: usize> {
     pub trace_cursor: usize,
     pub powl_executed_mask: KBitSet<WORDS>,
     pub powl_prev_idx: usize,
+
+    // --- BANDIT CONTEXT REPLAY (Vision 2030) ---
+    // last_context uses Cell for interior mutability inside &self propose()
+    pub last_context: std::cell::Cell<[f32; CONTEXT_DIM]>,
+    pub pre_action_conformance: f32,
+    pub adaptation_count: u32,
+    pub total_firings: u64,
+    pub total_violations: u64,
+    pub prediction_log: PredictionLogBuffer<64>,
 }
 
 impl<const WORDS: usize> Default for Vision2030Kernel<WORDS> {
@@ -150,6 +164,8 @@ impl<const WORDS: usize> Vision2030Kernel<WORDS> {
                 conformance_score: 1.0,
                 drift_detected: false,
                 active_cases: 0,
+                field_elevation: 0.0,
+                pack_posture: PackPosture::Nominal,
             },
             activity_table,
             transition_inputs,
@@ -158,22 +174,82 @@ impl<const WORDS: usize> Vision2030Kernel<WORDS> {
             trace_cursor: 0,
             powl_executed_mask: KBitSet::zero(),
             powl_prev_idx: PowlModel::<WORDS>::MAX_NODES,
+            last_context: std::cell::Cell::new([0.0; CONTEXT_DIM]),
+            pre_action_conformance: 0.0,
+            adaptation_count: 0,
+            total_firings: 0,
+            total_violations: 0,
+            prediction_log: PredictionLogBuffer::<64>::new(1),
         }
     }
 
-    /// REAL Feature Hashing: Project payload into CONTEXT_DIM space branchlessly
-    fn extract_context(&self, payload: &str) -> [f32; CONTEXT_DIM] {
-        let mut context = [0.0; CONTEXT_DIM];
-        context[0] = self.state.process_health;
-        context[1] = self.state.conformance_score;
-
-        let hash = fnv1a_64(payload.as_bytes());
-        for (i, item) in context.iter_mut().enumerate().take(CONTEXT_DIM).skip(2) {
-            // Fold hash bits into features
-            let val = (hash >> (i * 4)) & 0xFF;
-            *item = (val as f32) / 255.0;
+    fn state_context(&self, state: &AutonomicState) -> [f32; CONTEXT_DIM] {
+        let mut ctx = [0.0f32; CONTEXT_DIM];
+        ctx[0] = state.process_health;
+        ctx[1] = state.conformance_score;
+        ctx[2] = state.throughput / (1.0 + state.throughput);
+        ctx[3] = state.drift_detected as u8 as f32;
+        ctx[4] = (state.active_cases as f32 / 1000.0).min(1.0);
+        let signal_keys = [
+            "repair_signal",
+            "opt_signal",
+            "drift_signal",
+            "escalate_signal",
+            "health_signal",
+        ];
+        for (i, key) in signal_keys.iter().enumerate() {
+            ctx[5 + i] = (self.sketch.estimate(key) as f32 / 100.0).clamp(0.0, 1.0);
         }
-        context
+        ctx
+    }
+
+    /// Compute adaptive OCPM divergence threshold from binding frequency distribution.
+    ///
+    /// Scans binding_frequencies[0..4096] and computes mean + 2*std_dev to detect
+    /// anomalous edge frequencies. Uses integer arithmetic throughout to avoid floats.
+    /// Floor at OCPM_DIVERGENCE_THRESHOLD for cold-start safety.
+    fn ocpm_divergence_threshold(&self) -> u32 {
+        const EDGE_CACHE: usize = 4096;
+        let mut sum: u64 = 0;
+        let mut sum_sq: u128 = 0;
+
+        // Accumulate frequency statistics
+        for &freq in &self.oc_dfg.binding_frequencies[0..EDGE_CACHE] {
+            sum = sum.wrapping_add(freq as u64);
+            sum_sq = sum_sq.wrapping_add((freq as u128).wrapping_mul(freq as u128));
+        }
+
+        // Compute mean and variance using integer arithmetic
+        let mean: u64 = sum / (EDGE_CACHE as u64);
+        let mean_sq: u128 = (mean as u128).wrapping_mul(mean as u128);
+        let mean_of_sq: u128 = sum_sq / (EDGE_CACHE as u128);
+        let variance: u128 = if mean_of_sq > mean_sq {
+            mean_of_sq - mean_sq
+        } else {
+            0
+        };
+
+        // Integer square root of variance for std_dev
+        let std_dev = {
+            if variance == 0 {
+                0u64
+            } else {
+                // Newton-Raphson for u64
+                let mut x = (variance as u64).wrapping_add(1) >> 1;
+                let mut prev = 0u64;
+                while x != prev && x > 0 {
+                    prev = x;
+                    let q = variance / (x as u128);
+                    x = ((x as u128).wrapping_add(q)) as u64 >> 1;
+                }
+                x
+            }
+        };
+
+        // Threshold = mean + 2*std_dev, floor at OCPM_DIVERGENCE_THRESHOLD
+        let adaptive_threshold = (mean.wrapping_add(2u64.wrapping_mul(std_dev)))
+            .max(OCPM_DIVERGENCE_THRESHOLD as u64) as u32;
+        adaptive_threshold
     }
 }
 
@@ -253,6 +329,7 @@ impl<const WORDS: usize> AutonomicKernel for Vision2030Kernel<WORDS> {
             }
         }
 
+        let adaptive_threshold = self.ocpm_divergence_threshold();
         for &(_id_hash, type_hash, qual_hash) in &mock_objects[..mock_objects_len] {
             let binding_hash = activity_hash
                 .wrapping_mul(FNV_MIX_PRIME)
@@ -260,9 +337,7 @@ impl<const WORDS: usize> AutonomicKernel for Vision2030Kernel<WORDS> {
                 .wrapping_mul(FNV_MIX_PRIME)
                 .wrapping_add(qual_hash);
             let binding_idx = (binding_hash as usize) & EDGE_MASK_4096;
-            if self.oc_dfg.binding_frequencies[binding_idx] > OCPM_DIVERGENCE_THRESHOLD
-                && p.contains("divergence")
-            {
+            if self.oc_dfg.binding_frequencies[binding_idx] > adaptive_threshold {
                 ocpm_drift = true;
             }
         }
@@ -275,6 +350,26 @@ impl<const WORDS: usize> AutonomicKernel for Vision2030Kernel<WORDS> {
                 (self.state.conformance_score - CONFORMANCE_PENALTY_SWAR_VIOLATION).max(0.0);
             self.state.process_health =
                 (self.state.process_health - HEALTH_PENALTY_SWAR_VIOLATION).max(0.0);
+
+            // Emit Detection bark from detector breed
+            let _bark = BarkEvent {
+                kind: BarkKind::Detection,
+                source_breed: "detector",
+                signal_hash: fnv1a_64(b"ocpm_drift"),
+                timestamp_us: std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .map(|d| d.as_micros() as u64)
+                    .unwrap_or(0),
+                tighten: true,
+            };
+
+            // Tighten pack posture on detection
+            self.state.pack_posture = match self.state.pack_posture {
+                PackPosture::Nominal => PackPosture::Elevated,
+                PackPosture::Elevated => PackPosture::Tightened,
+                PackPosture::Tightened => PackPosture::Lockdown,
+                PackPosture::Lockdown => PackPosture::Lockdown,
+            };
         }
 
         if let Some(idx) = act_idx_opt {
@@ -333,61 +428,55 @@ impl<const WORDS: usize> AutonomicKernel for Vision2030Kernel<WORDS> {
     }
 
     fn propose(&self, state: &AutonomicState) -> Vec<AutonomicAction> {
-        // Phase 4: Contextual Bandit Action Selection (Zero-Heap)
-        let context = self.extract_context("current_state");
-        let action_idx = self.bandit.select_action(&context, 3);
+        const ACTION_PALETTE: [(ActionType, ActionRisk, &str, u64); 4] = [
+            (ActionType::Recommend, ActionRisk::Low, "Throughput optimization", 101),
+            (ActionType::Repair, ActionRisk::Medium, "Axiomatic structural repair", 102),
+            (ActionType::Escalate, ActionRisk::High, "Critical escalation", 103),
+            (ActionType::Recover, ActionRisk::Low, "Evidence recovery from audit log", 104),
+        ];
 
-        // BCINR Optimization: Use MCTS UCT to weight recovery vs optimization
-        let uct_score_repair = crate::utils::math::monte_carlo_tree_search_mcts(
-            ((0.8 * 1000.0) as u64) << 32 | 100, // Q=0.8, visits=100
-            1000,                                // total visits
-        );
-        let uct_score_opt = crate::utils::math::monte_carlo_tree_search_mcts(
-            ((0.5 * 1000.0) as u64) << 32 | 500, // Q=0.5, visits=500
-            1000,
-        );
+        let context = self.state_context(state);
+        self.last_context.set(context);
+        let action_idx = self.bandit.select_action(&context, 4);
 
-        if state.drift_detected {
-            // If MCTS UCT favors repair (it should given the scores above)
-            if uct_score_repair > uct_score_opt {
-                return vec![
-                    AutonomicAction::new(
-                        102,
-                        ActionType::Repair,
-                        ActionRisk::Medium,
-                        "Axiomatic structural repair",
-                    ),
-                    AutonomicAction::new(
-                        103,
-                        ActionType::Escalate,
-                        ActionRisk::High,
-                        "Human override requested",
-                    ),
-                ];
-            }
+        // Heuristic q-values — ties (both 0.0 at cold start) resolve to Repair when drifted
+        let q_repair =
+            state.conformance_score / (1.0 + self.sketch.estimate("repair_signal") as f32);
+        let q_opt =
+            state.process_health / (1.0 + self.sketch.estimate("opt_signal") as f32);
+
+        let candidates = if state.drift_detected && q_repair >= q_opt {
+            vec![
+                AutonomicAction::new(
+                    ACTION_PALETTE[1].3,
+                    ACTION_PALETTE[1].0,
+                    ACTION_PALETTE[1].1,
+                    ACTION_PALETTE[1].2,
+                ),
+                AutonomicAction::new(
+                    ACTION_PALETTE[2].3,
+                    ACTION_PALETTE[2].0,
+                    ACTION_PALETTE[2].1,
+                    ACTION_PALETTE[2].2,
+                ),
+            ]
+        } else {
+            let arm = action_idx.min(3);
+            vec![AutonomicAction::new(
+                ACTION_PALETTE[arm].3,
+                ACTION_PALETTE[arm].0,
+                ACTION_PALETTE[arm].1,
+                ACTION_PALETTE[arm].2,
+            )]
+        };
+
+        // MDF wiring: if MDF finds a minimum-decisive action, return it; else fall through to candidates
+        use crate::autonomic::MinimumDecisiveForce;
+        if let Some(mdf_action) = MinimumDecisiveForce::is_minimal_decisive(&candidates, state) {
+            return vec![mdf_action.clone()];
         }
 
-        match action_idx {
-            0 => {
-                vec![AutonomicAction::recommend(101, "Throughput optimization")]
-            }
-            1 => {
-                vec![AutonomicAction::new(
-                    102,
-                    ActionType::Repair,
-                    ActionRisk::Medium,
-                    "Patching trace buffer",
-                )]
-            }
-            _ => {
-                vec![AutonomicAction::new(
-                    103,
-                    ActionType::Escalate,
-                    ActionRisk::High,
-                    "Critical escalation",
-                )]
-            }
-        }
+        candidates
     }
 
     fn accept(&self, action: &AutonomicAction, state: &AutonomicState) -> bool {
@@ -410,32 +499,30 @@ impl<const WORDS: usize> AutonomicKernel for Vision2030Kernel<WORDS> {
     }
 
     fn execute(&mut self, action: AutonomicAction) -> AutonomicResult {
-        let _old_drift = self.state.drift_detected;
+        let t_start = std::time::Instant::now();
+
         let is_repair = (action.action_type == ActionType::Repair) as u64;
+        let is_recover = (action.action_type == ActionType::Recover) as u64;
 
-        // Branchless state mutation via BCINR select
-        self.state.drift_detected = select_u64(is_repair, 0, self.state.drift_detected as u64) != 0;
+        self.pre_action_conformance = self.state.conformance_score;
+        self.total_firings = self.total_firings.saturating_add(1);
 
-        // --- ADVERSARIAL REPAIR: Marking Migration ---
-        // Instead of hard resetting to p0, we attempt to preserve the process context
-        // in a bisimilar way. For this K-Tier engine, we preserve the executed mask.
+        self.state.drift_detected = select_u64(is_repair | is_recover, 0, self.state.drift_detected as u64) != 0;
+
         if is_repair != 0 {
-            // "Repair" means we acknowledge the current state and validly
-            // continue from where we are, effectively 'fixing' the history.
-            // In a more complex engine, this would project the old marking
-            // onto the new structure.
             self.trace_cursor = 0;
-            // self.powl_executed_mask remains as is (context preservation)
-            // self.powl_prev_idx remains (context preservation)
-
-            let _old_conf = self.state.conformance_score;
-            let _old_health = self.state.process_health;
             self.state.conformance_score =
                 (self.state.conformance_score + CONFORMANCE_REWARD_REPAIR).min(1.0);
             self.state.process_health = (self.state.process_health + HEALTH_REWARD_REPAIR).min(1.0);
+        } else if is_recover != 0 {
+            // Recover action: attempt to pull last positive entry from prediction log
+            if let Some(_entry) = self.prediction_log.last_positive_entry() {
+                self.state.conformance_score =
+                    (self.state.conformance_score + CONFORMANCE_REWARD_RECOVER).min(1.0);
+                self.state.process_health = (self.state.process_health + HEALTH_REWARD_RECOVER).min(1.0);
+            }
         }
 
-        let t_start = std::time::Instant::now();
         let execution_latency_ms = t_start.elapsed().as_millis() as u64;
         let manifest_hash = fnv1a_64(action.parameters.as_bytes());
 
@@ -454,10 +541,17 @@ impl<const WORDS: usize> AutonomicKernel for Vision2030Kernel<WORDS> {
     }
 
     fn adapt(&mut self, feedback: AutonomicFeedback) {
-        let context = self.extract_context("adaptation");
-        self.bandit.update(&context, feedback.reward);
+        let delta = self.state.conformance_score - self.pre_action_conformance;
+        let derived_reward = if feedback.human_override {
+            -1.0f32
+        } else {
+            delta.clamp(-1.0, 1.0)
+        };
 
-        let _old_health = self.state.process_health;
+        let bandit_ctx = self.last_context.get();
+        self.bandit.update(&bandit_ctx, derived_reward);
+        self.adaptation_count = self.adaptation_count.saturating_add(1);
+
         let decay = if feedback.reward < 0.0 {
             HEALTH_DECAY_NEGATIVE_REWARD
         } else {

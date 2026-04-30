@@ -411,7 +411,10 @@ fn parse_args() -> CliArgs {
                 "ralph-andon" | "ralph_andon" => DoctorKind::RalphAndon,
                 "automl" | "" => DoctorKind::Automl,
                 other => {
-                    eprintln!("doctor: unknown --kind={} (allowed: automl, ralph-plan, ralph-andon)", other);
+                    eprintln!(
+                        "doctor: unknown --kind={} (allowed: automl, ralph-plan, ralph-andon)",
+                        other
+                    );
                     std::process::exit(2);
                 }
             };
@@ -1069,7 +1072,10 @@ fn run_ralph_plan_mode(plans_dir: &Path, json_mode: bool) -> ExitCode {
             });
             println!("{}", serde_json::to_string_pretty(&out).unwrap());
         } else {
-            eprintln!("ralph-plan plans directory not found: {}", plans_dir.display());
+            eprintln!(
+                "ralph-plan plans directory not found: {}",
+                plans_dir.display()
+            );
         }
         return ExitCode::from(1);
     }
@@ -1203,7 +1209,10 @@ fn run_ralph_plan_mode(plans_dir: &Path, json_mode: bool) -> ExitCode {
         });
         println!("{}", serde_json::to_string_pretty(&out).unwrap());
     } else {
-        println!("ralph-plan doctor: {} plans, verdict={}", report.plans_read, verdict);
+        println!(
+            "ralph-plan doctor: {} plans, verdict={}",
+            report.plans_read, verdict
+        );
     }
 
     match verdict {
@@ -1305,8 +1314,12 @@ fn andon_verdict_for_class(class: &str, tier: &str) -> &'static str {
         | "CAPABILITY_MISSING" => "LYING",
         "HEIJUNKA_STARVED" | "RATE_LIMIT_EXHAUSTED" | "DRIVER_TIMEOUT" => "SLOW",
         "SEQUENCING_DEFECT" | "CONFORMANCE_DRIFT" => "REDUNDANT",
-        "TASKS_EMPTY" | "PLAN_MISSING" | "TASKS_MISSING" | "SPEC_MISSING"
-        | "SPECKIT_SPEC_MISSING" | "SPECKIT_NOT_INITIALIZED" => "SATURATED",
+        "TASKS_EMPTY"
+        | "PLAN_MISSING"
+        | "TASKS_MISSING"
+        | "SPEC_MISSING"
+        | "SPECKIT_SPEC_MISSING"
+        | "SPECKIT_NOT_INITIALIZED" => "SATURATED",
         "RECEIPT_UNVERIFIED" | "DOCTOR_DEGRADED" => "STALE",
         _ => match tier {
             "red" => "LYING",
@@ -1317,7 +1330,12 @@ fn andon_verdict_for_class(class: &str, tier: &str) -> &'static str {
     }
 }
 
-fn five_whys_for(class: &str, tier: &str, scope: &str, halts: &str) -> (Vec<(String, String)>, String) {
+fn five_whys_for(
+    class: &str,
+    tier: &str,
+    scope: &str,
+    halts: &str,
+) -> (Vec<(String, String)>, String) {
     // Deterministic 5-Whys: each (q,a) pair is keyed off the andon class so
     // identical events always produce identical analyses (no LLM nondeterminism).
     let q1 = format!("Why was the andon '{}' raised?", class);
@@ -1331,16 +1349,20 @@ fn five_whys_for(class: &str, tier: &str, scope: &str, halts: &str) -> (Vec<(Str
             "A receipt or chain link failed integrity checks at append time.".to_string()
         }
         "DOCTOR_LYING" | "LIFECYCLE_UNSOUND" => {
-            "A doctor invariant detected an artifact whose declared state contradicts evidence.".to_string()
+            "A doctor invariant detected an artifact whose declared state contradicts evidence."
+                .to_string()
         }
         "CONSTITUTION_MISSING" | "CONSTITUTION_VIOLATION" => {
-            "The cell's constitution is absent or contradicted by an executed obligation.".to_string()
+            "The cell's constitution is absent or contradicted by an executed obligation."
+                .to_string()
         }
         "HEIJUNKA_STARVED" => {
-            "The heijunka queue produced no eligible obligation within the polling window.".to_string()
+            "The heijunka queue produced no eligible obligation within the polling window."
+                .to_string()
         }
         "RATE_LIMIT_EXHAUSTED" | "DRIVER_TIMEOUT" => {
-            "The chosen driver exceeded its budget envelope before producing an artifact.".to_string()
+            "The chosen driver exceeded its budget envelope before producing an artifact."
+                .to_string()
         }
         _ => format!(
             "Class {} signals a defect in the {} subsystem that the operator did not preempt.",
@@ -1349,19 +1371,32 @@ fn five_whys_for(class: &str, tier: &str, scope: &str, halts: &str) -> (Vec<(Str
     };
     let q3 = "Why was the underlying defect not caught upstream?".to_string();
     let a3 = match scope {
-        "CHAIN" | "RECEIPT" => "Chain-append validation lacks a pre-flight conformance check for this class.".to_string(),
-        "EXECUTOR" => "Executor receipts are not gated through the doctor before chain-append.".to_string(),
+        "CHAIN" | "RECEIPT" => {
+            "Chain-append validation lacks a pre-flight conformance check for this class."
+                .to_string()
+        }
+        "EXECUTOR" => {
+            "Executor receipts are not gated through the doctor before chain-append.".to_string()
+        }
         "DOCTOR" => "Doctor self-checks did not include a fixture for this pathology.".to_string(),
-        "CONSTITUTION" => "Constitution presence/parity is not asserted at obligation-dequeue time.".to_string(),
-        "SPECKIT" | "TASK" => "Spec Kit phase artifacts are not required by an upstream gate.".to_string(),
+        "CONSTITUTION" => {
+            "Constitution presence/parity is not asserted at obligation-dequeue time.".to_string()
+        }
+        "SPECKIT" | "TASK" => {
+            "Spec Kit phase artifacts are not required by an upstream gate.".to_string()
+        }
         "HEIJUNKA" => "Heijunka has no starvation alarm before the queue empties.".to_string(),
         "AGENT" => "Agent capability/auth is not probed before obligation assignment.".to_string(),
         _ => "No upstream proof gate exists for this pathology.".to_string(),
     };
     let q4 = "Why does that gap exist in the manufacturing pipeline?".to_string();
     let a4 = match halts {
-        "portfolio" => "The pathology is portfolio-fatal but escalation is reactive, not preventive.".to_string(),
-        "cell" => "Cell-scoped fail-fast logic does not pre-empt this class before work starts.".to_string(),
+        "portfolio" => {
+            "The pathology is portfolio-fatal but escalation is reactive, not preventive."
+                .to_string()
+        }
+        "cell" => "Cell-scoped fail-fast logic does not pre-empt this class before work starts."
+            .to_string(),
         _ => "The class is currently treated as informational rather than gated.".to_string(),
     };
     let q5 = "Why has the gap not been engineered out yet?".to_string();
@@ -1426,10 +1461,26 @@ fn run_ralph_andon_mode(
         .and_then(|x| x.as_str())
         .unwrap_or("andon-unknown")
         .to_string();
-    let class = v.get("class").and_then(|x| x.as_str()).unwrap_or("").to_string();
-    let tier = v.get("tier").and_then(|x| x.as_str()).unwrap_or("yellow").to_string();
-    let scope = v.get("scope").and_then(|x| x.as_str()).unwrap_or("CELL").to_string();
-    let halts = v.get("halts").and_then(|x| x.as_str()).unwrap_or("none").to_string();
+    let class = v
+        .get("class")
+        .and_then(|x| x.as_str())
+        .unwrap_or("")
+        .to_string();
+    let tier = v
+        .get("tier")
+        .and_then(|x| x.as_str())
+        .unwrap_or("yellow")
+        .to_string();
+    let scope = v
+        .get("scope")
+        .and_then(|x| x.as_str())
+        .unwrap_or("CELL")
+        .to_string();
+    let halts = v
+        .get("halts")
+        .and_then(|x| x.as_str())
+        .unwrap_or("none")
+        .to_string();
 
     let (whys, root_cause) = five_whys_for(&class, &tier, &scope, &halts);
     let verdict = andon_verdict_for_class(&class, &tier);
@@ -1447,9 +1498,15 @@ fn run_ralph_andon_mode(
     });
 
     // Write to analyses-dir/<andon-id>.5whys.json (default: ./analyses).
-    let dir = analyses_dir.map(PathBuf::from).unwrap_or_else(|| PathBuf::from("analyses"));
+    let dir = analyses_dir
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from("analyses"));
     if let Err(e) = std::fs::create_dir_all(&dir) {
-        eprintln!("ralph-andon: cannot create analyses dir {}: {}", dir.display(), e);
+        eprintln!(
+            "ralph-andon: cannot create analyses dir {}: {}",
+            dir.display(),
+            e
+        );
         return ExitCode::from(2);
     }
     let out_path = dir.join(format!("{}.5whys.json", id));
@@ -1464,7 +1521,10 @@ fn run_ralph_andon_mode(
     } else {
         println!(
             "ralph-andon: id={} class={} verdict={} → {}",
-            id, class, verdict, out_path.display()
+            id,
+            class,
+            verdict,
+            out_path.display()
         );
     }
 

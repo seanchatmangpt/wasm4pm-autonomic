@@ -111,10 +111,7 @@ impl PortfolioIndexer {
                     continue;
                 }
                 // Skip hidden directories and well-known non-project dirs.
-                let dir_name = child
-                    .file_name()
-                    .and_then(|n| n.to_str())
-                    .unwrap_or("");
+                let dir_name = child.file_name().and_then(|n| n.to_str()).unwrap_or("");
                 if dir_name.starts_with('.') || matches!(dir_name, "target" | "node_modules") {
                     continue;
                 }
@@ -158,7 +155,10 @@ mod tests {
         let indexer = PortfolioIndexer::new();
         let state = indexer.scan(tmp.path()).unwrap();
         assert_eq!(state.active_projects, 0, "empty dir has no projects");
-        assert!(state.known_artifacts.is_empty(), "empty dir has no artifacts");
+        assert!(
+            state.known_artifacts.is_empty(),
+            "empty dir has no artifacts"
+        );
     }
 
     #[test]
@@ -168,7 +168,10 @@ mod tests {
         let indexer = PortfolioIndexer::new();
         let state = indexer.scan(tmp.path()).unwrap();
         assert_eq!(state.active_projects, 1);
-        assert!(state.known_artifacts.iter().any(|p| p.ends_with("Cargo.toml")));
+        assert!(state
+            .known_artifacts
+            .iter()
+            .any(|p| p.ends_with("Cargo.toml")));
     }
 
     #[test]
@@ -204,9 +207,18 @@ mod tests {
         let plan_artifacts: Vec<_> = state
             .known_artifacts
             .iter()
-            .filter(|p| p.parent().and_then(|d| d.file_name()).map(|d| d == "plans").unwrap_or(false))
+            .filter(|p| {
+                p.parent()
+                    .and_then(|d| d.file_name())
+                    .map(|d| d == "plans")
+                    .unwrap_or(false)
+            })
             .collect();
-        assert_eq!(plan_artifacts.len(), 2, "both plan files should be discovered");
+        assert_eq!(
+            plan_artifacts.len(),
+            2,
+            "both plan files should be discovered"
+        );
     }
 
     #[test]

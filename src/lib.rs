@@ -12,11 +12,12 @@ pub mod conformance;
 pub mod discovery;
 pub mod io;
 pub mod jtbd_counterfactual_tests;
-pub mod ocel;
 pub mod jtbd_tests;
 pub mod models;
+pub mod ocel;
 pub mod ontology_proptests;
 pub mod proptest_kernel_verification;
+pub mod provenance_chain;
 pub mod reinforcement;
 pub mod reinforcement_tests;
 pub mod utils;
@@ -25,6 +26,7 @@ pub use agentic::ralph::patterns::universe64::Universe64;
 // Re-export models for easier access
 pub use conformance::*;
 pub use models::*;
+pub use provenance_chain::{Blake3Chain, LinkKind};
 
 // Zero-heap, stack-allocated RL state for nanosecond-scale updates.
 #[derive(Clone, Copy, Eq, Hash, PartialEq, Debug)]
@@ -41,6 +43,25 @@ pub struct RlState<const WORDS: usize> {
     pub activities_hash: u64,
     pub ontology_mask: crate::utils::dense_kernel::KBitSet<16>,
     pub universe: Option<Universe64>,
+}
+
+impl<const WORDS: usize> Default for RlState<WORDS> {
+    fn default() -> Self {
+        Self {
+            health_level: 0,
+            event_rate_q: 0,
+            activity_count_q: 0,
+            spc_alert_level: 0,
+            drift_status: 0,
+            rework_ratio_q: 0,
+            circuit_state: 0,
+            cycle_phase: 0,
+            marking_mask: utils::dense_kernel::KBitSet::default(),
+            activities_hash: 0,
+            ontology_mask: crate::utils::dense_kernel::KBitSet::default(),
+            universe: None,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Eq, Hash, PartialEq, Debug)]
@@ -116,6 +137,11 @@ pub mod rl_state_serialization {
 }
 pub mod automation;
 pub mod autonomic;
+pub mod breeds;
+pub mod compile_eligible;
+pub mod pack_admission;
+pub use breeds::{Breed, BreedKind, Dachshund, Detector, Guardian, Herder, Recorder, Retriever, Watchdog};
+pub use pack_admission::{AdmissibilityVerdict, MarkChickenVerdict, PackAdmission};
 
 // Vision 2030 Core Modules
 pub mod agentic;
@@ -130,7 +156,7 @@ pub mod simd;
 // Re-export autonomic for easier access
 pub use autonomic::{
     ActionRisk, ActionType, AutonomicAction, AutonomicEvent, AutonomicKernel, AutonomicResult,
-    AutonomicState, DefaultKernel,
+    AutonomicState, DefaultKernel, Vision2030Kernel,
 };
 
 pub mod benchmark;
@@ -623,4 +649,8 @@ pub mod dteam {
         }
     }
 }
+#[cfg(target_arch = "wasm32")]
+pub mod wasm;
+
 pub mod proptest_xes;
+pub mod proptest_zero_allocation;

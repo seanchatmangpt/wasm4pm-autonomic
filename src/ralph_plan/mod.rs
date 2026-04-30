@@ -143,11 +143,9 @@ impl std::fmt::Display for ValidationError {
                 sequence_len, expected
             ),
             Self::DuplicatePhase { phase } => write!(f, "phase appears more than once: {}", phase),
-            Self::UnknownPhase { phase } => write!(
-                f,
-                "phase '{}' not present in phase_sequence",
-                phase
-            ),
+            Self::UnknownPhase { phase } => {
+                write!(f, "phase '{}' not present in phase_sequence", phase)
+            }
             Self::VerdictInconsistent { reason } => {
                 write!(f, "verdict inconsistent with state: {}", reason)
             }
@@ -241,17 +239,12 @@ impl RalphPlan {
                 .iter()
                 .any(|g| g.status == GateStatus::Fail && g.failure_class.is_some());
             if !has_failure_gate {
-                return Err(ValidationError::BlockedWithoutFailureClass {
-                    phase: bp.clone(),
-                });
+                return Err(ValidationError::BlockedWithoutFailureClass { phase: bp.clone() });
             }
         }
 
         // Verdict consistency.
-        let any_fail = self
-            .gates
-            .iter()
-            .any(|g| g.status == GateStatus::Fail);
+        let any_fail = self.gates.iter().any(|g| g.status == GateStatus::Fail);
         let pending = self.accounting.phases_pending > 0;
         let blocked = self.accounting.phases_blocked > 0;
         let skipped = self.accounting.phases_skipped > 0;
@@ -412,13 +405,11 @@ mod tests {
             blocked_phases: vec![],
             skipped_phases: vec![],
             artifacts: vec![],
-            gates: vec![
-                Gate {
-                    name: "constitution_present".into(),
-                    status: GateStatus::Pass,
-                    failure_class: None,
-                },
-            ],
+            gates: vec![Gate {
+                name: "constitution_present".into(),
+                status: GateStatus::Pass,
+                failure_class: None,
+            }],
             accounting: Accounting {
                 phases_expected: 4,
                 phases_completed: 4,
@@ -481,6 +472,7 @@ mod tests {
             failure_class: Some("MISSING_TASKS_ARTIFACT".into()),
         });
         p.verdict = Verdict::SoftFail;
-        p.validate().expect("soft_fail with blocked phases should be valid");
+        p.validate()
+            .expect("soft_fail with blocked phases should be valid");
     }
 }

@@ -52,7 +52,6 @@ fn create_ralph_receipt(verdict: &str, constitution_hash: Option<&str>) -> Strin
     serde_json::to_string_pretty(&receipt).unwrap()
 }
 
-
 // ── Test: GgenReceipt deserializes actual ggen receipt format ─────────────
 //
 // ggen receipts use Vec<String> for both input_hashes and output_hashes.
@@ -95,13 +94,24 @@ fn ggen_receipt_deserializes_vec_format_correctly() {
     let receipt: GgenReceiptCheck =
         serde_json::from_str(raw).expect("must deserialize actual ggen receipt format");
 
-    assert_eq!(receipt.operation_id, "pack-install-capability-mcp-20260401-164929");
-    assert_eq!(receipt.input_hashes.len(), 1, "input_hashes must have 1 entry");
+    assert_eq!(
+        receipt.operation_id,
+        "pack-install-capability-mcp-20260401-164929"
+    );
+    assert_eq!(
+        receipt.input_hashes.len(),
+        1,
+        "input_hashes must have 1 entry"
+    );
     assert_eq!(
         receipt.input_hashes[0],
         "5dc5076a78bce60dc1a6682017e78ee50f1c3ce5aa5080b8d4f2bc31074ecef3"
     );
-    assert_eq!(receipt.output_hashes.len(), 3, "output_hashes must have 3 entries");
+    assert_eq!(
+        receipt.output_hashes.len(),
+        3,
+        "output_hashes must have 3 entries"
+    );
     assert!(!receipt.signature.is_empty(), "signature must be non-empty");
     assert!(!receipt.timestamp.is_empty(), "timestamp must be non-empty");
     assert!(receipt.previous_receipt_hash.is_none());
@@ -293,7 +303,11 @@ fn sr_validates_speckit_constitution_hash() {
     let temp_dir = TempDir::new().unwrap();
 
     let constitution_path = temp_dir.path().join("constitution.md");
-    fs::write(&constitution_path, "# Constitution\n\nThis is the constitution.").unwrap();
+    fs::write(
+        &constitution_path,
+        "# Constitution\n\nThis is the constitution.",
+    )
+    .unwrap();
 
     let spec_path = temp_dir.path().join("spec.md");
     fs::write(&spec_path, "# Spec").unwrap();
@@ -557,8 +571,11 @@ fn sr_emits_structured_verdict_with_all_hashes() {
     fs::write(&cap_receipt_path, create_ggen_receipt("sig123")).unwrap();
 
     let ralph_receipt_path = temp_dir.path().join("ralph.json");
-    fs::write(&ralph_receipt_path, create_ralph_receipt("Pass", Some("rh123")))
-        .unwrap();
+    fs::write(
+        &ralph_receipt_path,
+        create_ralph_receipt("Pass", Some("rh123")),
+    )
+    .unwrap();
 
     let constitution_path = temp_dir.path().join("constitution.md");
     fs::write(&constitution_path, "# Constitution").unwrap();
@@ -656,8 +673,7 @@ fn sr_includes_ralph_plan_receipt_hash_in_gates() {
     let temp_dir = TempDir::new().unwrap();
     let receipt_path = temp_dir.path().join("ralph.json");
 
-    fs::write(&receipt_path, create_ralph_receipt("Pass", Some("rh123")))
-        .unwrap();
+    fs::write(&receipt_path, create_ralph_receipt("Pass", Some("rh123"))).unwrap();
 
     let output = std::process::Command::new("cargo")
         .args(&["run", "--bin", "sr", "--"])
@@ -692,8 +708,11 @@ fn sr_unblocks_ostar_closure_on_valid_receipts_and_artifacts() {
     fs::write(&cap_receipt_path, create_ggen_receipt("sig123")).unwrap();
 
     let ralph_receipt_path = temp_dir.path().join("ralph.json");
-    fs::write(&ralph_receipt_path, create_ralph_receipt("Pass", Some("rh123")))
-        .unwrap();
+    fs::write(
+        &ralph_receipt_path,
+        create_ralph_receipt("Pass", Some("rh123")),
+    )
+    .unwrap();
 
     let constitution_path = temp_dir.path().join("constitution.md");
     fs::write(&constitution_path, "# Constitution").unwrap();
@@ -751,7 +770,11 @@ fn sr_powl8_program_valid_opcodes_accepted() {
     let prog_json = serde_json::json!({
         "opcodes": [1, 2, 3, 4, 5, 6, 7, 8, 1, 3]
     });
-    fs::write(&prog_path, serde_json::to_string_pretty(&prog_json).unwrap()).unwrap();
+    fs::write(
+        &prog_path,
+        serde_json::to_string_pretty(&prog_json).unwrap(),
+    )
+    .unwrap();
 
     let output = std::process::Command::new("cargo")
         .args(&["run", "--bin", "sr", "--"])
@@ -803,7 +826,11 @@ fn sr_powl8_program_invalid_opcode_rejected() {
     let prog_json = serde_json::json!({
         "opcodes": [1, 2, 9, 3]
     });
-    fs::write(&prog_path, serde_json::to_string_pretty(&prog_json).unwrap()).unwrap();
+    fs::write(
+        &prog_path,
+        serde_json::to_string_pretty(&prog_json).unwrap(),
+    )
+    .unwrap();
 
     let output = std::process::Command::new("cargo")
         .args(&["run", "--bin", "sr", "--"])
@@ -845,8 +872,11 @@ fn sr_blocks_ostar_closure_on_missing_speckit_artifact() {
     fs::write(&cap_receipt_path, create_ggen_receipt("sig123")).unwrap();
 
     let ralph_receipt_path = temp_dir.path().join("ralph.json");
-    fs::write(&ralph_receipt_path, create_ralph_receipt("Pass", Some("rh123")))
-        .unwrap();
+    fs::write(
+        &ralph_receipt_path,
+        create_ralph_receipt("Pass", Some("rh123")),
+    )
+    .unwrap();
 
     let output = std::process::Command::new("cargo")
         .args(&["run", "--bin", "sr", "--"])
@@ -862,7 +892,11 @@ fn sr_blocks_ostar_closure_on_missing_speckit_artifact() {
         Ok(out) => {
             let exit_code = out.status.code();
             // Should fail because Spec Kit artifacts missing
-            assert_ne!(Some(0), exit_code, "SR should fail on missing Spec Kit artifacts");
+            assert_ne!(
+                Some(0),
+                exit_code,
+                "SR should fail on missing Spec Kit artifacts"
+            );
         }
         Err(e) => {
             eprintln!("Warning: sr binary not available: {}", e);

@@ -15,13 +15,43 @@ impl fmt::Display for AutonomicEvent {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+pub enum PackPosture {
+    Nominal,
+    Elevated,
+    Tightened,
+    Lockdown,
+}
+
+impl Default for PackPosture {
+    fn default() -> Self {
+        PackPosture::Nominal
+    }
+}
+
+impl fmt::Display for PackPosture {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let posture_str = match self {
+            PackPosture::Nominal => "NOMINAL",
+            PackPosture::Elevated => "ELEVATED",
+            PackPosture::Tightened => "TIGHTENED",
+            PackPosture::Lockdown => "LOCKDOWN",
+        };
+        write!(f, "{}", posture_str)
+    }
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct AutonomicState {
     pub process_health: f32,
     pub throughput: f32,
     pub conformance_score: f32,
     pub drift_detected: bool,
     pub active_cases: usize,
+    #[serde(default)]
+    pub field_elevation: f32,
+    #[serde(default)]
+    pub pack_posture: PackPosture,
 }
 
 impl fmt::Display for AutonomicState {
@@ -82,6 +112,7 @@ pub enum ActionType {
     Reroute,
     Repair,
     Notify,
+    Recover,
 }
 
 impl fmt::Display for ActionType {
@@ -96,6 +127,7 @@ impl fmt::Display for ActionType {
             ActionType::Reroute => "Reroute",
             ActionType::Repair => "Repair",
             ActionType::Notify => "Notify",
+            ActionType::Recover => "Recover",
         };
         write!(f, "{}", type_str)
     }
@@ -162,6 +194,10 @@ impl AutonomicAction {
 
     pub fn recommend(id: u64, params: &str) -> Self {
         Self::new(id, ActionType::Recommend, ActionRisk::Low, params)
+    }
+
+    pub fn recover(id: u64, params: &str) -> Self {
+        Self::new(id, ActionType::Recover, ActionRisk::Low, params)
     }
 
     pub fn critical(id: u64, action_type: ActionType, params: &str) -> Self {

@@ -95,7 +95,10 @@ pub fn bitmask_to_features(facts: u64) -> Vec<f64> {
 /// Train decision tree on (facts, label) pairs and predict diagnosis on test facts.
 #[must_use]
 pub fn classify(train_facts: &[u64], labels: &[bool], test_facts: &[u64]) -> Vec<bool> {
-    let train: Vec<Vec<f64>> = train_facts.iter().map(|&m| bitmask_to_features(m)).collect();
+    let train: Vec<Vec<f64>> = train_facts
+        .iter()
+        .map(|&m| bitmask_to_features(m))
+        .collect();
     let test: Vec<Vec<f64>> = test_facts.iter().map(|&m| bitmask_to_features(m)).collect();
     decision_tree::classify_d3(&train, labels, &test)
 }
@@ -142,8 +145,8 @@ mod tests {
         let train_facts = vec![
             fact::GRAM_POS | fact::COCCUS | fact::AEROBIC | fact::FEVER | fact::RIGORS, // strep
             fact::GRAM_POS | fact::COCCUS | fact::AEROBIC | fact::FEVER | fact::RIGORS, // strep
-            fact::GRAM_NEG | fact::ANAEROBIC,                                            // not strep
-            fact::FEVER,                                                                  // not strep
+            fact::GRAM_NEG | fact::ANAEROBIC,                                           // not strep
+            fact::FEVER,                                                                // not strep
         ];
         let labels = vec![true, true, false, false];
         let test_facts = vec![

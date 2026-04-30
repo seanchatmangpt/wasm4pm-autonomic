@@ -1,0 +1,15 @@
+# clippy configuration for the `ccog` crate (Phase 12).
+#
+# Rationale: post-Phase-8 the canonical map type is `PackedKeyTable`
+# (deterministic iteration, FNV-1a hashing, alloc-free hot path).
+# `std::collections::HashMap` and `BTreeMap` introduce non-deterministic
+# iteration order or allocator pressure that breaks receipt determinism
+# and the KernelFloor budget.
+#
+# Tests and benches may legitimately use these types; clippy is not run
+# with `--all-targets` by default in the pack-coverage gate.
+
+disallowed-types = [
+  { path = "std::collections::HashMap", reason = "use ccog::utils::dense::PackedKeyTable for deterministic iteration; HashMap is non-deterministic and breaks receipt determinism" },
+  { path = "std::collections::BTreeMap", reason = "use ccog::utils::dense::PackedKeyTable; BTreeMap allocates and pollutes the KernelFloor budget" },
+]

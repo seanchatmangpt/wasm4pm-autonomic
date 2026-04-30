@@ -41,3 +41,33 @@ impl<const WORDS: usize> SwarMarking<WORDS> {
 }
 
 pub type SwarMarking64 = SwarMarking<1>;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_try_fire_branchless_enabled() {
+        let marking = SwarMarking64::new(0b1111);
+        let req = &[0b0011];
+        let out = &[0b1100];
+        let (new_marking, fired) = marking.try_fire_branchless(req, out);
+        assert!(fired);
+        assert_eq!(new_marking.words[0], 0b1100);
+    }
+
+    #[test]
+    fn test_try_fire_branchless_disabled() {
+        let marking = SwarMarking64::new(0b0001);
+        let req = &[0b1110]; // Requires bits not present
+        let out = &[0b0000];
+        let (_new_marking, fired) = marking.try_fire_branchless(req, out);
+        assert!(!fired);
+    }
+
+    #[test]
+    fn test_swar_marking_new_sets_word_zero() {
+        let marking = SwarMarking64::new(0xDEADBEEF);
+        assert_eq!(marking.words[0], 0xDEADBEEF);
+    }
+}

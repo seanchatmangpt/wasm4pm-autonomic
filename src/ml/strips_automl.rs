@@ -93,8 +93,14 @@ pub fn bitmask_to_features(state: u64) -> Vec<f64> {
 /// Train gradient boosting on (state, reachable?) pairs and predict on test states.
 #[must_use]
 pub fn classify(train_states: &[u64], labels: &[bool], test_states: &[u64]) -> Vec<bool> {
-    let train: Vec<Vec<f64>> = train_states.iter().map(|&s| bitmask_to_features(s)).collect();
-    let test: Vec<Vec<f64>> = test_states.iter().map(|&s| bitmask_to_features(s)).collect();
+    let train: Vec<Vec<f64>> = train_states
+        .iter()
+        .map(|&s| bitmask_to_features(s))
+        .collect();
+    let test: Vec<Vec<f64>> = test_states
+        .iter()
+        .map(|&s| bitmask_to_features(s))
+        .collect();
     gradient_boosting::classify_default(&train, labels, &test)
 }
 
@@ -131,10 +137,10 @@ mod tests {
     fn classify_holding_pattern_separable() {
         // Reachable: states where HOLDING_A is set or pickup-A precondition holds
         let train_states = vec![
-            HOLDING_A,                                           // already at goal
-            CLEAR_A | ON_TABLE_A | ARM_EMPTY,                    // 1-step plan
-            HOLDING_B,                                           // can putdown then pickup
-            0,                                                   // unreachable empty state
+            HOLDING_A,                        // already at goal
+            CLEAR_A | ON_TABLE_A | ARM_EMPTY, // 1-step plan
+            HOLDING_B,                        // can putdown then pickup
+            0,                                // unreachable empty state
         ];
         let labels = vec![true, true, true, false];
         let test_states = vec![HOLDING_A, 0];
@@ -150,12 +156,7 @@ mod tests {
 
     #[test]
     fn classify_is_deterministic_across_invocations() {
-        let train = vec![
-            HOLDING_A,
-            CLEAR_A | ON_TABLE_A | ARM_EMPTY,
-            HOLDING_B,
-            0,
-        ];
+        let train = vec![HOLDING_A, CLEAR_A | ON_TABLE_A | ARM_EMPTY, HOLDING_B, 0];
         let labels = vec![true, true, true, false];
         let p1 = classify(&train, &labels, &train);
         let p2 = classify(&train, &labels, &train);

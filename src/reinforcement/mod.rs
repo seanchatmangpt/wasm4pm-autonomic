@@ -12,12 +12,14 @@ pub const REINFORCE_LEARNING_RATE: f32 = 0.01;
 
 pub mod double_q;
 pub mod expected_sarsa;
+pub mod linucb_agent;
 pub mod q_learning;
 pub mod reinforce;
 pub mod sarsa;
 
 pub use double_q::DoubleQLearning;
 pub use expected_sarsa::ExpectedSARSAAgent;
+pub use linucb_agent::LinUcbAgent;
 pub use q_learning::QLearning;
 pub use reinforce::ReinforceAgent;
 pub use sarsa::SARSAAgent;

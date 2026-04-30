@@ -9,6 +9,7 @@ repository = "https://github.com/dteam-ai/dteam"
 homepage = "https://dteam.ai"
 
 [workspace]
+members = ["crates/ccog", "crates/ccog-bridge", "crates/autoinstinct"]
 
 [dependencies]
 unibit-globe = { path = "../unibit/crates/unibit-globe" }
@@ -20,23 +21,23 @@ unibit-graph = { path = "../unibit/crates/unibit-graph" }
 unibit-kernel = { path = "../unibit/crates/unibit-kernel" }
 
 log = "0.4"
-env_logger = "0.11"
+env_logger = { version = "0.11", optional = true }
 bcinr = "26.4.18"
 rustc-hash = "1.1.0"
 fastrand = "2.1"
 itertools = "0.12"
-rayon = "1.10"
+rayon = { version = "1.10", optional = true }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0", features = ["arbitrary_precision"] }
 toml = "0.8"
 anyhow = "1.0"
 tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-opentelemetry = { version = "0.31", features = ["trace"] }
-opentelemetry_sdk = { version = "0.31", features = ["rt-tokio"] }
-tracing-opentelemetry = "0.32"
-opentelemetry-otlp = { version = "0.31", features = ["grpc-tonic", "trace"] }
-tokio = { version = "1.52", features = ["full"] }
+tracing-subscriber = { version = "0.3", features = ["env-filter"], optional = true }
+opentelemetry = { version = "0.31", features = ["trace"], optional = true }
+opentelemetry_sdk = { version = "0.31", features = ["rt-tokio"], optional = true }
+tracing-opentelemetry = { version = "0.32", optional = true }
+opentelemetry-otlp = { version = "0.31", features = ["grpc-tonic", "trace"], optional = true }
+tokio = { version = "1.52", features = ["full"], optional = true }
 quick-xml = { version = "0.37", features = ["serialize"] }
 uuid = { version = "1.0", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
@@ -45,10 +46,7 @@ hex = "0.4"
 blake3 = "1.5"
 blake2 = "0.10"
 ed25519-dalek = { version = "2", default-features = false, features = ["std"] }
-wasm-bindgen = "0.2"
-serde-wasm-bindgen = "0.6"
 hashbrown = "0.14"
-wasm4pm = { path = "/Users/sac/chatmangpt/wasm4pm/wasm4pm", default-features = false, features = ["powl", "streaming_basic", "hand_rolled_stats"] }
 
 [features]
 default = ["token-based-replay"]
@@ -56,6 +54,8 @@ token-based-replay = []
 # Enables live trace generation from conformance::trace_generator.
 # Until that module is implemented, leave this feature off (stub stubs are used).
 trace-generator = []
+# Native platform support (uses tokio, rayon, OpenTelemetry) — required for non-WASM builds
+native = ["dep:rayon", "dep:tokio", "dep:opentelemetry_sdk", "dep:opentelemetry-otlp", "dep:opentelemetry", "dep:tracing-opentelemetry", "dep:env_logger", "dep:tracing-subscriber"]
 
 [dev-dependencies]
 oxigraph = "0.4"
@@ -71,10 +71,19 @@ proptest = "1.2.0"
 
 [lib]
 path = "src/lib.rs"
+crate-type = ["cdylib", "rlib"]
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.2", features = ["js"] }
+console_error_panic_hook = "0.1"
+uuid = { version = "1.0", features = ["js"] }
+wasm-bindgen = "0.2"
+serde-wasm-bindgen = "0.6"
 
 [[bin]]
 name = "pdc2025"
 path = "src/bin/pdc2025.rs"
+required-features = ["native"]
 
 [[bin]]
 name = "ostar_bridge"
@@ -210,4 +219,12 @@ harness = false
 
 [[bench]]
 name = "bitmask_replay_bench"
+harness = false
+
+[[bench]]
+name = "bpn_measurement_bench"
+harness = false
+
+[[bench]]
+name = "vision_2030_e2e_bench"
 harness = false

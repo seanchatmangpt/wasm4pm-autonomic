@@ -27,7 +27,7 @@
 //!     DriftSignal::Healthy => println!("Model is healthy"),
 //!     DriftSignal::GradualDecay => println!("Slow drift detected"),
 //!     DriftSignal::SuddenFailure => println!("Catastrophic failure"),
-//!     DriftSignal::StratifiedDegradation => println!("Tier-specific failure"),
+//!     DriftSignal::StratifiedDegradation { tier, .. } => println!("Tier {tier} failure"),
 //! }
 //! ```
 
@@ -104,7 +104,11 @@ impl ConfusionMetrics {
     ) -> HashMap<u8, f64> {
         let mut tiers: HashMap<u8, (u32, u32)> = HashMap::new(); // (correct, total) per tier
 
-        for ((&pred, &obs), &tier) in predictions.iter().zip(observed.iter()).zip(tier_sequence.iter()) {
+        for ((&pred, &obs), &tier) in predictions
+            .iter()
+            .zip(observed.iter())
+            .zip(tier_sequence.iter())
+        {
             let tier = tier.min(3);
             let (correct, total) = tiers.entry(tier).or_insert((0, 0));
             *total += 1;
@@ -115,7 +119,11 @@ impl ConfusionMetrics {
 
         let mut result = HashMap::new();
         for (tier, (correct, total)) in tiers {
-            let acc = if total == 0 { 0.0 } else { correct as f64 / total as f64 };
+            let acc = if total == 0 {
+                0.0
+            } else {
+                correct as f64 / total as f64
+            };
             result.insert(tier, acc);
         }
         result
@@ -123,7 +131,7 @@ impl ConfusionMetrics {
 }
 
 /// Signal indicating model drift type.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum DriftSignal {
     /// Model accuracy drop < 5%.
     Healthy,
@@ -131,8 +139,12 @@ pub enum DriftSignal {
     GradualDecay,
     /// Model accuracy drop > 15% — immediate retraining required.
     SuddenFailure,
-    /// Accuracy drop > 20% in any single compute tier — tier-specific degradation.
-    StratifiedDegradation,
+    /// Accuracy drop > 20% in a specific compute tier — tier-targeted degradation.
+    StratifiedDegradation {
+        tier: u8,
+        actual_accuracy: f64,
+        expected_accuracy: f64,
+    },
 }
 
 impl DriftSignal {
@@ -142,7 +154,7 @@ impl DriftSignal {
             self,
             DriftSignal::GradualDecay
                 | DriftSignal::SuddenFailure
-                | DriftSignal::StratifiedDegradation
+                | DriftSignal::StratifiedDegradation { .. }
         )
     }
 }
@@ -176,34 +188,57 @@ pub fn compute_confusion_matrix(predictions: &[bool], observed: &[bool]) -> Conf
     ConfusionMetrics { tp, fp, fn_, tn }
 }
 
-/// Detect model drift using confusion matrix and tier stratification.
+/// Detect model drift using confusion matrix, tier stratification, and per-tier baselines.
 ///
 /// # Arguments
 /// * `metrics` — Computed confusion matrix
+/// * `predictions` — Model's binary predictions (parallel to `tier_sequence`)
+/// * `observed` — Ground-truth labels
 /// * `tier_sequence` — Which tier (0-3) fired for each prediction
-/// * `baseline_accuracy` — Historical model accuracy (e.g., 0.95 for 95%)
+/// * `baseline_accuracy` — Historical overall model accuracy
+/// * `tier_baselines` — Per-tier expected accuracy: `&[(tier_id, expected_accuracy)]`.
+///   Pass `&[]` to skip stratified checking.
 ///
 /// # Returns
-/// One of four [`DriftSignal`] variants based on accuracy drop and tier-wise degradation.
+/// One of four [`DriftSignal`] variants. `StratifiedDegradation` takes priority over
+/// `SuddenFailure` when a per-tier drop exceeds 20%.
 ///
 /// **Thresholds:**
-/// - Healthy: drop < 5%
-/// - GradualDecay: drop 5–15%
-/// - SuddenFailure: drop > 15%
-/// - StratifiedDegradation: any tier has no predictions (stub detection)
-///
-/// **Note:** Full stratified detection requires predictions+observed data via
-/// [`ConfusionMetrics::per_tier_accuracy()`]. This function provides basic overall
-/// accuracy-based drift detection and can detect tier availability issues.
+/// - `StratifiedDegradation`: any tier's actual accuracy drops > 20% below its baseline
+/// - `SuddenFailure`: overall accuracy drop > 15%
+/// - `GradualDecay`: overall accuracy drop 5–15%
+/// - `Healthy`: drop < 5%
 pub fn detect_drift(
     metrics: &ConfusionMetrics,
-    _tier_sequence: &[u8],
+    predictions: &[bool],
+    observed: &[bool],
+    tier_sequence: &[u8],
     baseline_accuracy: f64,
+    tier_baselines: &[(u8, f64)],
 ) -> DriftSignal {
+    // Stratified check runs first — tier-specific failure is more actionable
+    if !tier_sequence.is_empty() {
+        let tier_accs = metrics.per_tier_accuracy(predictions, observed, tier_sequence);
+        for (&tier_id, &actual) in &tier_accs {
+            let expected_acc = tier_baselines
+                .iter()
+                .find(|&&(id, _)| id == tier_id)
+                .map(|&(_, acc)| acc)
+                .unwrap_or(baseline_accuracy);
+
+            if actual < expected_acc - 0.20 {
+                return DriftSignal::StratifiedDegradation {
+                    tier: tier_id,
+                    actual_accuracy: actual,
+                    expected_accuracy: expected_acc,
+                };
+            }
+        }
+    }
+
     let current_accuracy = metrics.accuracy();
     let drop = (baseline_accuracy - current_accuracy).max(0.0);
 
-    // Check overall accuracy drop
     if drop > 0.15 {
         DriftSignal::SuddenFailure
     } else if drop >= 0.05 {
@@ -250,40 +285,51 @@ mod tests {
 
         let cm = compute_confusion_matrix(&predictions, &observed);
         let tier_seq = vec![0, 0, 0, 1, 1, 1];
-        let signal = detect_drift(&cm, &tier_seq, 1.0); // 100% baseline, 100% current
+        let signal = detect_drift(&cm, &predictions, &observed, &tier_seq, 1.0, &[]);
         assert_eq!(signal, DriftSignal::Healthy);
     }
 
     #[test]
     fn test_detect_drift_gradual_decay() {
-        // 100 predictions: 90 correct, 10 wrong
         let mut predictions = vec![true; 90];
         predictions.extend(vec![false; 10]);
         let mut observed = vec![true; 90];
-        observed.extend(vec![true; 10]); // Last 10 should have been true but predicted false
+        observed.extend(vec![true; 10]);
 
         let cm = compute_confusion_matrix(&predictions, &observed);
         let tier_seq = vec![0; 100];
-        // accuracy = 90 / 100 = 0.9
-        // baseline = 1.0, drop = 0.1 (10%) -> GradualDecay (5-15%)
-        let signal = detect_drift(&cm, &tier_seq, 1.0);
+        // accuracy = 0.9, baseline = 1.0, drop = 0.1 -> GradualDecay
+        let signal = detect_drift(&cm, &predictions, &observed, &tier_seq, 1.0, &[]);
         assert_eq!(signal, DriftSignal::GradualDecay);
     }
 
     #[test]
     fn test_detect_drift_sudden_failure() {
-        // 100 predictions: 80 correct, 20 wrong
         let mut predictions = vec![true; 80];
         predictions.extend(vec![false; 20]);
-        let mut observed = vec![true; 100];
-        observed.extend(vec![false; 0]); // All should have been true
+        let observed = vec![true; 100];
 
         let cm = compute_confusion_matrix(&predictions, &observed);
         let tier_seq = vec![0; 100];
-        // accuracy = 80 / 100 = 0.8
-        // baseline = 1.0, drop = 0.2 (20%) -> SuddenFailure (>15%)
-        let signal = detect_drift(&cm, &tier_seq, 1.0);
+        // accuracy = 0.8, baseline = 1.0, drop = 0.2 -> SuddenFailure
+        let signal = detect_drift(&cm, &predictions, &observed, &tier_seq, 1.0, &[]);
         assert_eq!(signal, DriftSignal::SuddenFailure);
+    }
+
+    #[test]
+    fn test_detect_drift_stratified_degradation() {
+        // Tier 1: all wrong (0.0 accuracy), expected 0.90 -> 0.0 < 0.90 - 0.20 = 0.70
+        let predictions = vec![false; 10];
+        let observed = vec![true; 10];
+        let tier_seq = vec![1u8; 10];
+
+        let cm = compute_confusion_matrix(&predictions, &observed);
+        let signal =
+            detect_drift(&cm, &predictions, &observed, &tier_seq, 0.9, &[(1, 0.90)]);
+        assert!(
+            matches!(signal, DriftSignal::StratifiedDegradation { tier: 1, .. }),
+            "expected StratifiedDegradation for tier 1"
+        );
     }
 
     #[test]
@@ -325,7 +371,12 @@ mod tests {
         assert!(!DriftSignal::Healthy.needs_retraining());
         assert!(DriftSignal::GradualDecay.needs_retraining());
         assert!(DriftSignal::SuddenFailure.needs_retraining());
-        assert!(DriftSignal::StratifiedDegradation.needs_retraining());
+        assert!(DriftSignal::StratifiedDegradation {
+            tier: 0,
+            actual_accuracy: 0.5,
+            expected_accuracy: 0.9
+        }
+        .needs_retraining());
     }
 
     #[test]

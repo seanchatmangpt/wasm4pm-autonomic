@@ -196,10 +196,9 @@ fn emit_ralph_plan(
     let phases_completed = completed_phases.len() as u32;
     let phases_blocked = blocked_phases.len() as u32;
     let phases_skipped = skipped_phases.len() as u32;
-    let phases_pending =
-        phases_expected - phases_completed - phases_blocked - phases_skipped;
-    let balanced = phases_completed + phases_blocked + phases_skipped + phases_pending
-        == phases_expected;
+    let phases_pending = phases_expected - phases_completed - phases_blocked - phases_skipped;
+    let balanced =
+        phases_completed + phases_blocked + phases_skipped + phases_pending == phases_expected;
 
     // Determine highest-reached phase: last entry in `completed_phases` according to sequence order.
     let phase = phase_sequence
@@ -215,10 +214,7 @@ fn emit_ralph_plan(
     //   Fatal    — reserved for catastrophic; not selected by emitter (validator may upgrade)
     let any_fail = gates.iter().any(|g| g.status == GateStatus::Fail);
     // Pass requires every phase actually completed: no fails, no blocks, no pending, no skips.
-    let verdict = if !any_fail
-        && phases_blocked == 0
-        && phases_pending == 0
-        && phases_skipped == 0
+    let verdict = if !any_fail && phases_blocked == 0 && phases_pending == 0 && phases_skipped == 0
     {
         Verdict::Pass
     } else {
@@ -281,8 +277,8 @@ fn run_portfolio_tick(args: &[String]) -> anyhow::Result<()> {
         args.get(pos + 1).map(|s| s.as_str())
     }
 
-    let registry = flag(args, "--registry")
-        .ok_or_else(|| anyhow::anyhow!("--registry <path> is required"))?;
+    let registry =
+        flag(args, "--registry").ok_or_else(|| anyhow::anyhow!("--registry <path> is required"))?;
     let cell = flag(args, "--cell");
     let phase = flag(args, "--phase").unwrap_or("observe");
     let emit_receipt = flag(args, "--emit-receipt")
@@ -321,7 +317,11 @@ fn run_portfolio_tick(args: &[String]) -> anyhow::Result<()> {
                 }
             }
             found.ok_or_else(|| {
-                anyhow::anyhow!("cell '{}' not found in registry {}", name, registry_path.display())
+                anyhow::anyhow!(
+                    "cell '{}' not found in registry {}",
+                    name,
+                    registry_path.display()
+                )
             })?
         }
         None => registry_path
@@ -459,10 +459,7 @@ async fn main() -> anyhow::Result<()> {
     }
     let _ = fs::create_dir_all(&plans_out);
 
-    let run_id = format!(
-        "ralph-{}",
-        chrono::Utc::now().format("%Y%m%dT%H%M%SZ")
-    );
+    let run_id = format!("ralph-{}", chrono::Utc::now().format("%Y%m%dT%H%M%SZ"));
 
     if is_test && cfg!(debug_assertions) {
         info!("!! TEST MODE ENABLED: Skipping LLM calls and using mock responses.");
@@ -564,8 +561,7 @@ async fn main() -> anyhow::Result<()> {
                 let _phase_span =
                     info_span!("run_phase", phase = %phase_name, idea = %idea).entered();
 
-                let journal: Arc<Mutex<PhaseJournal>> =
-                    Arc::new(Mutex::new(PhaseJournal::new()));
+                let journal: Arc<Mutex<PhaseJournal>> = Arc::new(Mutex::new(PhaseJournal::new()));
 
                 if is_test {
                     for (phase, filename) in [

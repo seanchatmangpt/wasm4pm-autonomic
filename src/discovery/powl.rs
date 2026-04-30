@@ -7,6 +7,14 @@
 /// This module is the public entry point used by the spec-level interface.
 /// The underlying algorithm is the Nanosecond Inductive Miner from
 /// `crate::powl::discovery`.
+///
+/// ## Wire-in Decision (PDC 2025 Phase 2)
+///
+/// The `discover_powl` function is wired into the ostar_bridge JSON RPC interface
+/// as the `discover_powl` operation. It accepts an EventLog and returns a PetriNet
+/// converted from the discovered POWL model via `powl_to_wf_net`. This enables
+/// end-to-end POWL-driven discovery pipelines in the autonomic kernel without
+/// requiring Petri net serialization overhead.
 use crate::models::{AttributeValue, Trace};
 use crate::powl::core::{PowlModel, PowlNode};
 use crate::powl::discovery::mine_powl;
@@ -91,8 +99,7 @@ pub fn discover_powl(traces: &[Trace]) -> Result<PowlModel<DISCOVER_WORDS>, Disc
 
     // --- Step 2: build DFG ---------------------------------------------------
     // dfg[i] is a bitset of all activities that directly follow activity i.
-    let mut dfg: Vec<KBitSet<DISCOVER_WORDS>> =
-        vec![KBitSet::zero(); max_activities];
+    let mut dfg: Vec<KBitSet<DISCOVER_WORDS>> = vec![KBitSet::zero(); max_activities];
 
     let mut footprint: KBitSet<DISCOVER_WORDS> = KBitSet::zero();
 
@@ -212,7 +219,11 @@ mod tests {
 
         match &model.root {
             PowlNode::Operator { operator, .. } => {
-                assert_eq!(*operator, PowlOperator::XOR, "disjoint paths must yield XOR");
+                assert_eq!(
+                    *operator,
+                    PowlOperator::XOR,
+                    "disjoint paths must yield XOR"
+                );
             }
             other => panic!("Expected XOR, got {:?}", other),
         }

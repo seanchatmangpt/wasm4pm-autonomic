@@ -25,13 +25,20 @@
 //! // Entry appended; on overflow, oldest entry is replaced.
 //! ```
 
+use std::cell::UnsafeCell;
 use std::sync::atomic::{AtomicU64, Ordering};
+use hex;
+
+/// Compute BLAKE3-256 hash of raw bytes as the scent trail that cannot be casually rewritten.
+pub fn blake3_input_hash(raw: &[u8]) -> [u8; 32] {
+    *blake3::hash(raw).as_bytes()
+}
 
 /// A single prediction log entry (32 bytes).
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct PredictionEntry {
-    /// FNV-1a hash of the input context (e.g., model features).
-    pub input_hash: u64,
+    /// BLAKE3-256 hash of the input context (e.g., model features) — scent trail.
+    pub input_hash: [u8; 32],
     /// Binary/artifact version for reproducibility.
     pub binary_version: u32,
     /// Timestamp in microseconds since UNIX epoch.
@@ -50,14 +57,14 @@ impl PredictionEntry {
     /// Create a new prediction entry.
     ///
     /// # Arguments
-    /// * `input_hash` — Hash of decision context
+    /// * `input_hash` — BLAKE3-256 hash of decision context (scent trail)
     /// * `binary_version` — Artifact version for audit trail
     /// * `timestamp_us` — Timestamp in microseconds
     /// * `decision` — The prediction boolean
     /// * `tier_fired` — Compute tier (0-3)
     /// * `provenance_hash` — Hash of signal+fusion operator
     pub fn new(
-        input_hash: u64,
+        input_hash: [u8; 32],
         binary_version: u32,
         timestamp_us: u64,
         decision: bool,
@@ -85,7 +92,7 @@ impl PredictionEntry {
 /// All operations are O(1) and allocation-free. No Mutex, RwLock, or heap growth.
 pub struct PredictionLogBuffer<const N: usize> {
     /// Ring buffer of prediction entries.
-    entries: [PredictionEntry; N],
+    entries: UnsafeCell<[PredictionEntry; N]>,
     /// Current write position (0..N).
     write_pos: AtomicU64,
     /// Monotonic sequence counter (incremented on each write).
@@ -94,13 +101,15 @@ pub struct PredictionLogBuffer<const N: usize> {
     binary_version: u32,
 }
 
+unsafe impl<const N: usize> Sync for PredictionLogBuffer<N> {}
+
 impl<const N: usize> PredictionLogBuffer<N> {
     /// Create a new prediction log buffer with the given binary version.
     ///
     /// All entries are initialized with zeros. The buffer can hold exactly N entries.
     pub fn new(binary_version: u32) -> Self {
         const ZERO_ENTRY: PredictionEntry = PredictionEntry {
-            input_hash: 0,
+            input_hash: [0u8; 32],
             binary_version: 0,
             timestamp_us: 0,
             decision: false,
@@ -110,7 +119,7 @@ impl<const N: usize> PredictionLogBuffer<N> {
         };
 
         PredictionLogBuffer {
-            entries: [ZERO_ENTRY; N],
+            entries: UnsafeCell::new([ZERO_ENTRY; N]),
             write_pos: AtomicU64::new(0),
             sequence: AtomicU64::new(0),
             binary_version,
@@ -122,7 +131,7 @@ impl<const N: usize> PredictionLogBuffer<N> {
     /// This is the hot path: O(1), lock-free, no allocations.
     ///
     /// # Arguments
-    /// * `input_hash` — Hash of input context
+    /// * `input_hash` — BLAKE3-256 hash of input context (scent trail)
     /// * `decision` — The prediction (true/false)
     /// * `tier_fired` — Compute tier (0-3)
     /// * `provenance_hash` — Hash of signal+fusion operator
@@ -130,12 +139,12 @@ impl<const N: usize> PredictionLogBuffer<N> {
     /// Returns the monotonic sequence number of this entry (for tracing).
     pub fn log_prediction(
         &self,
-        input_hash: u64,
+        input_hash: [u8; 32],
+        timestamp_us: u64,
         decision: bool,
         tier_fired: u8,
         provenance_hash: u64,
     ) -> u64 {
-        let timestamp_us = Self::current_timestamp_us();
         let seq = self.sequence.fetch_add(1, Ordering::Relaxed);
         let pos = (seq as usize) % N;
 
@@ -155,7 +164,7 @@ impl<const N: usize> PredictionLogBuffer<N> {
         // we use unsafe here to override the const constraint temporarily.
         // The buffer's invariant is maintained: each write is a single assignment.
         unsafe {
-            let ptr = &self.entries as *const [PredictionEntry; N] as *mut [PredictionEntry; N];
+            let ptr = self.entries.get();
             (*ptr)[pos] = entry;
         }
 
@@ -176,6 +185,53 @@ impl<const N: usize> PredictionLogBuffer<N> {
         self.sequence.load(Ordering::Acquire) == 0
     }
 
+    /// Retrieve the last positive (decision==true) entry in the buffer.
+    ///
+    /// This is a non-destructive scan: no atomics are modified, no allocations.
+    /// Iterates in reverse (newest-first) and returns the first entry with decision==true.
+    ///
+    /// Returns Some(entry) if a positive entry exists, or None if the buffer is empty
+    /// or contains only negative decisions.
+    pub fn last_positive_entry(&self) -> Option<PredictionEntry> {
+        let seq = self.sequence.load(Ordering::Acquire);
+        let count = (seq as usize).min(N);
+
+        if count == 0 {
+            return None;
+        }
+
+        unsafe {
+            let entries_ptr = self.entries.get();
+
+            // Determine iteration order based on wraparound state
+            let indices_to_check: Vec<usize> = if seq < N as u64 {
+                // Buffer has not wrapped: entries are [0..count) in order
+                // Check in reverse (newest at count-1, oldest at 0)
+                (0..count).rev().collect()
+            } else {
+                // Buffer has wrapped: oldest entry is at (write_pos + 1) % N
+                let write_pos = self.write_pos.load(Ordering::Acquire) as usize;
+                // Build indices in reverse order: newest-first is [write_pos, write_pos-1, ..., start]
+                let mut indices = Vec::with_capacity(N);
+                for offset in 0..N {
+                    let idx = (write_pos.wrapping_sub(offset)) % N;
+                    indices.push(idx);
+                }
+                indices
+            };
+
+            // Scan in reverse and return first entry with decision==true
+            for idx in indices_to_check {
+                let entry = (*entries_ptr)[idx];
+                if entry.decision {
+                    return Some(entry);
+                }
+            }
+        }
+
+        None
+    }
+
     /// Drain the buffer into a Vec<PredictionEntry> in chronological order.
     ///
     /// This is meant to be called at window boundaries (e.g., every 60s) to export
@@ -191,20 +247,23 @@ impl<const N: usize> PredictionLogBuffer<N> {
             return result;
         }
 
-        if seq < N as u64 {
-            // Buffer has not yet wrapped around; entries are in order [0..count).
-            for i in 0..count {
-                result.push(self.entries[i]);
-            }
-        } else {
-            // Buffer has wrapped. Read starting from the entry after write_pos,
-            // wrapping around.
-            let write_pos = self.write_pos.load(Ordering::Acquire) as usize;
-            let start = (write_pos + 1) % N;
+        unsafe {
+            let entries_ptr = self.entries.get();
+            if seq < N as u64 {
+                // Buffer has not yet wrapped around; entries are in order [0..count).
+                for i in 0..count {
+                    result.push((*entries_ptr)[i]);
+                }
+            } else {
+                // Buffer has wrapped. Read starting from the entry after write_pos,
+                // wrapping around.
+                let write_pos = self.write_pos.load(Ordering::Acquire) as usize;
+                let start = (write_pos + 1) % N;
 
-            for offset in 0..N {
-                let idx = (start + offset) % N;
-                result.push(self.entries[idx]);
+                for offset in 0..N {
+                    let idx = (start + offset) % N;
+                    result.push((*entries_ptr)[idx]);
+                }
             }
         }
 
@@ -227,12 +286,14 @@ impl<const N: usize> PredictionLogBuffer<N> {
     pub fn drain_to_csv(&self) -> String {
         let entries = self.drain_to_vec();
         let mut csv = String::new();
-        csv.push_str("input_hash,binary_version,timestamp_us,decision,tier_fired,provenance_hash\n");
+        csv.push_str(
+            "input_hash,binary_version,timestamp_us,decision,tier_fired,provenance_hash\n",
+        );
 
         for entry in entries {
             csv.push_str(&format!(
-                "{:x},{},{},{},{},{:x}\n",
-                entry.input_hash,
+                "{},{},{},{},{},{:x}\n",
+                hex::encode(entry.input_hash),
                 entry.binary_version,
                 entry.timestamp_us,
                 if entry.decision { "true" } else { "false" },
@@ -252,8 +313,11 @@ impl<const N: usize> PredictionLogBuffer<N> {
         let mut h = 0xcbf29ce484222325u64;
 
         for entry in entries {
-            h ^= entry.input_hash;
-            h = h.wrapping_mul(0x100000001b3);
+            // Fold BLAKE3-256 hash bytes into FNV-1a hash
+            for byte in &entry.input_hash {
+                h ^= *byte as u64;
+                h = h.wrapping_mul(0x100000001b3);
+            }
             h ^= entry.binary_version as u64;
             h = h.wrapping_mul(0x100000001b3);
             h ^= entry.timestamp_us;
@@ -269,17 +333,7 @@ impl<const N: usize> PredictionLogBuffer<N> {
         h
     }
 
-    /// Get the current timestamp in microseconds since UNIX epoch.
-    ///
-    /// Uses `std::time::SystemTime` and converts to microseconds.
-    fn current_timestamp_us() -> u64 {
-        use std::time::{SystemTime, UNIX_EPOCH};
 
-        SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map(|d| d.as_micros() as u64)
-            .unwrap_or(0)
-    }
 }
 
 #[cfg(test)]
@@ -288,11 +342,11 @@ mod tests {
 
     #[test]
     fn test_prediction_entry_creation() {
-        let entry = PredictionEntry::new(0x1234, 42, 1000000, true, 1, 0x5678);
-        assert_eq!(entry.input_hash, 0x1234);
+        let entry = PredictionEntry::new(blake3_input_hash(b"input_1234"), 42, 1000000, true, 1, 0x5678);
+        assert_eq!(entry.input_hash, blake3_input_hash(b"input_1234"));
         assert_eq!(entry.binary_version, 42);
         assert_eq!(entry.timestamp_us, 1000000);
-        assert_eq!(entry.decision, true);
+        assert!(entry.decision);
         assert_eq!(entry.tier_fired, 1);
         assert_eq!(entry.provenance_hash, 0x5678);
     }
@@ -307,11 +361,11 @@ mod tests {
     #[test]
     fn test_log_prediction_single() {
         let buffer = PredictionLogBuffer::<10>::new(42);
-        let seq1 = buffer.log_prediction(0x1111, true, 0, 0x2222);
+        let seq1 = buffer.log_prediction(blake3_input_hash(b"input_1111"), 1000000, true, 0, 0x2222);
         assert_eq!(seq1, 0);
         assert_eq!(buffer.len(), 1);
 
-        let seq2 = buffer.log_prediction(0x3333, false, 2, 0x4444);
+        let seq2 = buffer.log_prediction(blake3_input_hash(b"input_3333"), 1000000, false, 2, 0x4444);
         assert_eq!(seq2, 1);
         assert_eq!(buffer.len(), 2);
     }
@@ -323,7 +377,8 @@ mod tests {
 
         // Log 10 entries (double the buffer size)
         for i in 0..10 {
-            buffer.log_prediction(i as u64, i % 2 == 0, (i % 4) as u8, i as u64 + 0x1000);
+            let i_value = i as u64;
+            buffer.log_prediction(blake3_input_hash(&i_value.to_le_bytes()), 1000000, i % 2 == 0, (i % 4) as u8, i as u64 + 0x1000);
         }
 
         assert_eq!(buffer.len(), SIZE); // Buffer capped at size
@@ -334,21 +389,23 @@ mod tests {
 
         // Verify the entries are the last logged ones (oldest to newest after drainage)
         for (idx, entry) in entries.iter().enumerate() {
-            let expected_input = (5 + idx) as u64;
-            assert_eq!(entry.input_hash, expected_input);
+            let expected_input_value = (5 + idx) as u64;
+            assert_eq!(entry.input_hash, blake3_input_hash(&expected_input_value.to_le_bytes()));
         }
     }
 
     #[test]
     fn test_drain_to_csv() {
         let buffer = PredictionLogBuffer::<3>::new(42);
-        buffer.log_prediction(0x1111, true, 1, 0x2222);
-        buffer.log_prediction(0x3333, false, 2, 0x4444);
+        buffer.log_prediction(blake3_input_hash(b"input_1111"), 1000000, true, 1, 0x2222);
+        buffer.log_prediction(blake3_input_hash(b"input_3333"), 1000000, false, 2, 0x4444);
 
         let csv = buffer.drain_to_csv();
-        assert!(csv.contains("input_hash,binary_version,timestamp_us,decision,tier_fired,provenance_hash"));
-        assert!(csv.contains("1111")); // First entry's input_hash
-        assert!(csv.contains("3333")); // Second entry's input_hash
+        assert!(csv.contains(
+            "input_hash,binary_version,timestamp_us,decision,tier_fired,provenance_hash"
+        ));
+        assert!(csv.contains(&hex::encode(blake3_input_hash(b"input_1111")))); // First entry's input_hash
+        assert!(csv.contains(&hex::encode(blake3_input_hash(b"input_3333")))); // Second entry's input_hash
         assert!(csv.contains("true"));
         assert!(csv.contains("false"));
     }
@@ -356,7 +413,7 @@ mod tests {
     #[test]
     fn test_tier_clamping() {
         let buffer = PredictionLogBuffer::<5>::new(42);
-        buffer.log_prediction(0x1111, true, 255, 0x2222); // Clamp to 3
+        buffer.log_prediction(blake3_input_hash(b"input_1111"), 1000000, true, 255, 0x2222); // Clamp to 3
         let entries = buffer.drain_to_vec();
         assert_eq!(entries[0].tier_fired, 3);
     }
@@ -366,14 +423,14 @@ mod tests {
         // Test that identical sequences of log_prediction calls produce identical entries
         // (modulo timestamps, which vary by system time)
         let buffer1 = PredictionLogBuffer::<10>::new(42);
-        buffer1.log_prediction(0x1111, true, 0, 0x2222);
-        buffer1.log_prediction(0x3333, false, 1, 0x4444);
+        buffer1.log_prediction(blake3_input_hash(b"input_1111"), 1000, true, 0, 0x2222);
+        buffer1.log_prediction(blake3_input_hash(b"input_3333"), 2000, false, 1, 0x4444);
         let entries1 = buffer1.drain_to_vec();
 
         // Create identical buffer
         let buffer2 = PredictionLogBuffer::<10>::new(42);
-        buffer2.log_prediction(0x1111, true, 0, 0x2222);
-        buffer2.log_prediction(0x3333, false, 1, 0x4444);
+        buffer2.log_prediction(blake3_input_hash(b"input_1111"), 1000, true, 0, 0x2222);
+        buffer2.log_prediction(blake3_input_hash(b"input_3333"), 2000, false, 1, 0x4444);
         let entries2 = buffer2.drain_to_vec();
 
         // Compare entries (ignoring timestamp which varies)
@@ -391,7 +448,7 @@ mod tests {
     #[test]
     fn test_buffer_reset_after_drain() {
         let buffer = PredictionLogBuffer::<5>::new(42);
-        buffer.log_prediction(0x1111, true, 0, 0x2222);
+        buffer.log_prediction(blake3_input_hash(b"input_1111"), 1000000, true, 0, 0x2222);
         assert_eq!(buffer.len(), 1);
 
         let _csv = buffer.drain_to_csv();

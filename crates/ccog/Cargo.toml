@@ -1,0 +1,66 @@
+[package]
+name = "ccog"
+version = "0.1.0"
+edition = "2021"
+license = "BUSL-1.1"
+authors = ["Sean Chatman <xpointsh@gmail.com>"]
+description = "Compiled Cognition core: field-cognition facade over RDF graph closure"
+
+[dependencies]
+oxigraph = { version = "0.5", default-features = false }
+blake3 = "1.5"
+chrono = { version = "0.4", features = ["serde"] }
+thiserror = "1"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+anyhow = "1.0"
+zstd = "0.13"
+tar = "0.4"
+indexmap = "2"
+postcard = { version = "1.0", features = ["alloc"], default-features = false }
+smallvec = { version = "1.13", features = ["serde"] }
+clap = { version = "4", features = ["derive"], optional = true }
+ed25519-dalek = { version = "2", default-features = false, features = ["std"], optional = true }
+rand = { version = "0.8", optional = true }
+
+[features]
+default = ["nightly"]
+nightly = []
+# Phase 7 replay path — enable once Writer-7 lands `decide_with_trace`.
+phase7 = []
+# Ed25519-signed submission packets for external transparency anchoring.
+transparency = ["dep:ed25519-dalek", "dep:rand"]
+# DENDRAL CLI binary; toggle with `--features dendral-cli`.
+dendral-cli = ["dep:clap"]
+
+[[bin]]
+name = "dendral"
+path = "src/bin/dendral.rs"
+required-features = ["dendral-cli"]
+
+[dev-dependencies]
+criterion = "0.5"
+proptest = "1.2.0"
+fake = { version = "2.10", features = ["derive", "chrono"] }
+ed25519-dalek = { version = "2", default-features = false, features = ["std"] }
+rand = "0.8"
+
+[[bench]]
+name = "ccog_hot_path_bench"
+harness = false
+
+[[bench]]
+name = "pack_lifestyle_bench"
+harness = false
+
+[[bench]]
+name = "pack_edge_bench"
+harness = false
+
+[[bench]]
+name = "pack_enterprise_bench"
+harness = false
+
+[[bench]]
+name = "pack_dev_bench"
+harness = false

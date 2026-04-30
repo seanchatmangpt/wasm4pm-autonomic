@@ -152,12 +152,7 @@ fn doctor_accepts_ralph_plan_kind() {
         failure_class: None,
     }];
 
-    let plan = create_ralph_plan(
-        "doctor-test-001",
-        accounting,
-        gates,
-        Verdict::Pass,
-    );
+    let plan = create_ralph_plan("doctor-test-001", accounting, gates, Verdict::Pass);
 
     let plan_path = run_dir.join("ralph-plan.json");
     let json_str = serde_json::to_string_pretty(&plan).expect("serialize");
@@ -166,7 +161,11 @@ fn doctor_accepts_ralph_plan_kind() {
     // Run doctor --kind=ralph-plan (if available)
     // For now, verify the plan is valid per doctor's invariants
     assert!(plan.accounting.balanced);
-    assert_eq!(plan.accounting.phases_completed + plan.accounting.phases_blocked + plan.accounting.phases_skipped + plan.accounting.phases_pending,
+    assert_eq!(
+        plan.accounting.phases_completed
+            + plan.accounting.phases_blocked
+            + plan.accounting.phases_skipped
+            + plan.accounting.phases_pending,
         plan.accounting.phases_expected
     );
     assert_eq!(plan.gates.len(), 1);
@@ -222,12 +221,7 @@ fn doctor_rejects_implement_without_tasks() {
         failure_class: Some("tasks_not_completed".to_string()),
     }];
 
-    let plan = create_ralph_plan(
-        "bad-sequence-001",
-        accounting,
-        gates,
-        Verdict::Fatal,
-    );
+    let plan = create_ralph_plan("bad-sequence-001", accounting, gates, Verdict::Fatal);
 
     // Doctor would detect this (gate shows failure reason)
     assert_eq!(plan.verdict, Verdict::Fatal);
@@ -295,14 +289,8 @@ fn ggen_signs_doctor_verdict() {
 
     assert_eq!(persisted["operation_id"].as_str().unwrap(), "sign-test-001");
     assert!(persisted["input_hashes"].is_array());
-    assert_eq!(
-        persisted["input_hashes"].as_array().unwrap().len(),
-        2
-    );
-    assert_eq!(
-        persisted["signature"].as_str().unwrap(),
-        ""
-    );
+    assert_eq!(persisted["input_hashes"].as_array().unwrap().len(), 2);
+    assert_eq!(persisted["signature"].as_str().unwrap(), "");
 }
 
 // ============================================================================
@@ -343,10 +331,7 @@ fn chain_verify_passes() {
     let receipts = persisted["receipts"].as_array().unwrap();
     assert_eq!(receipts.len(), 2);
     assert_eq!(receipts[0]["previous_hash"], serde_json::Value::Null);
-    assert_eq!(
-        receipts[1]["previous_hash"].as_str().unwrap(),
-        "aaa111"
-    );
+    assert_eq!(receipts[1]["previous_hash"].as_str().unwrap(), "aaa111");
 }
 
 // ============================================================================
@@ -421,8 +406,11 @@ fn happy_path_soft_fail_receipt_chain() {
     let ralph_plan = create_ralph_plan(run_id, accounting, gates, Verdict::SoftFail);
 
     let plan_path = run_dir.join("ralph-plan.json");
-    fs::write(&plan_path, serde_json::to_string_pretty(&ralph_plan).unwrap())
-        .expect("emit ralph-plan.json");
+    fs::write(
+        &plan_path,
+        serde_json::to_string_pretty(&ralph_plan).unwrap(),
+    )
+    .expect("emit ralph-plan.json");
 
     // Verify plan is persisted and valid
     let persisted: RalphPlan =
@@ -471,10 +459,7 @@ fn happy_path_soft_fail_receipt_chain() {
     // Verify unsigned receipt structure
     let unsigned_persisted: Value =
         serde_json::from_str(&fs::read_to_string(&unsigned_path).unwrap()).unwrap();
-    assert_eq!(
-        unsigned_persisted["operation_id"].as_str().unwrap(),
-        run_id
-    );
+    assert_eq!(unsigned_persisted["operation_id"].as_str().unwrap(), run_id);
     assert!(unsigned_persisted["input_hashes"].is_array());
     assert!(unsigned_persisted["output_hashes"].is_array());
     assert_eq!(unsigned_persisted["signature"].as_str().unwrap(), "");
@@ -531,8 +516,8 @@ fn happy_path_soft_fail_receipt_chain() {
     fs::write(&state_path, state.to_string()).expect("write state");
 
     // Verify state advanced
-    let state_persisted: Value = serde_json::from_str(&fs::read_to_string(&state_path).unwrap())
-        .expect("read state");
+    let state_persisted: Value =
+        serde_json::from_str(&fs::read_to_string(&state_path).unwrap()).expect("read state");
     assert_eq!(state_persisted["run_id"].as_str().unwrap(), run_id);
     assert_eq!(state_persisted["status"].as_str().unwrap(), "blocked");
     assert_eq!(state_persisted["receipt_count"], 1);

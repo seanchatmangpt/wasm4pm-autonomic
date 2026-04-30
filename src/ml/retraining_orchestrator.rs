@@ -70,7 +70,7 @@ pub fn handle_drift_signal(signal: DriftSignal) -> RetrainingAction {
         DriftSignal::Healthy => RetrainingAction::Continue,
         DriftSignal::GradualDecay => RetrainingAction::CreateRetrainingTicket,
         DriftSignal::SuddenFailure => RetrainingAction::ApprovedRetrainThenRebuild,
-        DriftSignal::StratifiedDegradation => RetrainingAction::ApprovedRetrainThenRebuild,
+        DriftSignal::StratifiedDegradation { .. } => RetrainingAction::ApprovedRetrainThenRebuild,
     }
 }
 
@@ -156,16 +156,8 @@ impl RetrainingContext {
 /// 4. Return `true` if the new model is an improvement
 ///
 /// For now, it always returns `true` (caller must implement validation).
+#[deprecated(note = "stub — must implement before production use")]
 pub fn validate_retraining_against_traces(_new_model_accuracy: f64) -> bool {
-    // Integration point: Call src/conformance/bitmask_replay::replay_trace_standard()
-    // or token-based replay on retraining dataset to verify new model quality.
-    //
-    // Pseudocode:
-    // ```
-    // let baseline_fitness = replay_log_on_old_model(&traces, &old_model);
-    // let new_fitness = replay_log_on_new_model(&traces, &new_model);
-    // new_fitness >= baseline_fitness * 1.05 // At least 5% improvement
-    // ```
     true
 }
 
@@ -180,20 +172,8 @@ pub fn validate_retraining_against_traces(_new_model_accuracy: f64) -> bool {
 /// 5. Return the new compiled plan
 ///
 /// For now, it returns a success flag indicating the call site can proceed.
-pub fn retrain_with_hdit_automl(
-    _current_accuracy: f64,
-    _baseline_accuracy: f64,
-) -> bool {
-    // Integration point: Call src/ml/hdit_automl::run_hdit_automl()
-    //
-    // Pseudocode:
-    // ```
-    // let logs = prediction_log.drain_to_vec(); // Get feedback
-    // let anchor = extract_ground_truth_from_logs(&logs);
-    // let candidates = signal_pool.evaluate_all(&logs);
-    // let new_plan = run_hdit_automl(candidates, &anchor, n_target);
-    // save_compiled_plan(&new_plan);
-    // ```
+#[deprecated(note = "stub — must implement before production use")]
+pub fn retrain_with_hdit_automl(_current_accuracy: f64, _baseline_accuracy: f64) -> bool {
     true
 }
 
@@ -208,18 +188,8 @@ pub fn retrain_with_hdit_automl(
 /// 5. Return success/failure
 ///
 /// For now, it returns a success flag.
+#[deprecated(note = "stub — must implement before production use")]
 pub fn retrain_rl_agents(_context: &RetrainingContext) -> bool {
-    // Integration point: Call src/automation::train_with_provenance()
-    // or individual src/reinforcement/*.rs agent trainers
-    //
-    // Pseudocode:
-    // ```
-    // let trajectories = extract_trajectories_from_feedback(&context.timestamp_us);
-    // for agent in &mut agents {
-    //     let result = agent.update_batch(&trajectories);
-    //     if !result.converged() { return false; }
-    // }
-    // ```
     true
 }
 
@@ -289,7 +259,11 @@ mod tests {
 
     #[test]
     fn test_handle_drift_signal_stratified() {
-        let action = handle_drift_signal(DriftSignal::StratifiedDegradation);
+        let action = handle_drift_signal(DriftSignal::StratifiedDegradation {
+            tier: 2,
+            actual_accuracy: 0.5,
+            expected_accuracy: 0.9,
+        });
         assert_eq!(action, RetrainingAction::ApprovedRetrainThenRebuild);
     }
 
@@ -309,13 +283,7 @@ mod tests {
 
     #[test]
     fn test_retraining_context_creation() {
-        let ctx = RetrainingContext::new(
-            DriftSignal::GradualDecay,
-            0.85,
-            0.95,
-            None,
-            1000000,
-        );
+        let ctx = RetrainingContext::new(DriftSignal::GradualDecay, 0.85, 0.95, None, 1000000);
         assert_eq!(ctx.signal, DriftSignal::GradualDecay);
         assert_eq!(ctx.action, RetrainingAction::CreateRetrainingTicket);
         assert_eq!(ctx.current_accuracy, 0.85);
@@ -325,25 +293,13 @@ mod tests {
 
     #[test]
     fn test_retraining_context_accuracy_drop() {
-        let ctx = RetrainingContext::new(
-            DriftSignal::SuddenFailure,
-            0.80,
-            0.95,
-            Some(1),
-            1000000,
-        );
+        let ctx = RetrainingContext::new(DriftSignal::SuddenFailure, 0.80, 0.95, Some(1), 1000000);
         assert!((ctx.accuracy_drop_pct() - 15.0).abs() < 0.01);
     }
 
     #[test]
     fn test_retraining_context_summary() {
-        let ctx = RetrainingContext::new(
-            DriftSignal::SuddenFailure,
-            0.80,
-            1.0,
-            Some(2),
-            2000000,
-        );
+        let ctx = RetrainingContext::new(DriftSignal::SuddenFailure, 0.80, 1.0, Some(2), 2000000);
         let summary = ctx.summary();
         assert!(summary.contains("Immediate retraining"));
         assert!(summary.contains("20.00%")); // Drop percentage (80% - 100% = -20%, clamped to 0% in the drop, but 100% - 80% = 20%)
@@ -352,38 +308,23 @@ mod tests {
 
     #[test]
     fn test_validate_retraining_stub() {
-        // Stub always returns true
         assert!(validate_retraining_against_traces(0.9));
     }
 
     #[test]
     fn test_retrain_with_hdit_automl_stub() {
-        // Stub always returns true
         assert!(retrain_with_hdit_automl(0.85, 0.95));
     }
 
     #[test]
     fn test_retrain_rl_agents_stub() {
-        let ctx = RetrainingContext::new(
-            DriftSignal::GradualDecay,
-            0.85,
-            0.95,
-            None,
-            1000000,
-        );
+        let ctx = RetrainingContext::new(DriftSignal::GradualDecay, 0.85, 0.95, None, 1000000);
         assert!(retrain_rl_agents(&ctx));
     }
 
     #[test]
     fn test_execute_full_retrain_pipeline() {
-        let ctx = RetrainingContext::new(
-            DriftSignal::SuddenFailure,
-            0.80,
-            0.95,
-            Some(1),
-            1000000,
-        );
-        // All stubs return true, so pipeline succeeds
+        let ctx = RetrainingContext::new(DriftSignal::SuddenFailure, 0.80, 0.95, Some(1), 1000000);
         assert!(execute_full_retrain_pipeline(&ctx));
     }
 }

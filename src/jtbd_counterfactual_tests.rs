@@ -451,4 +451,61 @@ mod tests {
         // 2. Drift is resolved.
         // 3. Conformance score improves.
     }
+
+    #[test]
+    fn cf_jtbd_19_evidence_recovery() {
+        // Counterfactual Scenario 19: Evidence Recovery (Retriever Cognitive Breed)
+        // This counterfactual test validates the Recover action on a drifted state.
+        // We establish a baseline drifted state, then evaluate a Recover action
+        // via the Simulator to confirm that evidence recovery from the audit log
+        // improves both health and conformance while clearing drift.
+        let events = vec!["Start", "Bypass", "Bypass"];
+
+        // Set up the drifted state
+        let mut kernel = setup_violation(events);
+        let drifted_state = kernel.infer();
+        assert!(
+            drifted_state.drift_detected,
+            "Setup must produce a drifted state for recovery validation"
+        );
+
+        // Construct a Recover action
+        let recover_action = AutonomicAction::recover(200, "Evidence recovery from audit log");
+
+        // Evaluate via counterfactual Simulator
+        let simulator = Simulator::new(drifted_state.clone());
+        let (projected_state, reward) = simulator.evaluate_action(&recover_action);
+
+        // Verify recovery properties
+        println!(
+            "  Recover Action Evaluation: reward={:.2}, drift_before={}, drift_after={}",
+            reward, drifted_state.drift_detected, projected_state.drift_detected
+        );
+
+        assert!(
+            reward > 0.0,
+            "Recover action must yield positive reward (REWARD_RECOVER=0.5)"
+        );
+        assert!(
+            !projected_state.drift_detected,
+            "Recover action must clear drift in projected state"
+        );
+        assert!(
+            projected_state.conformance_score >= drifted_state.conformance_score,
+            "Recover action must not degrade conformance"
+        );
+
+        // Execute the action in the actual kernel to verify health improvement
+        kernel.execute(recover_action);
+        let recovered_state = kernel.infer();
+
+        assert!(
+            recovered_state.process_health >= drifted_state.process_health,
+            "Health must not degrade after recovery execution"
+        );
+        assert!(
+            !recovered_state.drift_detected,
+            "Drift must be cleared in the actual kernel state"
+        );
+    }
 }

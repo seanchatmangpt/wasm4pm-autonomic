@@ -94,7 +94,10 @@ pub fn bitmask_to_features(mask: u64) -> Vec<f64> {
 /// Train naive Bayes on (mask, label) pairs and predict on test masks.
 #[must_use]
 pub fn classify(train_masks: &[u64], labels: &[bool], test_masks: &[u64]) -> Vec<bool> {
-    let train: Vec<Vec<f64>> = train_masks.iter().map(|&m| bitmask_to_features(m)).collect();
+    let train: Vec<Vec<f64>> = train_masks
+        .iter()
+        .map(|&m| bitmask_to_features(m))
+        .collect();
     let test: Vec<Vec<f64>> = test_masks.iter().map(|&m| bitmask_to_features(m)).collect();
     naive_bayes::classify(&train, labels, &test)
 }
@@ -103,11 +106,7 @@ pub fn classify(train_masks: &[u64], labels: &[bool], test_masks: &[u64]) -> Vec
 ///
 /// This is the leave-it-in form: predictions equal in-sample fits, useful as a
 /// signal generator when paired with the classical ELIZA on the same anchor.
-pub fn eliza_automl_signal(
-    name: &str,
-    inputs: &[u64],
-    anchor: &[bool],
-) -> SignalProfile {
+pub fn eliza_automl_signal(name: &str, inputs: &[u64], anchor: &[bool]) -> SignalProfile {
     let predictions = classify(inputs, anchor, inputs);
     // Naive-Bayes training is small-O on 16 features — counts as ~T1 tier.
     let timing_us = (inputs.len() as u64 / 4).max(1);
@@ -143,10 +142,10 @@ mod tests {
     fn classify_perfect_separation() {
         // Two clearly separated classes
         let train_masks = vec![
-            keyword_bit(kw::DREAM),                         // true
-            keyword_bit(kw::DREAM) | keyword_bit(kw::I),    // true
-            keyword_bit(kw::SORRY),                         // false
-            keyword_bit(kw::FATHER),                        // false
+            keyword_bit(kw::DREAM),                      // true
+            keyword_bit(kw::DREAM) | keyword_bit(kw::I), // true
+            keyword_bit(kw::SORRY),                      // false
+            keyword_bit(kw::FATHER),                     // false
         ];
         let labels = vec![true, true, false, false];
         let test_masks = vec![keyword_bit(kw::DREAM), keyword_bit(kw::SORRY)];
@@ -170,7 +169,12 @@ mod tests {
 
     #[test]
     fn classify_is_deterministic_across_invocations() {
-        let train = vec![keyword_bit(kw::DREAM), keyword_bit(kw::SORRY), keyword_bit(kw::I), 0];
+        let train = vec![
+            keyword_bit(kw::DREAM),
+            keyword_bit(kw::SORRY),
+            keyword_bit(kw::I),
+            0,
+        ];
         let labels = vec![true, false, true, false];
         let test = vec![keyword_bit(kw::DREAM), 0];
         let p1 = classify(&train, &labels, &test);

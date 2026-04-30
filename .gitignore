@@ -25,3 +25,6 @@
 PATENTS.md
 docs/PATENT_PROVISIONAL_SPECIFICATION.md
 !docs/regulatory/AUDIT_TRAIL_SCHEMA.json
+
+# Build caches
+apps/matrix-tv/.next/

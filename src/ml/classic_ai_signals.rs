@@ -24,7 +24,7 @@ pub use crate::ml::strips::strips_automl_signal;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ml::eliza::{kw, keyword_bit};
+    use crate::ml::eliza::{keyword_bit, kw};
     use crate::ml::hdit_automl::{run_hdit_automl, Tier};
     use crate::ml::mycin::{fact, org};
     use crate::ml::shrdlu::{self, Cmd};
@@ -37,9 +37,9 @@ mod tests {
         // ELIZA: dream keyword present in slots 0, 2 (matches anchor)
         let eliza_inputs = vec![
             keyword_bit(kw::DREAM),
-            keyword_bit(kw::YOU),       // YOU has no rule → no match → false
+            keyword_bit(kw::YOU), // YOU has no rule → no match → false
             keyword_bit(kw::DREAM),
-            0,                          // no keywords → no match → false
+            0, // no keywords → no match → false
         ];
         let eliza_sig = eliza_automl_signal("eliza_dream", &eliza_inputs, &anchor);
 
@@ -54,12 +54,25 @@ mod tests {
 
         // STRIPS: HOLDING_A reachable from slot 0 (initial state) and slot 2
         let strips_states = vec![
-            strips::CLEAR_A | strips::ON_TABLE_A | strips::ARM_EMPTY | strips::CLEAR_B | strips::ON_TABLE_B,
+            strips::CLEAR_A
+                | strips::ON_TABLE_A
+                | strips::ARM_EMPTY
+                | strips::CLEAR_B
+                | strips::ON_TABLE_B,
             strips::HOLDING_B, // arm not empty, can't pickup A immediately
-            strips::CLEAR_A | strips::ON_TABLE_A | strips::ARM_EMPTY | strips::CLEAR_C | strips::ON_TABLE_C,
+            strips::CLEAR_A
+                | strips::ON_TABLE_A
+                | strips::ARM_EMPTY
+                | strips::CLEAR_C
+                | strips::ON_TABLE_C,
             0, // empty state, no preconditions met
         ];
-        let strips_sig = strips_automl_signal("strips_pickup_A", &strips_states, strips::HOLDING_A, &anchor);
+        let strips_sig = strips_automl_signal(
+            "strips_pickup_A",
+            &strips_states,
+            strips::HOLDING_A,
+            &anchor,
+        );
 
         // SHRDLU: PickUp(A) succeeds in slots 0, 2
         let shrdlu_states = vec![
@@ -68,17 +81,30 @@ mod tests {
             shrdlu::initial_state(),
             shrdlu::holding(2),
         ];
-        let shrdlu_sig = shrdlu_automl_signal("shrdlu_pickup_A", &shrdlu_states, Cmd::PickUp(0), &anchor);
+        let shrdlu_sig =
+            shrdlu_automl_signal("shrdlu_pickup_A", &shrdlu_states, Cmd::PickUp(0), &anchor);
 
         // Hearsay-II: all reach sentence (signal won't differentiate, used for completeness)
         let hearsay_inputs = vec![0xCAFE_u64, 0x0_u64, 0xBABE_u64, 0x0_u64];
         let _hearsay_sig = hearsay_automl_signal("hearsay", &hearsay_inputs, &anchor);
 
         // Verify each signal correctly predicts against anchor
-        assert_eq!(eliza_sig.accuracy_vs_anchor, 1.0, "ELIZA should match anchor");
-        assert_eq!(mycin_sig.accuracy_vs_anchor, 1.0, "MYCIN should match anchor");
-        assert_eq!(strips_sig.accuracy_vs_anchor, 1.0, "STRIPS should match anchor");
-        assert_eq!(shrdlu_sig.accuracy_vs_anchor, 1.0, "SHRDLU should match anchor");
+        assert_eq!(
+            eliza_sig.accuracy_vs_anchor, 1.0,
+            "ELIZA should match anchor"
+        );
+        assert_eq!(
+            mycin_sig.accuracy_vs_anchor, 1.0,
+            "MYCIN should match anchor"
+        );
+        assert_eq!(
+            strips_sig.accuracy_vs_anchor, 1.0,
+            "STRIPS should match anchor"
+        );
+        assert_eq!(
+            shrdlu_sig.accuracy_vs_anchor, 1.0,
+            "SHRDLU should match anchor"
+        );
 
         // All four perfect signals must be T0 tier (nanosecond execution)
         assert_eq!(eliza_sig.tier, Tier::T0, "ELIZA must be T0");
@@ -89,7 +115,10 @@ mod tests {
         // Run AutoML with all four perfect signals
         let candidates = vec![eliza_sig, mycin_sig, strips_sig, shrdlu_sig];
         let plan = run_hdit_automl(candidates, &anchor, 2);
-        assert!(!plan.selected.is_empty(), "AutoML must select at least one signal");
+        assert!(
+            !plan.selected.is_empty(),
+            "AutoML must select at least one signal"
+        );
         assert_eq!(plan.plan_accuracy, 1.0, "perfect signals → perfect plan");
     }
 
@@ -99,9 +128,20 @@ mod tests {
         let anchor = vec![true; 50];
 
         let eliza_sig = eliza_automl_signal("e", &[keyword_bit(kw::DREAM); 50], &anchor);
-        let mycin_sig = mycin_automl_signal("m", &[fact::GRAM_NEG | fact::ANAEROBIC; 50], org::BACTEROIDES, &anchor);
-        let strips_sig = strips_automl_signal("s", &[strips::HOLDING_A; 50], strips::HOLDING_A, &anchor);
-        let shrdlu_sig = shrdlu_automl_signal("sh", &[shrdlu::initial_state(); 50], Cmd::PickUp(0), &anchor);
+        let mycin_sig = mycin_automl_signal(
+            "m",
+            &[fact::GRAM_NEG | fact::ANAEROBIC; 50],
+            org::BACTEROIDES,
+            &anchor,
+        );
+        let strips_sig =
+            strips_automl_signal("s", &[strips::HOLDING_A; 50], strips::HOLDING_A, &anchor);
+        let shrdlu_sig = shrdlu_automl_signal(
+            "sh",
+            &[shrdlu::initial_state(); 50],
+            Cmd::PickUp(0),
+            &anchor,
+        );
 
         assert_eq!(eliza_sig.tier, Tier::T0);
         assert_eq!(mycin_sig.tier, Tier::T0);

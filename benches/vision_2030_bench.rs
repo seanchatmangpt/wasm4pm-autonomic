@@ -37,12 +37,15 @@ fn bench_linucb_select(bencher: Bencher) {
 
 #[divan::bench]
 fn bench_counterfactual_sim(bencher: Bencher) {
+    use dteam::autonomic::types::PackPosture;
     let state = AutonomicState {
         process_health: 0.9,
         throughput: 100.0,
         conformance_score: 0.95,
         drift_detected: false,
         active_cases: 10,
+        field_elevation: 0.0,
+        pack_posture: PackPosture::Nominal,
     };
     let sim = Simulator::new(state);
     let action = dteam::autonomic::AutonomicAction::recommend(1, "test");

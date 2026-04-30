@@ -126,7 +126,6 @@ impl<'a> AutoMLEvaluator<'a> {
         // Determinism note: rayon's par_iter keeps the original iteration order for
         // collected results, so `results[i]` corresponds to the i-th trial — same as
         // serial. The max_by() tiebreak is stable.
-        use rayon::prelude::*;
 
         let mut trials: Vec<TrialConfig> = Vec::new();
         while let Some(trial) = strategy.next_trial() {
@@ -138,8 +137,18 @@ impl<'a> AutoMLEvaluator<'a> {
         }
 
         // Parallel evaluation — each evaluate() call is ~seconds of RL work
+        #[cfg(feature = "native")]
+        let results: Vec<TrialResult> = {
+            use rayon::prelude::*;
+            trials
+                .par_iter()
+                .map(|trial| self.evaluate(trial, base_config))
+                .collect()
+        };
+
+        #[cfg(not(feature = "native"))]
         let results: Vec<TrialResult> = trials
-            .par_iter()
+            .iter()
             .map(|trial| self.evaluate(trial, base_config))
             .collect();
 

@@ -123,10 +123,18 @@ pub fn bitmask_to_features(state: u64) -> Vec<f64> {
     let mut pair_count = 0;
     for x in 0..5 {
         for y in 0..5 {
-            if x == y { continue; }
-            if pair_count >= 14 { break; }
+            if x == y {
+                continue;
+            }
+            if pair_count >= 14 {
+                break;
+            }
             let bit_offset = 16 + x * 5 + y;
-            features.push(if (state >> bit_offset) & 1 != 0 { 1.0 } else { 0.0 });
+            features.push(if (state >> bit_offset) & 1 != 0 {
+                1.0
+            } else {
+                0.0
+            });
             pair_count += 1;
         }
     }
@@ -136,8 +144,14 @@ pub fn bitmask_to_features(state: u64) -> Vec<f64> {
 /// Train logistic regression on (state, label) pairs and predict on test states.
 #[must_use]
 pub fn classify(train_states: &[u64], labels: &[bool], test_states: &[u64]) -> Vec<bool> {
-    let train: Vec<Vec<f64>> = train_states.iter().map(|&s| bitmask_to_features(s)).collect();
-    let test: Vec<Vec<f64>> = test_states.iter().map(|&s| bitmask_to_features(s)).collect();
+    let train: Vec<Vec<f64>> = train_states
+        .iter()
+        .map(|&s| bitmask_to_features(s))
+        .collect();
+    let test: Vec<Vec<f64>> = test_states
+        .iter()
+        .map(|&s| bitmask_to_features(s))
+        .collect();
     logistic_regression::classify_default(&train, labels, &test)
 }
 
@@ -190,13 +204,7 @@ mod tests {
         let s_no_clear = on(1, 0) | ARM_EMPTY | on_table(0); // A under B; not clear
         let s_arm_held = holding(2);
 
-        let train_states = vec![
-            s_initial,
-            s_initial,
-            s_holding_b,
-            s_no_clear,
-            s_arm_held,
-        ];
+        let train_states = vec![s_initial, s_initial, s_holding_b, s_no_clear, s_arm_held];
         let labels = vec![true, true, false, false, false];
         let test_states = vec![s_initial, s_holding_b];
         let preds = classify(&train_states, &labels, &test_states);

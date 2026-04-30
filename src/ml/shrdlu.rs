@@ -79,21 +79,29 @@ pub const OBJECT_NAMES: [&str; N_OBJECTS] = ["A", "B", "C", "D", "E"];
 
 #[inline(always)]
 #[must_use]
-pub const fn clear(x: usize) -> u64 { 1u64 << (x & 0x07) }
+pub const fn clear(x: usize) -> u64 {
+    1u64 << (x & 0x07)
+}
 
 #[inline(always)]
 #[must_use]
-pub const fn on_table(x: usize) -> u64 { 1u64 << (5 + (x & 0x07)) }
+pub const fn on_table(x: usize) -> u64 {
+    1u64 << (5 + (x & 0x07))
+}
 
 #[inline(always)]
 #[must_use]
-pub const fn holding(x: usize) -> u64 { 1u64 << (10 + (x & 0x07)) }
+pub const fn holding(x: usize) -> u64 {
+    1u64 << (10 + (x & 0x07))
+}
 
 pub const ARM_EMPTY: u64 = 1u64 << 15;
 
 #[inline(always)]
 #[must_use]
-pub const fn on(x: usize, y: usize) -> u64 { 1u64 << (16 + (x % 5) * 5 + (y % 5)) }
+pub const fn on(x: usize, y: usize) -> u64 {
+    1u64 << (16 + (x % 5) * 5 + (y % 5))
+}
 
 pub type State = u64;
 
@@ -104,6 +112,28 @@ pub fn initial_state() -> State {
         s |= clear(i) | on_table(i);
     }
     s
+}
+
+#[inline(always)]
+#[must_use]
+pub const fn select_u64(mask: u64, a: u64, b: u64) -> u64 {
+    (a & mask) | (b & !mask)
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Op {
+    pub pre: State,
+    pub del: State,
+    pub add: State,
+}
+
+#[inline(always)]
+#[must_use]
+pub fn apply_fast(state: State, op: &Op) -> State {
+    let satisfied = ((op.pre & state) == op.pre) as u64;
+    let mask = satisfied.wrapping_neg();
+    let next = (state & !op.del) | op.add;
+    select_u64(mask, next, state)
 }
 
 // =============================================================================
@@ -126,21 +156,29 @@ impl Cmd {
         match self {
             Cmd::PickUp(x) => {
                 let pre = clear(x) | on_table(x) | ARM_EMPTY;
-                if (s & pre) != pre { return None; }
+                if (s & pre) != pre {
+                    return None;
+                }
                 Some((s & !(clear(x) | on_table(x) | ARM_EMPTY)) | holding(x))
             }
             Cmd::PutDown(x) => {
-                if (s & holding(x)) == 0 { return None; }
+                if (s & holding(x)) == 0 {
+                    return None;
+                }
                 Some((s & !holding(x)) | clear(x) | on_table(x) | ARM_EMPTY)
             }
             Cmd::Stack(x, y) => {
                 let pre = holding(x) | clear(y);
-                if (s & pre) != pre || x == y { return None; }
+                if (s & pre) != pre || x == y {
+                    return None;
+                }
                 Some((s & !(holding(x) | clear(y))) | on(x, y) | clear(x) | ARM_EMPTY)
             }
             Cmd::Unstack(x, y) => {
                 let pre = on(x, y) | clear(x) | ARM_EMPTY;
-                if (s & pre) != pre || x == y { return None; }
+                if (s & pre) != pre || x == y {
+                    return None;
+                }
                 Some((s & !(on(x, y) | clear(x) | ARM_EMPTY)) | holding(x) | clear(y))
             }
         }
@@ -165,20 +203,32 @@ pub enum Query {
 pub fn answer(q: Query, s: State) -> String {
     match q {
         Query::IsClear(x) => {
-            if (s & clear(x)) != 0 { format!("Yes, {} is clear.", OBJECT_NAMES[x]) }
-            else { format!("No, {} is not clear.", OBJECT_NAMES[x]) }
+            if (s & clear(x)) != 0 {
+                format!("Yes, {} is clear.", OBJECT_NAMES[x])
+            } else {
+                format!("No, {} is not clear.", OBJECT_NAMES[x])
+            }
         }
         Query::IsOnTable(x) => {
-            if (s & on_table(x)) != 0 { format!("Yes, {} is on the table.", OBJECT_NAMES[x]) }
-            else { format!("No, {} is not on the table.", OBJECT_NAMES[x]) }
+            if (s & on_table(x)) != 0 {
+                format!("Yes, {} is on the table.", OBJECT_NAMES[x])
+            } else {
+                format!("No, {} is not on the table.", OBJECT_NAMES[x])
+            }
         }
         Query::IsHolding(x) => {
-            if (s & holding(x)) != 0 { format!("Yes, I am holding {}.", OBJECT_NAMES[x]) }
-            else { format!("No, I am not holding {}.", OBJECT_NAMES[x]) }
+            if (s & holding(x)) != 0 {
+                format!("Yes, I am holding {}.", OBJECT_NAMES[x])
+            } else {
+                format!("No, I am not holding {}.", OBJECT_NAMES[x])
+            }
         }
         Query::IsOn(x, y) => {
-            if (s & on(x, y)) != 0 { format!("Yes, {} is on {}.", OBJECT_NAMES[x], OBJECT_NAMES[y]) }
-            else { format!("No, {} is not on {}.", OBJECT_NAMES[x], OBJECT_NAMES[y]) }
+            if (s & on(x, y)) != 0 {
+                format!("Yes, {} is on {}.", OBJECT_NAMES[x], OBJECT_NAMES[y])
+            } else {
+                format!("No, {} is not on {}.", OBJECT_NAMES[x], OBJECT_NAMES[y])
+            }
         }
         Query::WhereIs(x) => {
             if (s & holding(x)) != 0 {
@@ -225,10 +275,13 @@ fn obj_index(token: &str) -> Option<usize> {
 pub fn parse(input: &str) -> Request {
     let lower = input.to_lowercase();
     let tokens: Vec<&str> = lower.split_whitespace().collect();
-    if tokens.is_empty() { return Request::Unknown; }
+    if tokens.is_empty() {
+        return Request::Unknown;
+    }
 
     // Find object indices in input
-    let objs: Vec<(usize, usize)> = tokens.iter()
+    let objs: Vec<(usize, usize)> = tokens
+        .iter()
         .enumerate()
         .filter_map(|(i, t)| obj_index(t).map(|o| (i, o)))
         .collect();
@@ -258,9 +311,14 @@ pub fn parse(input: &str) -> Request {
     }
 
     // Handle commands
-    let has_pickup = tokens.contains(&"pick") || tokens.contains(&"grasp") || tokens.contains(&"take") || tokens.contains(&"get");
-    let has_putdown = (tokens.contains(&"put") && tokens.contains(&"down")) || tokens.contains(&"drop");
-    let has_stack = tokens.contains(&"stack") || (tokens.contains(&"put") && tokens.contains(&"on"));
+    let has_pickup = tokens.contains(&"pick")
+        || tokens.contains(&"grasp")
+        || tokens.contains(&"take")
+        || tokens.contains(&"get");
+    let has_putdown =
+        (tokens.contains(&"put") && tokens.contains(&"down")) || tokens.contains(&"drop");
+    let has_stack =
+        tokens.contains(&"stack") || (tokens.contains(&"put") && tokens.contains(&"on"));
     let has_unstack = tokens.contains(&"unstack") || tokens.contains(&"remove");
 
     if has_unstack && objs.len() >= 2 {
@@ -296,7 +354,9 @@ pub fn plan_cmd(s: State, cmd: Cmd) -> Option<Vec<Cmd>> {
 }
 
 fn plan_inner(s: State, cmd: Cmd, depth: usize) -> Option<Vec<Cmd>> {
-    if depth == 0 { return None; }
+    if depth == 0 {
+        return None;
+    }
 
     // Already achievable?
     if cmd.apply(s).is_some() {
@@ -431,17 +491,17 @@ pub fn execute_plan(s: &mut State, plan: &[Cmd]) -> Result<(), &'static str> {
 /// REPL: parse input, plan, execute, return response.
 pub fn eval(input: &str, s: &mut State) -> String {
     match parse(input) {
-        Request::Do(cmd) => {
-            match plan_cmd(*s, cmd) {
-                Some(plan) => {
-                    match execute_plan(s, &plan) {
-                        Ok(_) => format!("OK ({} step{}).", plan.len(), if plan.len() == 1 {""} else {"s"}),
-                        Err(e) => format!("Error: {}", e),
-                    }
-                }
-                None => "I cannot do that.".to_string(),
-            }
-        }
+        Request::Do(cmd) => match plan_cmd(*s, cmd) {
+            Some(plan) => match execute_plan(s, &plan) {
+                Ok(_) => format!(
+                    "OK ({} step{}).",
+                    plan.len(),
+                    if plan.len() == 1 { "" } else { "s" }
+                ),
+                Err(e) => format!("Error: {}", e),
+            },
+            None => "I cannot do that.".to_string(),
+        },
         Request::Ask(q) => answer(q, *s),
         Request::Unknown => "I don't understand.".to_string(),
     }
@@ -496,7 +556,15 @@ mod tests {
 
     #[test]
     fn cmd_stack_succeeds_when_holding_and_target_clear() {
-        let s = holding(0) | clear(1) | on_table(1) | clear(2) | on_table(2) | clear(3) | on_table(3) | clear(4) | on_table(4);
+        let s = holding(0)
+            | clear(1)
+            | on_table(1)
+            | clear(2)
+            | on_table(2)
+            | clear(3)
+            | on_table(3)
+            | clear(4)
+            | on_table(4);
         let next = Cmd::Stack(0, 1).apply(s);
         assert!(next.is_some());
         let n = next.unwrap();
@@ -508,7 +576,16 @@ mod tests {
 
     #[test]
     fn cmd_unstack_succeeds_when_on_and_clear() {
-        let s = on(0, 1) | clear(0) | ARM_EMPTY | on_table(1) | clear(2) | on_table(2) | clear(3) | on_table(3) | clear(4) | on_table(4);
+        let s = on(0, 1)
+            | clear(0)
+            | ARM_EMPTY
+            | on_table(1)
+            | clear(2)
+            | on_table(2)
+            | clear(3)
+            | on_table(3)
+            | clear(4)
+            | on_table(4);
         let next = Cmd::Unstack(0, 1).apply(s);
         assert!(next.is_some());
         let n = next.unwrap();
@@ -608,7 +685,16 @@ mod tests {
     #[test]
     fn plan_pickup_when_blocked_clears_first() {
         // A is under B; we want to pick up A
-        let s = on(1, 0) | clear(1) | ARM_EMPTY | on_table(0) | clear(2) | on_table(2) | clear(3) | on_table(3) | clear(4) | on_table(4);
+        let s = on(1, 0)
+            | clear(1)
+            | ARM_EMPTY
+            | on_table(0)
+            | clear(2)
+            | on_table(2)
+            | clear(3)
+            | on_table(3)
+            | clear(4)
+            | on_table(4);
         let plan = plan_cmd(s, Cmd::PickUp(0));
         assert!(plan.is_some());
         let p = plan.unwrap();

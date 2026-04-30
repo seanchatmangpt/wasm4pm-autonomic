@@ -295,10 +295,17 @@ impl MarkingSet {
             self.inline[self.len] = m;
             self.len += 1;
         } else {
-            // Spill to heap — rare / never expected for real-world nets
-            let mut v: Vec<u64> = self.inline.to_vec();
-            v.push(m);
-            self.overflow = Some(v);
+            #[cfg(debug_assertions)]
+            panic!(
+                "MarkingSet overflow: net has >64 reachable markings — violates zero-heap contract. \
+                 Nets must have ≤64 places (see NetBitmask64::from_petri_net assertion)."
+            );
+            #[cfg(not(debug_assertions))]
+            {
+                let mut v: Vec<u64> = self.inline.to_vec();
+                v.push(m);
+                self.overflow = Some(v);
+            }
         }
     }
 
@@ -640,5 +647,13 @@ mod tests {
         assert_eq!(cls.iter().filter(|&&b| b).count(), 2);
         assert!(cls[0] && cls[2]);
         assert!(!cls[1]);
+    }
+
+    #[test]
+    fn test_marking_set_no_heap_spill_pdc2025() {
+        let net = simple_net();
+        let bm = NetBitmask64::from_petri_net(&net);
+        assert!(in_language(&bm, &make_trace(&["a", "b"])));
+        assert!(!in_language(&bm, &make_trace(&["b", "a"])));
     }
 }

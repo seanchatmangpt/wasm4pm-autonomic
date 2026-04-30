@@ -141,7 +141,11 @@ pub fn combine_cf(cf1: Cf, cf2: Cf) -> Cf {
         // Mixed: (cf1 + cf2) / (1 - min(|cf1|, |cf2|))
         let min_abs = a.abs().min(b.abs());
         let denom = 1000 - min_abs;
-        if denom == 0 { 0 } else { ((a + b) * 1000) / denom }
+        if denom == 0 {
+            0
+        } else {
+            ((a + b) * 1000) / denom
+        }
     };
     result.clamp(-1000, 1000) as Cf
 }
@@ -187,24 +191,96 @@ const _: () = assert!(core::mem::size_of::<MycinRule>() == 32);
 /// Bacteremia rule base (compressed from MYCIN's actual rule lattice).
 pub const RULES: [MycinRule; 12] = [
     // STREP rules
-    MycinRule { id: 1, conditions: fact::GRAM_POS | fact::COCCUS | fact::AEROBIC | fact::FEVER | fact::RIGORS, conclusion: org::STREP, cf: 800, _pad: [0; 12] },
-    MycinRule { id: 2, conditions: fact::GRAM_POS | fact::COCCUS | fact::AEROBIC | fact::FEVER, conclusion: org::STREP, cf: 600, _pad: [0; 12] },
-    MycinRule { id: 3, conditions: fact::GRAM_POS | fact::AEROBIC | fact::FEVER | fact::RIGORS, conclusion: org::STREP, cf: 700, _pad: [0; 12] },
+    MycinRule {
+        id: 1,
+        conditions: fact::GRAM_POS | fact::COCCUS | fact::AEROBIC | fact::FEVER | fact::RIGORS,
+        conclusion: org::STREP,
+        cf: 800,
+        _pad: [0; 12],
+    },
+    MycinRule {
+        id: 2,
+        conditions: fact::GRAM_POS | fact::COCCUS | fact::AEROBIC | fact::FEVER,
+        conclusion: org::STREP,
+        cf: 600,
+        _pad: [0; 12],
+    },
+    MycinRule {
+        id: 3,
+        conditions: fact::GRAM_POS | fact::AEROBIC | fact::FEVER | fact::RIGORS,
+        conclusion: org::STREP,
+        cf: 700,
+        _pad: [0; 12],
+    },
     // E. coli rules
-    MycinRule { id: 4, conditions: fact::GRAM_NEG | fact::ROD | fact::AEROBIC | fact::BLOOD_POS, conclusion: org::E_COLI, cf: 850, _pad: [0; 12] },
-    MycinRule { id: 5, conditions: fact::GRAM_NEG | fact::AEROBIC | fact::BLOOD_POS, conclusion: org::E_COLI, cf: 600, _pad: [0; 12] },
+    MycinRule {
+        id: 4,
+        conditions: fact::GRAM_NEG | fact::ROD | fact::AEROBIC | fact::BLOOD_POS,
+        conclusion: org::E_COLI,
+        cf: 850,
+        _pad: [0; 12],
+    },
+    MycinRule {
+        id: 5,
+        conditions: fact::GRAM_NEG | fact::AEROBIC | fact::BLOOD_POS,
+        conclusion: org::E_COLI,
+        cf: 600,
+        _pad: [0; 12],
+    },
     // Pseudomonas
-    MycinRule { id: 6, conditions: fact::GRAM_NEG | fact::ROD | fact::AEROBIC | fact::BURN, conclusion: org::PSEUDOMONAS, cf: 900, _pad: [0; 12] },
-    MycinRule { id: 7, conditions: fact::GRAM_NEG | fact::AEROBIC | fact::COMPROMISED_HOST, conclusion: org::PSEUDOMONAS, cf: 500, _pad: [0; 12] },
+    MycinRule {
+        id: 6,
+        conditions: fact::GRAM_NEG | fact::ROD | fact::AEROBIC | fact::BURN,
+        conclusion: org::PSEUDOMONAS,
+        cf: 900,
+        _pad: [0; 12],
+    },
+    MycinRule {
+        id: 7,
+        conditions: fact::GRAM_NEG | fact::AEROBIC | fact::COMPROMISED_HOST,
+        conclusion: org::PSEUDOMONAS,
+        cf: 500,
+        _pad: [0; 12],
+    },
     // Staph
-    MycinRule { id: 8, conditions: fact::GRAM_POS | fact::COCCUS | fact::AEROBIC | fact::BURN, conclusion: org::STAPH, cf: 750, _pad: [0; 12] },
-    MycinRule { id: 9, conditions: fact::GRAM_POS | fact::COCCUS | fact::NOSOCOMIAL, conclusion: org::STAPH, cf: 500, _pad: [0; 12] },
+    MycinRule {
+        id: 8,
+        conditions: fact::GRAM_POS | fact::COCCUS | fact::AEROBIC | fact::BURN,
+        conclusion: org::STAPH,
+        cf: 750,
+        _pad: [0; 12],
+    },
+    MycinRule {
+        id: 9,
+        conditions: fact::GRAM_POS | fact::COCCUS | fact::NOSOCOMIAL,
+        conclusion: org::STAPH,
+        cf: 500,
+        _pad: [0; 12],
+    },
     // Bacteroides
-    MycinRule { id: 10, conditions: fact::GRAM_NEG | fact::ANAEROBIC, conclusion: org::BACTEROIDES, cf: 700, _pad: [0; 12] },
+    MycinRule {
+        id: 10,
+        conditions: fact::GRAM_NEG | fact::ANAEROBIC,
+        conclusion: org::BACTEROIDES,
+        cf: 700,
+        _pad: [0; 12],
+    },
     // Klebsiella
-    MycinRule { id: 11, conditions: fact::GRAM_NEG | fact::ROD | fact::NOSOCOMIAL, conclusion: org::KLEBSIELLA, cf: 600, _pad: [0; 12] },
+    MycinRule {
+        id: 11,
+        conditions: fact::GRAM_NEG | fact::ROD | fact::NOSOCOMIAL,
+        conclusion: org::KLEBSIELLA,
+        cf: 600,
+        _pad: [0; 12],
+    },
     // Proteus
-    MycinRule { id: 12, conditions: fact::GRAM_NEG | fact::ROD | fact::HEAD_TRAUMA, conclusion: org::PROTEUS, cf: 550, _pad: [0; 12] },
+    MycinRule {
+        id: 12,
+        conditions: fact::GRAM_NEG | fact::ROD | fact::HEAD_TRAUMA,
+        conclusion: org::PROTEUS,
+        cf: 550,
+        _pad: [0; 12],
+    },
 ];
 
 // =============================================================================
@@ -215,18 +291,29 @@ pub const RULES: [MycinRule; 12] = [
 ///
 /// Returns the OR of all rule conclusions whose conditions are satisfied.
 /// Branchless rule scan: `~20 ns` for 12 rules.
-#[inline]
+#[inline(always)]
 #[must_use]
-pub fn infer_fast(facts: u64, rules: &[MycinRule]) -> u64 {
+pub const fn select_u64(mask: u64, a: u64, b: u64) -> u64 {
+    (a & mask) | (b & !mask)
+}
+
+#[inline(always)]
+#[must_use]
+pub fn infer_fast(facts: u64, rules: &[MycinRule; 12]) -> u64 {
     let mut conclusions = 0u64;
-    let mut i = 0;
-    while i < rules.len() {
-        let r = rules[i];
-        let satisfied = ((r.conditions & facts) == r.conditions) as u64;
-        let mask = satisfied.wrapping_neg();
-        conclusions |= r.conclusion & mask;
-        i += 1;
+
+    macro_rules! step {
+        ($idx:expr) => {
+            let r = rules[$idx];
+            let satisfied = ((r.conditions & facts) == r.conditions) as u64;
+            let mask = satisfied.wrapping_neg();
+            conclusions |= select_u64(mask, r.conclusion, 0);
+        };
     }
+
+    step!(0); step!(1); step!(2); step!(3); step!(4); step!(5);
+    step!(6); step!(7); step!(8); step!(9); step!(10); step!(11);
+
     conclusions
 }
 
@@ -247,7 +334,9 @@ impl MycinResult {
     #[must_use]
     pub fn cf_for(&self, org_bit: u64) -> Cf {
         let idx = org_bit.trailing_zeros() as usize - 32;
-        if idx >= 16 { return CF_UNKNOWN; }
+        if idx >= 16 {
+            return CF_UNKNOWN;
+        }
         self.cf[idx]
     }
 
@@ -286,7 +375,9 @@ pub fn infer(facts: u64, rules: &[MycinRule]) -> MycinResult {
         for r in rules.iter() {
             if (r.conditions & facts) == r.conditions {
                 let idx = r.conclusion.trailing_zeros() as usize - 32;
-                if idx >= 16 { continue; }
+                if idx >= 16 {
+                    continue;
+                }
                 let prior = result.cf[idx];
                 let combined = combine_cf(prior, r.cf);
                 if combined != prior {
@@ -297,7 +388,9 @@ pub fn infer(facts: u64, rules: &[MycinRule]) -> MycinResult {
                 result.conclusions |= r.conclusion;
             }
         }
-        if !new_fired { break; }
+        if !new_fired {
+            break;
+        }
     }
 
     result
@@ -446,7 +539,7 @@ mod tests {
 
     #[test]
     fn infer_fast_no_diagnosis_when_facts_insufficient() {
-        let facts = fact::FEVER;  // Just fever, not enough
+        let facts = fact::FEVER; // Just fever, not enough
         let conclusions = infer_fast(facts, &RULES);
         // STREP requires GRAM_POS + COCCUS + AEROBIC + FEVER (+ optionally RIGORS)
         assert_eq!(conclusions, 0);
@@ -457,7 +550,11 @@ mod tests {
         let facts = fact::GRAM_POS | fact::COCCUS | fact::AEROBIC | fact::FEVER | fact::RIGORS;
         let result = infer(facts, &RULES);
         let strep_cf = result.cf_for(org::STREP);
-        assert!(strep_cf > 800, "STREP CF should combine multiple rules: got {}", strep_cf);
+        assert!(
+            strep_cf > 800,
+            "STREP CF should combine multiple rules: got {}",
+            strep_cf
+        );
     }
 
     #[test]

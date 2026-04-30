@@ -62,3 +62,40 @@ impl CountMinSketch {
         min_val
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_add_and_estimate_single_item() {
+        let mut cms = CountMinSketch::new(64, 4);
+        cms.add("test_item");
+        let estimate = cms.estimate("test_item");
+        assert_eq!(estimate, 1);
+    }
+
+    #[test]
+    fn test_estimate_absent_is_small() {
+        let mut cms = CountMinSketch::new(64, 4);
+        cms.add("item1");
+        let estimate = cms.estimate("item_not_added");
+        assert!(estimate < u32::MAX);
+    }
+
+    #[test]
+    fn test_add_multiple_increments() {
+        let mut cms = CountMinSketch::new(64, 4);
+        for _ in 0..5 {
+            cms.add("repeated");
+        }
+        let estimate = cms.estimate("repeated");
+        assert!(estimate >= 5);
+    }
+
+    #[test]
+    #[should_panic(expected = "CMS width must be a power of two")]
+    fn test_non_power_of_two_panics() {
+        let _cms = CountMinSketch::new(63, 4);
+    }
+}

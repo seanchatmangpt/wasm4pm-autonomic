@@ -19,8 +19,8 @@ use serde_json::Value;
 
 use dteam::conformance::token_replay;
 use dteam::io::pnml::read_pnml;
-use dteam::models::{Attribute, AttributeValue, Event, EventLog, Trace};
 use dteam::models::petri_net::PetriNet;
+use dteam::models::{Attribute, AttributeValue, Event, EventLog, Trace};
 
 #[derive(Default)]
 struct Args {
@@ -55,15 +55,23 @@ fn parse_args() -> Result<Args> {
         match a.as_str() {
             "--log" => args.log = Some(it.next().context("--log needs value")?.into()),
             "--model" => args.model = Some(it.next().context("--model needs value")?.into()),
-            "--object-type" => args.object_type = Some(it.next().context("--object-type needs value")?),
+            "--object-type" => {
+                args.object_type = Some(it.next().context("--object-type needs value")?)
+            }
             "--metrics" => {
                 let v = it.next().context("--metrics needs value")?;
                 args.metrics = v.split(',').map(|s| s.trim().to_string()).collect();
             }
             "--threshold-fitness" => args.threshold_fitness = it.next().context("v")?.parse()?,
-            "--threshold-precision" => args.threshold_precision = it.next().context("v")?.parse()?,
-            "--threshold-generalization" => args.threshold_generalization = it.next().context("v")?.parse()?,
-            "--threshold-simplicity" => args.threshold_simplicity = it.next().context("v")?.parse()?,
+            "--threshold-precision" => {
+                args.threshold_precision = it.next().context("v")?.parse()?
+            }
+            "--threshold-generalization" => {
+                args.threshold_generalization = it.next().context("v")?.parse()?
+            }
+            "--threshold-simplicity" => {
+                args.threshold_simplicity = it.next().context("v")?.parse()?
+            }
             "--report" => args.report = Some(it.next().context("--report needs value")?.into()),
             "-h" | "--help" => {
                 print_help();
@@ -115,8 +123,8 @@ fn build_event_log(path: &PathBuf, object_type: &str) -> Result<(EventLog, usize
         if line.is_empty() {
             continue;
         }
-        let v: Value = serde_json::from_str(line)
-            .with_context(|| format!("parse line {}", lineno + 1))?;
+        let v: Value =
+            serde_json::from_str(line).with_context(|| format!("parse line {}", lineno + 1))?;
         let activity = v
             .get("ocel:activity")
             .and_then(|x| x.as_str())
@@ -193,7 +201,10 @@ fn precision_proxy(log: &EventLog, net: &PetriNet) -> f64 {
     if visible_trans.is_empty() {
         return 1.0;
     }
-    let used = visible_trans.iter().filter(|l| log_acts.contains(**l)).count();
+    let used = visible_trans
+        .iter()
+        .filter(|l| log_acts.contains(**l))
+        .count();
     used as f64 / visible_trans.len() as f64
 }
 
@@ -331,7 +342,11 @@ fn main() -> ExitCode {
         activities,
         transitions_in_model: net.transitions.len(),
         metrics,
-        verdict: if all_pass { "pass".into() } else { "fail".into() },
+        verdict: if all_pass {
+            "pass".into()
+        } else {
+            "fail".into()
+        },
     };
 
     let serialized = serde_json::to_string_pretty(&report).unwrap();

@@ -189,3 +189,58 @@ impl<const OBJ_CACHE: usize, const EDGE_CACHE: usize> StreamingOcDfg<OBJ_CACHE, 
         self.recent_attribute_changes[obj_idx] = changed_field_hash;
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_ocel_log_add_event_hashed() {
+        let mut log = OcelLog::new();
+        let relations = vec![OcelRelation {
+            object_id_hash: 123,
+            qualifier_hash: 456,
+        }];
+        log.add_event_hashed(789, 111, 1000, &relations);
+        assert_eq!(log.events.len(), 1);
+        assert_eq!(log.events[0].id_hash, 789);
+        assert_eq!(log.events[0].activity_hash, 111);
+        assert_eq!(log.events[0].timestamp, 1000);
+    }
+
+    #[test]
+    fn test_streaming_oc_dfg_observe_event() {
+        let mut dfg: StreamingOcDfg<64, 256> = StreamingOcDfg::new();
+        let objects = vec![(100u64, 200u64, 300u64)];
+        dfg.observe_event(500, &objects);
+        assert_eq!(dfg.last_activity_per_obj[100 & 63], 500);
+    }
+
+    #[test]
+    fn test_streaming_oc_dfg_observe_o2o() {
+        let mut dfg: StreamingOcDfg<64, 256> = StreamingOcDfg::new();
+        dfg.observe_o2o(111, 222, 333);
+        let mut found = false;
+        for &freq in &dfg.o2o_frequencies {
+            if freq > 0 {
+                found = true;
+                break;
+            }
+        }
+        assert!(found);
+    }
+
+    #[test]
+    fn test_ocel_event_fields() {
+        let event = OcelEvent {
+            id_hash: 1,
+            activity_hash: 2,
+            timestamp: 3,
+            omap_start: 0,
+            omap_count: 1,
+        };
+        assert_eq!(event.id_hash, 1);
+        assert_eq!(event.activity_hash, 2);
+        assert_eq!(event.timestamp, 3);
+    }
+}

@@ -76,7 +76,9 @@
 //! Borda count is purely arithmetic; the blackboard uses deterministic ratings.
 
 use crate::ml::hdit_automl::SignalProfile;
-use crate::ml::hearsay::{Blackboard, Hypothesis, ACOUSTIC, DEFAULT_KS, PHONEME, SENTENCE, SYLLABLE, WORD};
+use crate::ml::hearsay::{
+    Blackboard, Hypothesis, ACOUSTIC, DEFAULT_KS, PHONEME, SENTENCE, SYLLABLE, WORD,
+};
 use crate::ml::rank_fusion;
 
 /// Run the classical Hearsay-II blackboard once and extract per-level
@@ -87,7 +89,7 @@ use crate::ml::rank_fusion;
 #[must_use]
 pub fn extract_level_scores(input: u64) -> Vec<f64> {
     let mut bb = Blackboard::new();
-    bb.post(Hypothesis::new(ACOUSTIC, input, 0.9, 0, 10));
+    bb.post(Hypothesis::new(ACOUSTIC, input, 900, 0, 10));
     let _ = crate::ml::hearsay::run(&mut bb, &DEFAULT_KS, 32);
     let mut scores = Vec::with_capacity(4);
     for level in &[ACOUSTIC, PHONEME, SYLLABLE, WORD] {
@@ -103,7 +105,9 @@ pub fn extract_level_scores(input: u64) -> Vec<f64> {
 /// inputs are in the top-`n_target` ranked items.
 #[must_use]
 pub fn fuse(source_scores: &[Vec<f64>], n_target: usize) -> Vec<bool> {
-    if source_scores.is_empty() { return Vec::new(); }
+    if source_scores.is_empty() {
+        return Vec::new();
+    }
     let n_inputs = source_scores[0].len();
     let higher_is_better: Vec<bool> = vec![true; source_scores.len()];
     // borda_count expects [source][input] layout — already correct.
@@ -117,7 +121,7 @@ pub fn hearsay_automl_signal(name: &str, inputs: &[u64], anchor: &[bool]) -> Sig
     let n_target = anchor.iter().filter(|&&a| a).count().max(1);
 
     // Build N=4 source streams: for each level, the per-input best-CF
-    let mut source_streams: Vec<Vec<f64>> = vec![Vec::with_capacity(inputs.len()); 4];
+    let mut source_streams: Vec<Vec<f64>> = (0..4).map(|_| Vec::with_capacity(inputs.len())).collect();
     for &inp in inputs {
         let level_scores = extract_level_scores(inp);
         for (i, s) in level_scores.iter().enumerate() {
@@ -137,7 +141,7 @@ pub fn hearsay_sentence_signal(name: &str, inputs: &[u64], anchor: &[bool]) -> S
     let mut predictions = Vec::with_capacity(inputs.len());
     for &inp in inputs {
         let mut bb = Blackboard::new();
-        bb.post(Hypothesis::new(ACOUSTIC, inp, 0.9, 0, 10));
+        bb.post(Hypothesis::new(ACOUSTIC, inp, 90, 0, 10));
         let _ = crate::ml::hearsay::run(&mut bb, &DEFAULT_KS, 32);
         predictions.push(!bb.at(SENTENCE).is_empty());
     }

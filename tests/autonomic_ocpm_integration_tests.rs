@@ -24,7 +24,10 @@ fn vision2030_kernel_run_cycle_produces_real_hash() {
     let results = kernel.run_cycle(event);
 
     // run_cycle must produce at least one result (health=1.0, conformance=1.0 initially)
-    assert!(!results.is_empty(), "run_cycle must produce at least one AutonomicResult");
+    assert!(
+        !results.is_empty(),
+        "run_cycle must produce at least one AutonomicResult"
+    );
 
     let result = &results[0];
 
