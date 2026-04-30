@@ -26,6 +26,26 @@
 //! byte is folded in even at genesis).
 //! Subsequent: `chain_hash = blake3(prior_chain_hash || source_hash || polarity)`,
 //! folded through a 65-byte stack buffer (no heap allocation per step).
+//!
+//! # Phase-10 ABI conformance
+//!
+//! POWL64's offline ABI (`crate::abi::powl64_to_postcard`,
+//! `powl64_to_jsonld`, `powl64_to_debug_string`) serializes the **path**
+//! (ordered chain-hash sequence) only, not the sparse cell map. The cell
+//! map is reconstructible by replaying the same source-IRI sequence into a
+//! fresh `Powl64`; the chain folds are the canonical ground truth.
+//!
+//! Conformance obligations (load-bearing — see
+//! `crates/ccog/tests/powl64_abi_conformance.rs`):
+//! - `chain_len()` must equal `path().len()` after every extend.
+//! - Polarity is folded at genesis — same source IRI with different
+//!   polarities must yield different genesis chain heads.
+//! - `semantic_receipt` must NOT be folded into the chain hash; replay
+//!   bundles can be polarity-only.
+//! - Coord collisions must preserve all colliding cells (`cells_at(coord)`
+//!   sums them); collisions never collapse the chain.
+//!
+//! No structural changes are made in Phase 10 — the ABI surface freezes here.
 
 use std::collections::HashMap;
 

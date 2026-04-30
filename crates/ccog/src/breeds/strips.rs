@@ -104,6 +104,13 @@ pub fn admit_breed(breed: Breed, field: &FieldContext) -> Result<bool> {
             None,
         )?,
         Breed::CompiledHook => true,
+        // Phase-9 breeds: each delegates to its own pure graph-probe admit.
+        // SOAR is hard-gated on Phase 7 trace-history persistence and will
+        // routinely return false until that lands.
+        Breed::Gps => crate::breeds::gps::admit(field)?,
+        Breed::Soar => crate::breeds::soar::admit(field)?,
+        Breed::Prs => crate::breeds::prs::admit(field)?,
+        Breed::Cbr => crate::breeds::cbr::admit(field)?,
     };
     Ok(admissible)
 }
@@ -147,6 +154,9 @@ pub fn admit_powl8(plan: &Powl8, field: &FieldContext) -> Result<PlanVerdict> {
             Powl8Node::OperatorSequence { .. }
             | Powl8Node::OperatorParallel { .. }
             | Powl8Node::PartialOrder { .. } => false,
+            // Choice and Loop are structural — their own activity status is
+            // derived from descendants. They are not directly advanced.
+            Powl8Node::Choice { .. } | Powl8Node::Loop { .. } => false,
         };
     }
 
@@ -194,6 +204,8 @@ pub fn admit_powl8_with_advanced(
             Powl8Node::OperatorSequence { .. }
                 | Powl8Node::OperatorParallel { .. }
                 | Powl8Node::PartialOrder { .. }
+                | Powl8Node::Choice { .. }
+                | Powl8Node::Loop { .. }
         ) {
             continue;
         }
@@ -224,6 +236,8 @@ pub fn admit_powl8_with_advanced(
                     Powl8Node::OperatorSequence { .. }
                         | Powl8Node::OperatorParallel { .. }
                         | Powl8Node::PartialOrder { .. }
+                        | Powl8Node::Choice { .. }
+                        | Powl8Node::Loop { .. }
                 )
         });
 

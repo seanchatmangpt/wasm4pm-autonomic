@@ -115,6 +115,32 @@ pub enum Powl8Node {
     StartNode,
     /// Plan exit marker; reachable only after all predecessors are advanced.
     EndNode,
+    /// Exactly one of up to four branch nodes runs at runtime. Branch indices
+    /// are global into `Powl8.nodes`; only `branches[..len as usize]` are
+    /// considered. Each branch sees the Choice node itself as its sole
+    /// declared predecessor (per [`Powl8::predecessor_masks`]).
+    ///
+    /// `Powl8Node` stays `Copy` because the branches array is a fixed
+    /// `[u16; 4]` — no heap-allocated branch list.
+    Choice {
+        /// Up to four branch node indices (global into `Powl8.nodes`). Only
+        /// the first `len` entries are read; trailing entries are ignored.
+        branches: [u16; 4],
+        /// Live branch count; must satisfy `1..=4`. `0` is malformed.
+        len: u8,
+    },
+    /// Bounded loop: at compile time, `max_iters` ≤ 16 sequential copies of
+    /// `body` are unrolled into the runtime plan. The combined executable
+    /// node count must remain ≤ 64 or compile yields `Malformed`. `body`
+    /// must be a different node index (no self-body).
+    ///
+    /// `Powl8Node` stays `Copy` because the only fields are `u16` + `u8`.
+    Loop {
+        /// Index of the body node (must differ from the Loop node itself).
+        body: u16,
+        /// Maximum unroll count; clamped at 16 by `shape_match`.
+        max_iters: u8,
+    },
 }
 
 /// Kinetic partial-order workflow plan, bounded to [`MAX_NODES`] nodes.
@@ -233,6 +259,34 @@ impl Powl8 {
                         return Err(PlanAdmission::Malformed);
                     }
                 }
+                Powl8Node::Choice { branches, len } => {
+                    let lc = len as usize;
+                    if lc == 0 || lc > 4 {
+                        return Err(PlanAdmission::Malformed);
+                    }
+                    for k in 0..lc {
+                        let bi = branches[k] as usize;
+                        if bi >= n {
+                            return Err(PlanAdmission::Malformed);
+                        }
+                        if bi == idx {
+                            // No self-loop: a Choice cannot select itself.
+                            return Err(PlanAdmission::Malformed);
+                        }
+                    }
+                }
+                Powl8Node::Loop { body, max_iters } => {
+                    let bi = body as usize;
+                    if bi >= n {
+                        return Err(PlanAdmission::Malformed);
+                    }
+                    if bi == idx {
+                        return Err(PlanAdmission::Malformed);
+                    }
+                    if max_iters == 0 || max_iters > 16 {
+                        return Err(PlanAdmission::Malformed);
+                    }
+                }
             }
         }
 
@@ -297,7 +351,7 @@ impl Powl8 {
         // Outgoing edges from any node are produced by the structure of every
         // node in the plan, so we scan the plan once per query. This is O(n²)
         // overall for shape_match, which is fine at MAX_NODES = 64.
-        for node in &self.nodes {
+        for (idx, node) in self.nodes.iter().enumerate() {
             match *node {
                 Powl8Node::OperatorSequence { a, b } => {
                     if (a as usize) == u {
@@ -322,6 +376,17 @@ impl Powl8 {
                         }
                     }
                 }
+                Powl8Node::Choice { branches, len } => {
+                    if idx == u {
+                        let lc = (len as usize).min(4);
+                        for k_b in 0..lc {
+                            if counter == k {
+                                return Some(branches[k_b] as usize);
+                            }
+                            counter += 1;
+                        }
+                    }
+                }
                 _ => {}
             }
         }
@@ -342,7 +407,7 @@ impl Powl8 {
     pub fn predecessor_masks(&self) -> [u64; MAX_NODES] {
         let mut preds = [0u64; MAX_NODES];
         let n = self.nodes.len().min(MAX_NODES);
-        for node in &self.nodes {
+        for (idx, node) in self.nodes.iter().enumerate() {
             match *node {
                 Powl8Node::OperatorSequence { a, b } => {
                     let ai = a as usize;
@@ -362,6 +427,18 @@ impl Powl8 {
                             if i != j && rel.is_edge(i, j) {
                                 preds[s + j] |= 1u64 << (s + i);
                             }
+                        }
+                    }
+                }
+                Powl8Node::Choice { branches, len } => {
+                    if idx >= n {
+                        continue;
+                    }
+                    let lc = (len as usize).min(4);
+                    for k in 0..lc {
+                        let bi = branches[k] as usize;
+                        if bi < n {
+                            preds[bi] |= 1u64 << idx;
                         }
                     }
                 }
@@ -407,18 +484,43 @@ impl Powl8 {
                 Powl8Node::Activity(_) => Some(CompiledNodeKind::HookSlot(idx as u16)),
                 Powl8Node::OperatorSequence { .. }
                 | Powl8Node::OperatorParallel { .. }
-                | Powl8Node::PartialOrder { .. } => None,
+                | Powl8Node::PartialOrder { .. }
+                | Powl8Node::Loop { .. } => None,
+                // Choice is executable: at runtime, the kernel evaluates a
+                // selector and chooses exactly one branch. The selector slot
+                // index is the original Choice node index.
+                Powl8Node::Choice { .. } => Some(CompiledNodeKind::Choice { selector_slot: idx as u16 }),
             };
         }
 
-        // Count executable nodes; bail early if we'd exceed the u64 mask.
+        // Loop unrolling: each `Powl8Node::Loop { body, max_iters }` contributes
+        // (max_iters - 1) extra runtime copies of `body` chained in sequence
+        // after the original `body` runtime entry. We track these as
+        // `(after_orig_body, count)` pairs and insert them after the standard
+        // Kahn pass, preserving topological correctness because each unrolled
+        // copy depends only on the previous copy.
+        let mut loop_unrolls: Vec<(u16, u8)> = Vec::new();
+        for node in &self.nodes {
+            if let Powl8Node::Loop { body, max_iters } = *node {
+                if max_iters > 1 {
+                    loop_unrolls.push((body, max_iters - 1));
+                }
+            }
+        }
+
+        // Count executable nodes (including loop unrolls); bail early if we
+        // would exceed the u64 mask.
         let mut exec_count = 0usize;
         for k in kind_of.iter().take(n) {
             if k.is_some() {
                 exec_count += 1;
             }
         }
-        if exec_count > 64 {
+        let unroll_extra: usize = loop_unrolls
+            .iter()
+            .map(|(_, c)| *c as usize)
+            .sum();
+        if exec_count + unroll_extra > 64 {
             return Err(PlanAdmission::Malformed);
         }
 
@@ -442,7 +544,7 @@ impl Powl8 {
             }
         };
 
-        for node in &self.nodes {
+        for (idx, node) in self.nodes.iter().enumerate() {
             match *node {
                 Powl8Node::OperatorSequence { a, b } => {
                     try_add(a as usize, b as usize, &mut outgoing, &mut indegree);
@@ -463,6 +565,16 @@ impl Powl8 {
                         }
                     }
                 }
+                // Choice contributes itself as predecessor of each branch.
+                Powl8Node::Choice { branches, len } => {
+                    let lc = (len as usize).min(4);
+                    for k in 0..lc {
+                        try_add(idx, branches[k] as usize, &mut outgoing, &mut indegree);
+                    }
+                }
+                // Loop is structural — body unrolling is handled below; the
+                // Loop node itself contributes no edges to the dep graph.
+                Powl8Node::Loop { .. } => {}
                 _ => {}
             }
         }
@@ -523,6 +635,31 @@ impl Powl8 {
             }
         }
 
+        // Append loop-unrolled body copies. Each `(body, extra)` extends the
+        // body's runtime sequence by `extra` copies, each depending solely
+        // on the previous one.
+        for (body, extra) in &loop_unrolls {
+            let body_rt = match runtime_index[*body as usize] {
+                Some(rt) => rt as usize,
+                None => continue, // Body wasn't executable; nothing to unroll.
+            };
+            let body_kind = match kind_of[*body as usize] {
+                Some(k) => k,
+                None => continue,
+            };
+            let mut prev_rt = body_rt;
+            for _ in 0..*extra {
+                let new_rt = order.len();
+                if new_rt >= 64 {
+                    return Err(PlanAdmission::Malformed);
+                }
+                order.push(*body);
+                kinds.push(body_kind);
+                preds.push(1u64 << prev_rt);
+                prev_rt = new_rt;
+            }
+        }
+
         Ok(CompiledPowl8 {
             order,
             preds,
@@ -540,6 +677,14 @@ pub enum CompiledNodeKind {
     Silent,
     /// Runtime activity node referencing an external slot index.
     HookSlot(u16),
+    /// Phase-10 Choice node: at runtime exactly one of the branches advances,
+    /// chosen by an external selector. `selector_slot` is the original
+    /// `Powl8` node index of the Choice declaration — used by the runtime
+    /// to look up the selector value (mask, oracle, RL policy, etc.).
+    Choice {
+        /// Original `Powl8.nodes` index of the Choice declaration.
+        selector_slot: u16,
+    },
 }
 
 /// Compiled POWL8: topologically ordered executable nodes with predecessor masks.

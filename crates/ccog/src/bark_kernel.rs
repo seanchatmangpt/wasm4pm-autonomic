@@ -53,6 +53,17 @@ pub struct BarkKernel {
 ///
 /// **Bit domain**: plan-node index (NOT compiled-runtime index — Track B
 /// adds compiled-order dispatch separately via `Powl8::compile`).
+///
+/// # Mask domain rule (Phase 10)
+///
+/// `advanced_mask` (and the sibling `fired_mask` / `denied_mask`) are
+/// **plan-node indexed** in this `BarkKernel::decide` flow because the
+/// kernel walks the raw `Powl8.nodes` array. After `Powl8::compile()` the
+/// returned `CompiledPowl8` reorders nodes topologically and any masks
+/// computed against `CompiledPowl8.preds[i]` are then **runtime-slot
+/// indexed, NOT plan-node indexed**. Mixing the two domains across a
+/// compile boundary is a defect. The constitutional rule is: every mask
+/// must declare its domain at the type or doc level — never silently.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct BarkDecision {
     /// Bit `i` set iff slot `i` fired (had a compiled hook AND its
