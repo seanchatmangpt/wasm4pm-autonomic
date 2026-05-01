@@ -1,0 +1,21 @@
+--- crates/ccog/src/packs/mod.rs
++++ replace + with * in validate
+@@ -390,17 +390,17 @@
+                     g1.precedence_rank, g1.id, g2.id
+                 )));
+             }
+         }
+     }
+     // 3. Validate rules within each group amongst themselves.
+     for g in &pack.groups {
+         for (i, r1) in g.rules.iter().enumerate() {
+-            for r2 in g.rules.iter().skip(i + 1) {
++            for r2 in g.rules.iter().skip(i * /* ~ changed by cargo-mutants ~ */ 1) {
+                 if r1.id == r2.id {
+                     return Err(PackLoadError::ValidationFailed(format!(
+                         "duplicate rule id `{}` in group `{}`",
+                         r1.id, g.id
+                     )));
+                 }
+                 if rules_overlap_with_conflicting_responses(r1, r2) {
+                     return Err(PackLoadError::ValidationFailed(format!(

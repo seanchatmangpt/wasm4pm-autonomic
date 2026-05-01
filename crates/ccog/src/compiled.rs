@@ -95,7 +95,10 @@ impl CompiledFieldSnapshot {
                 }
             }
 
-            if matches!(pred.as_str(), SKOS_PREF_LABEL | SKOS_ALT_LABEL | SCHEMA_NAME) {
+            if matches!(
+                pred.as_str(),
+                SKOS_PREF_LABEL | SKOS_ALT_LABEL | SCHEMA_NAME
+            ) {
                 if let Term::Literal(lit) = &obj {
                     let lc = lit.value().to_lowercase();
                     let lh = fnv1a_64(lc.as_bytes());

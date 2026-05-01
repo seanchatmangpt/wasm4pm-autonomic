@@ -1,7 +1,7 @@
 //! PROV-O receipt with BLAKE3 proof-of-origin hashing.
 
-use chrono::{DateTime, Utc};
 use crate::graph::GraphIri;
+use chrono::{DateTime, Utc};
 
 /// PROV receipt with cryptographic proof and deterministic hash.
 #[derive(Clone, Debug)]
@@ -151,22 +151,8 @@ mod tests {
     fn prior_chain_none_matches_some_zeros() {
         // None must serialize exactly the same as Some([0u8; 32]).
         let zeros = blake3::Hash::from_bytes([0u8; 32]);
-        let m_none = Receipt::canonical_material(
-            "hook",
-            0,
-            b"delta",
-            "field",
-            None,
-            1,
-        );
-        let m_some_zero = Receipt::canonical_material(
-            "hook",
-            0,
-            b"delta",
-            "field",
-            Some(zeros),
-            1,
-        );
+        let m_none = Receipt::canonical_material("hook", 0, b"delta", "field", None, 1);
+        let m_some_zero = Receipt::canonical_material("hook", 0, b"delta", "field", Some(zeros), 1);
         assert_eq!(m_none, m_some_zero, "None must equal Some([0u8; 32])");
         assert_eq!(
             Receipt::derive_urn(&m_none),

@@ -1,11 +1,11 @@
 //! STRIPS breed: transition admissibility via direct triple-pattern checks.
 
-use anyhow::Result;
-use oxigraph::model::NamedNode;
 use crate::field::FieldContext;
 use crate::graph::GraphIri;
 use crate::powl::{Powl8, Powl8Node, MAX_NODES};
 use crate::verdict::{Breed, PlanAdmission, PlanVerdict, TransitionVerdict};
+use anyhow::Result;
+use oxigraph::model::NamedNode;
 
 /// STRIPS: Transition admissibility checking.
 /// Evaluates whether a candidate operation can lawfully move the field from one graph state to another.
@@ -71,12 +71,8 @@ pub fn admit_breed(breed: Breed, field: &FieldContext) -> Result<bool> {
                 let dd = N::new("https://schema.org/DigitalDocument")?;
                 let pv = N::new("http://www.w3.org/ns/prov#value")?;
                 let docs = field.graph.instances_of(&dd)?;
-                docs.iter().all(|d| {
-                    field
-                        .graph
-                        .has_value_for(d, &pv)
-                        .unwrap_or(false)
-                })
+                docs.iter()
+                    .all(|d| field.graph.has_value_for(d, &pv).unwrap_or(false))
             }
         }
         Breed::Strips => {
@@ -277,9 +273,7 @@ mod breed_probe_tests {
 
     #[test]
     fn mycin_admitted_when_prov_value_present() -> Result<()> {
-        let f = field_with(
-            "<http://example.org/d1> <http://www.w3.org/ns/prov#value> \"x\" .\n",
-        );
+        let f = field_with("<http://example.org/d1> <http://www.w3.org/ns/prov#value> \"x\" .\n");
         assert!(admit_breed(Breed::Mycin, &f)?);
         Ok(())
     }

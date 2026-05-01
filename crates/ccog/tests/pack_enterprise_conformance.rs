@@ -15,14 +15,21 @@ fn empty_snap() -> CompiledFieldSnapshot {
 #[test]
 fn pack_enterprise_positive_emits_was_informed_by_and_used() {
     let snap = empty_snap();
-    let context = ClosedFieldContext { human_burden: 0,
+    let context = ClosedFieldContext {
+        human_burden: 0,
         snapshot: std::sync::Arc::new(snap.clone()),
         posture: PostureBundle::default(),
         context: ContextBundle::default(),
         tiers: TierMasks::ZERO,
     };
-    let h_informed = format!("{:04x}", ccog::utils::dense::fnv1a_64("http://www.w3.org/ns/prov#wasInformedBy".as_bytes()) as u16);
-    let h_used = format!("{:04x}", ccog::utils::dense::fnv1a_64("http://www.w3.org/ns/prov#used".as_bytes()) as u16);
+    let h_informed = format!(
+        "{:04x}",
+        ccog::utils::dense::fnv1a_64("http://www.w3.org/ns/prov#wasInformedBy".as_bytes()) as u16
+    );
+    let h_used = format!(
+        "{:04x}",
+        ccog::utils::dense::fnv1a_64("http://www.w3.org/ns/prov#used".as_bytes()) as u16
+    );
     for slot in BUILTINS {
         let delta = (slot.act)(&context).expect("act");
         let nt = delta.to_ntriples();
@@ -42,7 +49,8 @@ fn pack_enterprise_positive_emits_was_informed_by_and_used() {
 #[test]
 fn pack_enterprise_negative_no_example_org_iris() {
     let snap = empty_snap();
-    let context = ClosedFieldContext { human_burden: 0,
+    let context = ClosedFieldContext {
+        human_burden: 0,
         snapshot: std::sync::Arc::new(snap.clone()),
         posture: PostureBundle::default(),
         context: ContextBundle::default(),
@@ -68,7 +76,8 @@ fn pack_enterprise_boundary_response_class_canonical_only() {
         posture_mask: 1u64 << PostureBit::CALM,
         confidence: 200,
     };
-    let context = ClosedFieldContext { human_burden: 0,
+    let context = ClosedFieldContext {
+        human_burden: 0,
         snapshot: std::sync::Arc::new(snap.clone()),
         posture,
         context: ContextBundle::default(),

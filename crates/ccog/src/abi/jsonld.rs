@@ -20,11 +20,26 @@ use crate::powl64::Powl64;
 
 fn context_value() -> Value {
     let mut ctx: Map<String, Value> = Map::new();
-    ctx.insert("prov".to_string(), Value::String("http://www.w3.org/ns/prov#".to_string()));
-    ctx.insert("schema".to_string(), Value::String("https://schema.org/".to_string()));
-    ctx.insert("sh".to_string(), Value::String("http://www.w3.org/ns/shacl#".to_string()));
-    ctx.insert("xsd".to_string(), Value::String("http://www.w3.org/2001/XMLSchema#".to_string()));
-    ctx.insert("ccog".to_string(), Value::String("urn:ccog:vocab:".to_string()));
+    ctx.insert(
+        "prov".to_string(),
+        Value::String("http://www.w3.org/ns/prov#".to_string()),
+    );
+    ctx.insert(
+        "schema".to_string(),
+        Value::String("https://schema.org/".to_string()),
+    );
+    ctx.insert(
+        "sh".to_string(),
+        Value::String("http://www.w3.org/ns/shacl#".to_string()),
+    );
+    ctx.insert(
+        "xsd".to_string(),
+        Value::String("http://www.w3.org/2001/XMLSchema#".to_string()),
+    );
+    ctx.insert(
+        "ccog".to_string(),
+        Value::String("urn:ccog:vocab:".to_string()),
+    );
     Value::Object(ctx)
 }
 

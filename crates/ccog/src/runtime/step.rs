@@ -5,9 +5,9 @@ use crate::field::FieldContext;
 use crate::graph::GraphIri;
 use crate::hooks::HookRegistry;
 use crate::powl64::Powl64;
+use crate::runtime::error::{Result, RuntimeError};
 use crate::runtime::posture::PostureMachine;
 use crate::runtime::scheduler::{Scheduler, TickReport};
-use crate::runtime::error::{RuntimeError, Result};
 use crate::verdict::PackPosture;
 
 /// Multi-cycle ccog runtime with chained PROV receipts and posture tracking.
@@ -46,16 +46,24 @@ impl Runtime {
     }
 
     /// Borrow the field (for inspection in tests/callers).
-    pub fn field(&self) -> &FieldContext { &self.field }
+    pub fn field(&self) -> &FieldContext {
+        &self.field
+    }
 
     /// Mutable field access for loading state between steps.
-    pub fn field_mut(&mut self) -> &mut FieldContext { &mut self.field }
+    pub fn field_mut(&mut self) -> &mut FieldContext {
+        &mut self.field
+    }
 
     /// Current posture without mutation.
-    pub fn posture(&self) -> PackPosture { self.posture.current() }
+    pub fn posture(&self) -> PackPosture {
+        self.posture.current()
+    }
 
     /// Borrow the BLAKE3 receipt chain universe.
-    pub fn powl64(&self) -> &Powl64 { &self.powl64 }
+    pub fn powl64(&self) -> &Powl64 {
+        &self.powl64
+    }
 
     /// Run one cycle: tick → observe posture → chain receipts → return report.
     pub fn step(&mut self) -> Result<StepReport> {
@@ -66,7 +74,9 @@ impl Runtime {
         let mut chain_extended = false;
         if signal_count > 0 {
             if let Some(prev_iri) = self.last_receipt_iri.clone() {
-                let new_iri_opt = tick.outcomes.iter()
+                let new_iri_opt = tick
+                    .outcomes
+                    .iter()
                     .find_map(|o| o.receipt.as_ref().map(|r| r.activity_iri.clone()));
                 if let Some(new_iri) = new_iri_opt {
                     use crate::construct8::Triple;
@@ -74,8 +84,13 @@ impl Runtime {
                     let was_informed_by = "http://www.w3.org/ns/prov#wasInformedBy";
                     let new_node_str = new_iri.as_str();
                     let prev_node_str = prev_iri.as_str();
-                    chain.push(Triple::from_strings(new_node_str, was_informed_by, prev_node_str));
-                    chain.materialize(&self.field.graph)
+                    chain.push(Triple::from_strings(
+                        new_node_str,
+                        was_informed_by,
+                        prev_node_str,
+                    ));
+                    chain
+                        .materialize(&self.field.graph)
                         .map_err(|e| RuntimeError::FieldError(e.to_string()))?;
                     chain_extended = true;
                 }
@@ -87,7 +102,7 @@ impl Runtime {
         // wasInformedBy chain without touching ontology.
         for outcome in tick.outcomes.iter() {
             if let Some(receipt) = outcome.receipt.as_ref() {
-                use crate::powl64::{Powl64RouteCell, ProjectionTarget, PartnerId, Polarity};
+                use crate::powl64::{PartnerId, Polarity, Powl64RouteCell, ProjectionTarget};
                 use crate::runtime::cog8::CollapseFn;
 
                 let cell = Powl64RouteCell {
@@ -110,7 +125,10 @@ impl Runtime {
             }
         }
 
-        if let Some(latest) = tick.outcomes.iter().rev()
+        if let Some(latest) = tick
+            .outcomes
+            .iter()
+            .rev()
             .find_map(|o| o.receipt.as_ref().map(|r| r.activity_iri.clone()))
         {
             self.last_receipt_iri = Some(latest);

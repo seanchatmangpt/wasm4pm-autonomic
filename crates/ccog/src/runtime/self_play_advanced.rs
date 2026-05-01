@@ -1,8 +1,10 @@
 //! Advanced Self-Play Matrix and Coevolution Validation.
 
-use crate::runtime::self_play::{CcogEnvironment, CcogCritic, CcogCounterfactual, ScenarioFamily, SelfPlayLoop};
-use crate::runtime::{ClosedFieldContext, cog8::Cog8Decision};
 use crate::powl64::Powl64;
+use crate::runtime::self_play::{
+    CcogCounterfactual, CcogCritic, CcogEnvironment, ScenarioFamily, SelfPlayLoop,
+};
+use crate::runtime::{cog8::Cog8Decision, ClosedFieldContext};
 use anyhow::Result;
 
 /// Detailed criticism report for a self-play step.
@@ -27,14 +29,23 @@ impl AdvancedCritic {
     }
 
     /// Check if the tool call follows STRIPS preconditions.
-    pub fn check_strips_compliance(&self, _context: &ClosedFieldContext, _decision: &Cog8Decision) -> bool {
+    pub fn check_strips_compliance(
+        &self,
+        _context: &ClosedFieldContext,
+        _decision: &Cog8Decision,
+    ) -> bool {
         // Placeholder
         true
     }
 }
 
 impl CcogCritic for AdvancedCritic {
-    fn critique(&self, context: &ClosedFieldContext, decision: &Cog8Decision, _proof: &Powl64) -> Result<()> {
+    fn critique(
+        &self,
+        context: &ClosedFieldContext,
+        decision: &Cog8Decision,
+        _proof: &Powl64,
+    ) -> Result<()> {
         if !self.check_law_of_8(decision) {
             anyhow::bail!("Law of 8 violation");
         }
@@ -53,7 +64,10 @@ pub struct CoevolutionValidator {
 
 impl CoevolutionValidator {
     /// Evaluate a sequence of receipts for chunking potential.
-    pub fn propose_chunk(&self, history: &[crate::runtime::self_play::SelfPlayStep]) -> Option<String> {
+    pub fn propose_chunk(
+        &self,
+        history: &[crate::runtime::self_play::SelfPlayStep],
+    ) -> Option<String> {
         if history.len() >= self.support_threshold {
             Some("CandidateChunk::PolicyClosure".to_string())
         } else {

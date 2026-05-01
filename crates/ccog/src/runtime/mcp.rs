@@ -103,7 +103,11 @@ impl MCPProjectionTable {
     ///
     /// This evaluates the decision against the projection table to determine
     /// if an external tool should be invoked.
-    pub fn project(&self, decision: &Cog8Decision, _context: &ClosedFieldContext) -> Option<MCPCall> {
+    pub fn project(
+        &self,
+        decision: &Cog8Decision,
+        _context: &ClosedFieldContext,
+    ) -> Option<MCPCall> {
         // Iterate through rules to find a match for the decision's response.
         for rule in self.rules {
             if rule.trigger_instinct == decision.response {
@@ -135,27 +139,23 @@ impl MCPProjectionTable {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ids::{BreedId, CollapseFn, EdgeId, GroupId, NodeId, PackId, RuleId};
     use crate::runtime::cog8::{Cog8Decision, Instinct};
-    use crate::ids::{PackId, GroupId, RuleId, BreedId, NodeId, EdgeId, CollapseFn};
 
-    static TEST_RULES: [ProjectionRule; 1] = [
-        ProjectionRule {
-            trigger_instinct: Instinct::Retrieve,
-            collapse_fn: Some(CollapseFn::Grounding),
-            template: ToolCallTemplate {
-                tool_id: ToolId(42),
-                expected_result_type: ExpectedResultType::Construct8,
-                effect_policy: EffectPolicy::Write,
-                required_vars: 0xFF,
-            },
-        }
-    ];
+    static TEST_RULES: [ProjectionRule; 1] = [ProjectionRule {
+        trigger_instinct: Instinct::Retrieve,
+        collapse_fn: Some(CollapseFn::Grounding),
+        template: ToolCallTemplate {
+            tool_id: ToolId(42),
+            expected_result_type: ExpectedResultType::Construct8,
+            effect_policy: EffectPolicy::Write,
+            required_vars: 0xFF,
+        },
+    }];
 
     #[test]
     fn test_mcp_projection() {
-        let table = MCPProjectionTable {
-            rules: &TEST_RULES,
-        };
+        let table = MCPProjectionTable { rules: &TEST_RULES };
 
         let decision = Cog8Decision {
             response: Instinct::Retrieve,

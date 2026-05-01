@@ -1,11 +1,11 @@
 //! Prolog-style relations breed: transitive proof via SPARQL property paths + bounded BFS.
 
-use anyhow::Result;
-use std::collections::{HashSet, VecDeque};
-use crate::utils::dense::{fnv1a_64, PackedKeyTable};
 use crate::field::FieldContext;
 use crate::graph::GraphIri;
+use crate::utils::dense::{fnv1a_64, PackedKeyTable};
 use crate::verdict::RelationProof;
+use anyhow::Result;
+use std::collections::{HashSet, VecDeque};
 
 const MAX_DEPTH: usize = 8;
 
@@ -20,7 +20,9 @@ pub fn prove_relation(
     // Phase A: existence check
     let ask_sparql = format!(
         "ASK {{ <{}> <{}>+ <{}> }}",
-        subject.as_str(), predicate.as_str(), target.as_str()
+        subject.as_str(),
+        predicate.as_str(),
+        target.as_str()
     );
     if !field.graph.ask(&ask_sparql)? {
         return Ok(None);
@@ -32,16 +34,26 @@ pub fn prove_relation(
     queue.push_back((subject.clone(), 0));
     visited.insert(subject.as_str().to_string());
     while let Some((current, depth)) = queue.pop_front() {
-        if depth >= MAX_DEPTH { continue; }
-        let q = format!("SELECT ?next WHERE {{ <{}> <{}> ?next }}", current.as_str(), predicate.as_str());
+        if depth >= MAX_DEPTH {
+            continue;
+        }
+        let q = format!(
+            "SELECT ?next WHERE {{ <{}> <{}> ?next }}",
+            current.as_str(),
+            predicate.as_str()
+        );
         let rows = field.graph.select(&q)?;
         for row in rows {
             for (k, n) in row {
                 let name = k.strip_prefix('?').unwrap_or(&k);
-                if name != "next" { continue; }
+                if name != "next" {
+                    continue;
+                }
                 let next = GraphIri(n);
                 let key = next.as_str().to_string();
-                if visited.contains(&key) { continue; }
+                if visited.contains(&key) {
+                    continue;
+                }
                 visited.insert(key.clone());
                 parent.insert(fnv1a_64(key.as_bytes()), key.clone(), current.clone());
                 if next.as_str() == target.as_str() {

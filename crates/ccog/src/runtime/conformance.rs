@@ -10,11 +10,11 @@
 //! - **Simplicity**: Occam's razor for the COG8 topology.
 //! - **False Closures**: Identification of traces that terminate on non-sink nodes.
 
+use crate::ids::{EdgeId, NodeId};
+use crate::powl64::Powl64;
 use crate::runtime::cog8::EdgeKind;
 use crate::runtime::CompiledCcogConfig;
-use crate::powl64::Powl64;
-use crate::ids::{NodeId, EdgeId};
-use std::collections::{HashSet, HashMap};
+use std::collections::{HashMap, HashSet};
 
 /// Collection of recorded cognitive traces for conformance analysis.
 #[derive(Debug, Clone, Default)]
@@ -67,7 +67,7 @@ pub fn check_conformance<const N: usize, const E: usize>(
 
     let mut total_cells = 0;
     let mut fit_cells = 0;
-    
+
     // Track visits and usage
     let mut node_visit_counts = HashMap::new();
     let mut exercised_edges_per_node = HashMap::<NodeId, HashSet<EdgeId>>::new();
@@ -82,7 +82,10 @@ pub fn check_conformance<const N: usize, const E: usize>(
 
     for edge in config.edges.iter() {
         if edge.kind != EdgeKind::None {
-            node_to_config_edges.entry(edge.from).or_default().insert(edge.instr.edge_id);
+            node_to_config_edges
+                .entry(edge.from)
+                .or_default()
+                .insert(edge.instr.edge_id);
             if edge.kind != EdgeKind::Loop && edge.kind != EdgeKind::Blocking {
                 sink_nodes.remove(&edge.from);
             }
@@ -91,25 +94,32 @@ pub fn check_conformance<const N: usize, const E: usize>(
 
     for trace in &ledger.traces {
         total_cells += trace.cells.len();
-        
+
         for cell in &trace.cells {
             // Check if the cell aligns with an edge in the config.
             let mut found_match = false;
             for edge in config.edges.iter() {
-                if edge.kind != EdgeKind::None && edge.instr.edge_id == cell.edge_id && edge.from == cell.from_node && edge.to == cell.to_node {
+                if edge.kind != EdgeKind::None
+                    && edge.instr.edge_id == cell.edge_id
+                    && edge.from == cell.from_node
+                    && edge.to == cell.to_node
+                {
                     found_match = true;
-                    exercised_edges_per_node.entry(cell.from_node).or_default().insert(cell.edge_id);
+                    exercised_edges_per_node
+                        .entry(cell.from_node)
+                        .or_default()
+                        .insert(cell.edge_id);
                     break;
                 }
             }
             if found_match {
                 fit_cells += 1;
             }
-            
+
             // Track visits for generalization
             *node_visit_counts.entry(cell.to_node).or_insert(0) += 1;
         }
-        
+
         // Count the starting node of each trace
         if let Some(first_cell) = trace.cells.first() {
             *node_visit_counts.entry(first_cell.from_node).or_insert(0) += 1;
@@ -182,12 +192,12 @@ fn calculate_simplicity<const N: usize, const E: usize>(config: &CompiledCcogCon
             active_edges_count += 1;
         }
     }
-    
+
     let active_nodes_count = active_nodes.len();
     if active_nodes_count == 0 {
         return 1.0;
     }
-    
+
     // Occam's razor: favor models with fewer "extra" edges relative to nodes.
     // Simplicity = Nodes / (Nodes + Max(0, Edges - Nodes + 1))
     let extra_edges = if active_edges_count >= active_nodes_count {
@@ -195,16 +205,18 @@ fn calculate_simplicity<const N: usize, const E: usize>(config: &CompiledCcogCon
     } else {
         0
     };
-    
+
     active_nodes_count as f64 / (active_nodes_count + extra_edges) as f64
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::runtime::cog8::{Cog8Row, Cog8Edge, Powl8Instr, Powl8Op, Instinct, EdgeKind, CollapseFn};
-    use crate::powl64::Powl64RouteCell;
     use crate::ids::*;
+    use crate::powl64::Powl64RouteCell;
+    use crate::runtime::cog8::{
+        Cog8Edge, Cog8Row, CollapseFn, EdgeKind, Instinct, Powl8Instr, Powl8Op,
+    };
 
     fn create_conformance_config() -> CompiledCcogConfig<2, 1> {
         let node0 = Cog8Row {
@@ -302,7 +314,7 @@ mod tests {
     fn test_generalization_and_simplicity() {
         let config = create_conformance_config();
         let mut ledger = EvidenceLedger::new();
-        
+
         let mut trace1 = Powl64::new();
         trace1.extend(Powl64RouteCell {
             edge_id: EdgeId(1),
@@ -311,10 +323,10 @@ mod tests {
             ..Default::default()
         });
         ledger.record(trace1);
-        
+
         let report1 = check_conformance(&config, &ledger);
         assert_eq!(report1.generalization, 0.0);
-        
+
         let mut trace2 = Powl64::new();
         trace2.extend(Powl64RouteCell {
             edge_id: EdgeId(1),
@@ -323,7 +335,7 @@ mod tests {
             ..Default::default()
         });
         ledger.record(trace2);
-        
+
         let report2 = check_conformance(&config, &ledger);
         assert_eq!(report2.generalization, 1.0);
     }

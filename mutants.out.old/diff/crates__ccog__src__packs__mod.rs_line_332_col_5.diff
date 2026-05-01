@@ -1,0 +1,34 @@
+--- crates/ccog/src/packs/mod.rs
++++ replace compute_manifest_digest -> blake3::Hash with Default::default()
+@@ -324,30 +324,17 @@
+ /// The digest covers the pack name, ontology profile, and rules table.
+ /// This is used for tamper detection at the `ainst` -> `ccog` boundary.
+ #[must_use]
+ pub fn compute_manifest_digest(
+     name: &str,
+     ontology_profile: &[String],
+     rules: &[(String, String)],
+ ) -> blake3::Hash {
+-    let mut hasher = blake3::Hasher::new();
+-    hasher.update(name.as_bytes());
+-    hasher.update(b"\0");
+-    for iri in ontology_profile {
+-        hasher.update(iri.as_bytes());
+-        hasher.update(b"\0");
+-    }
+-    for (ctx, resp) in rules {
+-        hasher.update(ctx.as_bytes());
+-        hasher.update(b"\0");
+-        hasher.update(resp.as_bytes());
+-        hasher.update(b"\0");
+-    }
+-    hasher.finalize()
++    Default::default() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// Validate a [`LoadedFieldPack`]'s mask rules.
+ ///
+ /// A pack is rejected when:
+ /// - Two rules share an `id` (duplicate identity).
+ /// - Two rules have a non-zero bit intersection across any dimension
+ ///   (posture, expectation, risk, affordance) AND declare conflicting

@@ -7,8 +7,8 @@
 use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
 use serde::{Deserialize, Serialize};
 
-use crate::runtime::conformance::{EvidenceLedger, ConformanceReport};
 use crate::powl64::ProjectionTarget;
+use crate::runtime::conformance::{ConformanceReport, EvidenceLedger};
 
 /// Submission packet — `chain_head` + `bundle_hash` + Ed25519 signature.
 ///
@@ -62,10 +62,12 @@ impl VanDerAalstScorecard {
                 if cell.projection_target == ProjectionTarget::Hitl {
                     hitl_steps += 1;
                 }
-                
+
                 // Heuristic drift detection: identify the latest point of divergence.
                 // We use chain_head as the epoch marker.
-                if cell.chain_head > latest_drift_epoch && (report.fitness < 1.0 || report.precision < 1.0) {
+                if cell.chain_head > latest_drift_epoch
+                    && (report.fitness < 1.0 || report.precision < 1.0)
+                {
                     latest_drift_epoch = cell.chain_head;
                 }
             }
@@ -178,7 +180,7 @@ mod tests {
     fn scorecard_generation_metrics() {
         let mut ledger = EvidenceLedger::new();
         let mut trace = crate::powl64::Powl64::new();
-        
+
         // Add a step with HITL projection
         trace.extend(crate::powl64::Powl64RouteCell {
             projection_target: ProjectionTarget::Hitl,
@@ -191,9 +193,9 @@ mod tests {
             chain_head: 5678,
             ..Default::default()
         });
-        
+
         ledger.record(trace);
-        
+
         let report = ConformanceReport {
             fitness: 0.5,
             precision: 0.8,
@@ -201,9 +203,9 @@ mod tests {
             generalization: 0.0,
             simplicity: 0.0,
         };
-        
+
         let scorecard = VanDerAalstScorecard::generate(&ledger, &report);
-        
+
         assert_eq!(scorecard.case_throughput, 1.0);
         assert_eq!(scorecard.fitness, 0.5);
         assert_eq!(scorecard.precision, 0.8);

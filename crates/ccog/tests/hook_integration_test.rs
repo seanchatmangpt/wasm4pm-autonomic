@@ -3,7 +3,7 @@
 //! Tests that the ccog process fires knowledge hooks in response to verdicts
 //! and correctly materializes hook deltas into the field context.
 
-use ccog::{FieldContext, process_with_hooks, HookRegistry};
+use ccog::{process_with_hooks, FieldContext, HookRegistry};
 
 /// Field state fixture with missing evidence scenarios.
 ///
@@ -32,12 +32,9 @@ fn autonomic_loop_fires_missing_evidence_hook() {
     let mut registry = HookRegistry::new();
     registry.register(ccog::hooks::missing_evidence_hook());
 
-    let (verdict, hook_outcomes) = process_with_hooks(
-        "The witness statement is missing",
-        &mut field,
-        &registry,
-    )
-    .expect("process_with_hooks() failed");
+    let (verdict, hook_outcomes) =
+        process_with_hooks("The witness statement is missing", &mut field, &registry)
+            .expect("process_with_hooks() failed");
 
     // Assert: at least one hook fired
     assert!(
@@ -48,29 +45,16 @@ fn autonomic_loop_fires_missing_evidence_hook() {
     // Assert: hook outcome has valid BLAKE3 hash
     let outcome = &hook_outcomes[0];
     if let Some(receipt) = &outcome.receipt {
-        assert_eq!(
-            receipt.hash.len(),
-            64,
-            "BLAKE3 hash must be 64 chars"
-        );
+        assert_eq!(receipt.hash.len(), 64, "BLAKE3 hash must be 64 chars");
     }
 
     // Assert: hook delta is in the graph
     assert!(outcome.delta.len() > 0, "Hook delta should have triples");
 
     // Assert: verdict fields are correct
-    assert!(
-        !verdict.bound_terms.terms.is_empty(),
-        "Should bind phrase"
-    );
-    assert!(
-        verdict.evidence_gap.is_some(),
-        "Should detect gap"
-    );
-    assert!(
-        !verdict.transition.admissible,
-        "Should block transition"
-    );
+    assert!(!verdict.bound_terms.terms.is_empty(), "Should bind phrase");
+    assert!(verdict.evidence_gap.is_some(), "Should detect gap");
+    assert!(!verdict.transition.admissible, "Should block transition");
 }
 
 /// Test that no hook fires when evidence is complete.
@@ -92,12 +76,8 @@ fn autonomic_loop_no_hook_when_evidence_complete() {
     let mut registry = HookRegistry::new();
     registry.register(ccog::hooks::missing_evidence_hook());
 
-    let (_verdict, outcomes) = process_with_hooks(
-        "The witness is complete",
-        &mut field,
-        &registry,
-    )
-    .expect("process_with_hooks() failed");
+    let (_verdict, outcomes) = process_with_hooks("The witness is complete", &mut field, &registry)
+        .expect("process_with_hooks() failed");
 
     assert!(
         outcomes.is_empty(),

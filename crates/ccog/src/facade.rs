@@ -1,13 +1,13 @@
 //! Field-cognition facade: orchestrates the five MVP cognitive passes.
 
-use anyhow::Result;
-use chrono::Utc;
 use crate::construct8::{Construct8, Triple};
 use crate::field::FieldContext;
 use crate::graph::GraphIri;
 use crate::operation::Operation;
 use crate::receipt::Receipt;
 use crate::verdict::{BoundTerms, Verdict};
+use anyhow::Result;
+use chrono::Utc;
 
 /// Public facade: the five MVP operations that orchestrate the cognitive passes.
 pub fn process(phrase: &str, field: &mut FieldContext) -> Result<Verdict> {
@@ -56,10 +56,7 @@ fn emit_prov_delta(verdict: &Verdict, field: &mut FieldContext) -> Result<Constr
     let mut delta = Construct8::empty();
 
     // Derive output IRI from receipt hash
-    let output_iri = format!(
-        "urn:ccog:output:{}",
-        verdict.receipt.hash
-    );
+    let output_iri = format!("urn:ccog:output:{}", verdict.receipt.hash);
 
     // Fully expanded IRI constants
     let rt = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
@@ -76,11 +73,7 @@ fn emit_prov_delta(verdict: &Verdict, field: &mut FieldContext) -> Result<Constr
     let operation_iri = verdict.operation.kind_iri.as_str();
 
     // Triple 1: activity rdf:type prov:Activity
-    delta.push(Triple::from_strings(
-        activity_iri,
-        rt,
-        prov_activity,
-    ));
+    delta.push(Triple::from_strings(activity_iri, rt, prov_activity));
 
     // Triples 2-4: activity prov:used bound_term_N (up to 3 max)
     for bound_term in verdict.bound_terms.terms.iter().take(3) {
@@ -92,11 +85,7 @@ fn emit_prov_delta(verdict: &Verdict, field: &mut FieldContext) -> Result<Constr
     }
 
     // Triple 5: output rdf:type prov:Entity
-    delta.push(Triple::from_strings(
-        output_node,
-        rt,
-        prov_entity,
-    ));
+    delta.push(Triple::from_strings(output_node, rt, prov_entity));
 
     // Triple 6: output prov:wasGeneratedBy activity
     delta.push(Triple::from_strings(

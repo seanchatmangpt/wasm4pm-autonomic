@@ -1,5 +1,5 @@
-use ccog::runtime::cog8::*;
 use ccog::ids::*;
+use ccog::runtime::cog8::*;
 
 #[cfg(kani)]
 #[kani::proof]

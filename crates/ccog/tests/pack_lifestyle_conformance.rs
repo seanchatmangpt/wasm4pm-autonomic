@@ -90,12 +90,29 @@ fn pack_lifestyle_boundary_does_not_introduce_new_variants() {
     let snap = empty_snap();
     let inputs = [
         (1u64 << PostureBit::SETTLED, 0u64, 0u64, 0u64),
-        (1u64 << LifestyleBit::FATIGUED, 0, 0, 1u64 << ContextBit::THEFT_RISK),
-        (1u64 << PostureBit::CADENCE_DELIVERY, 1u64 << ContextBit::PACKAGE_EXPECTED, 0, 1u64 << ContextBit::CAN_RETRIEVE_NOW),
+        (
+            1u64 << LifestyleBit::FATIGUED,
+            0,
+            0,
+            1u64 << ContextBit::THEFT_RISK,
+        ),
+        (
+            1u64 << PostureBit::CADENCE_DELIVERY,
+            1u64 << ContextBit::PACKAGE_EXPECTED,
+            0,
+            1u64 << ContextBit::CAN_RETRIEVE_NOW,
+        ),
     ];
     for (pm, em, rm, am) in inputs {
-        let p = PostureBundle { posture_mask: pm, confidence: 200 };
-        let c = ContextBundle { expectation_mask: em, risk_mask: rm, affordance_mask: am };
+        let p = PostureBundle {
+            posture_mask: pm,
+            confidence: 200,
+        };
+        let c = ContextBundle {
+            expectation_mask: em,
+            risk_mask: rm,
+            affordance_mask: am,
+        };
         let context = ClosedFieldContext {
             snapshot: std::sync::Arc::new(snap.clone()),
             posture: p,
@@ -120,5 +137,8 @@ fn pack_lifestyle_boundary_does_not_introduce_new_variants() {
 fn pack_lifestyle_builtins_match_pack_table() {
     let from_trait = LifestylePack::builtins();
     assert_eq!(from_trait.len(), BUILTINS.len());
-    assert!(BUILTINS.len() >= 4 && BUILTINS.len() <= 6, "Lifestyle pack must have 4–6 slots");
+    assert!(
+        BUILTINS.len() >= 4 && BUILTINS.len() <= 6,
+        "Lifestyle pack must have 4–6 slots"
+    );
 }

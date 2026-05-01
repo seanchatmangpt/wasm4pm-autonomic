@@ -1,5 +1,9 @@
 //! POWL8 kinetic partial-order workflow primitive.
-#![allow(clippy::large_enum_variant, clippy::needless_range_loop, clippy::collapsible_match)]
+#![allow(
+    clippy::large_enum_variant,
+    clippy::needless_range_loop,
+    clippy::collapsible_match
+)]
 //!
 //! Minimal subset adapted from `unibit-powl`. Supports up to [`MAX_NODES`]
 //! nodes with a [`BinaryRelation`] bit-matrix expressing partial orders.
@@ -249,8 +253,7 @@ impl Powl8 {
                         return Err(PlanAdmission::Cyclic);
                     }
                 }
-                Powl8Node::OperatorSequence { a, b }
-                | Powl8Node::OperatorParallel { a, b } => {
+                Powl8Node::OperatorSequence { a, b } | Powl8Node::OperatorParallel { a, b } => {
                     let ai = a as usize;
                     let bi = b as usize;
                     if ai >= n || bi >= n {
@@ -489,7 +492,9 @@ impl Powl8 {
                 // Choice is executable: at runtime, the kernel evaluates a
                 // selector and chooses exactly one branch. The selector slot
                 // index is the original Choice node index.
-                Powl8Node::Choice { .. } => Some(CompiledNodeKind::Choice { selector_slot: idx as u16 }),
+                Powl8Node::Choice { .. } => Some(CompiledNodeKind::Choice {
+                    selector_slot: idx as u16,
+                }),
             };
         }
 
@@ -516,10 +521,7 @@ impl Powl8 {
                 exec_count += 1;
             }
         }
-        let unroll_extra: usize = loop_unrolls
-            .iter()
-            .map(|(_, c)| *c as usize)
-            .sum();
+        let unroll_extra: usize = loop_unrolls.iter().map(|(_, c)| *c as usize).sum();
         if exec_count + unroll_extra > 64 {
             return Err(PlanAdmission::Malformed);
         }
@@ -529,7 +531,10 @@ impl Powl8 {
         let mut outgoing: [u64; MAX_NODES] = [0u64; MAX_NODES];
         let mut indegree: [u32; MAX_NODES] = [0u32; MAX_NODES];
 
-        let try_add = |src: usize, tgt: usize, outgoing: &mut [u64; MAX_NODES], indegree: &mut [u32; MAX_NODES]| {
+        let try_add = |src: usize,
+                       tgt: usize,
+                       outgoing: &mut [u64; MAX_NODES],
+                       indegree: &mut [u32; MAX_NODES]| {
             if src >= n || tgt >= n {
                 return;
             }
@@ -781,11 +786,13 @@ mod tests {
         let mut rel = BinaryRelation::new();
         rel.add_edge(0, 1);
         rel.add_edge(1, 2);
-        let _po = p.push(Powl8Node::PartialOrder {
-            start: 1,
-            count: 3,
-            rel,
-        }).unwrap();
+        let _po = p
+            .push(Powl8Node::PartialOrder {
+                start: 1,
+                count: 3,
+                rel,
+            })
+            .unwrap();
         assert!(p.shape_match().is_ok());
     }
 
@@ -804,7 +811,8 @@ mod tests {
             start: 1,
             count: 3,
             rel,
-        }).unwrap();
+        })
+        .unwrap();
         assert!(matches!(p.shape_match(), Err(PlanAdmission::Cyclic)));
     }
 

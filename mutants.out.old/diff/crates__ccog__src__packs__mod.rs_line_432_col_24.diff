@@ -1,0 +1,21 @@
+--- crates/ccog/src/packs/mod.rs
++++ replace == with != in mask_satisfies
+@@ -424,17 +424,17 @@
+         | (r1.require_k2_mask & r2.require_k2_mask)
+         | (r1.require_k3_mask & r2.require_k3_mask);
+     overlap != 0 && r1.response != r2.response
+ }
+ 
+ /// Subset match: every set bit in `require` must also be set in `actual`.
+ #[inline]
+ const fn mask_satisfies(actual: u64, require: u64) -> bool {
+-    (actual & require) == require
++    (actual & require) != /* ~ changed by cargo-mutants ~ */ require
+ }
+ 
+ /// True when every dimension's requirement is satisfied by the runtime
+ /// masks across both the K0 surface (posture/context) and the K1/K2/K3
+ /// tier masks. K0-only rules (where K1/K2/K3 requirements are zero)
+ /// match identically to the pre-Phase-7 behavior.
+ #[inline]
+ fn rule_matches(

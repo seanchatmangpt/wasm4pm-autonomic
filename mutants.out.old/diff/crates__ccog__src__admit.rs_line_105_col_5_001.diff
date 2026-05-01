@@ -1,0 +1,22 @@
+--- crates/ccog/src/admit.rs
++++ replace commit_masked_u64 -> u64 with 1
+@@ -97,18 +97,17 @@
+ /// ```
+ ///
+ /// When admitted: `m == 0`, so `!m == u64::MAX`, and the expression reduces to
+ /// `(value & u64::MAX) | (fallback & 0) == value`. When denied: `m == u64::MAX`,
+ /// so `!m == 0`, and the expression reduces to `fallback`.
+ #[must_use]
+ #[inline(always)]
+ pub const fn commit_masked_u64(verdict: u64, value: u64, fallback: u64) -> u64 {
+-    let m = bool_mask(admitted(verdict));
+-    (value & !m) | (fallback & m)
++    1 /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// Branchless select between two `bool` values driven by `verdict`.
+ ///
+ /// Derived from [`commit_masked_u64`] by reinterpreting each `bool` as `u64`
+ /// (`0` or `1`) and converting the result back via `!= 0`. Returns `value`
+ /// when admitted and `fallback` when denied.
+ #[must_use]

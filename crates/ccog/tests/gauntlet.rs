@@ -108,9 +108,16 @@ fn gauntlet_decide_allocates_zero_octets() {
         "decide() must allocate ZERO octets (KernelFloor invariant); saw {} octets across {} allocations",
         octets, count
     );
-    assert_eq!(count, 0, "decide() must perform ZERO allocations; saw {}", count);
+    assert_eq!(
+        count, 0,
+        "decide() must perform ZERO allocations; saw {}",
+        count
+    );
     // Decision must still be meaningful — sanity that we measured the right thing.
-    assert!(decision.fired != 0, "decision must fire SOMETHING for this snapshot");
+    assert!(
+        decision.fired != 0,
+        "decision must fire SOMETHING for this snapshot"
+    );
 }
 
 // =============================================================================
@@ -169,10 +176,20 @@ fn gauntlet_warm_vs_hot_transition_admissibility_no_drift() {
     let hot = hot_delta_for_slot(&snap, "transition_admissibility").expect("hot");
 
     // Both must avoid the SHACL anti-pattern.
-    let h_act = format!("{:04x}", ccog::utils::dense::fnv1a_64("http://www.w3.org/ns/prov#Activity".as_bytes()) as u16);
-    let h_used = format!("{:04x}", ccog::utils::dense::fnv1a_64("http://www.w3.org/ns/prov#used".as_bytes()) as u16);
+    let h_act = format!(
+        "{:04x}",
+        ccog::utils::dense::fnv1a_64("http://www.w3.org/ns/prov#Activity".as_bytes()) as u16
+    );
+    let h_used = format!(
+        "{:04x}",
+        ccog::utils::dense::fnv1a_64("http://www.w3.org/ns/prov#used".as_bytes()) as u16
+    );
     for nt in [&warm, &hot] {
-        assert!(!nt.contains("shacl#targetClass"), "no sh:targetClass in:\n{}", nt);
+        assert!(
+            !nt.contains("shacl#targetClass"),
+            "no sh:targetClass in:\n{}",
+            nt
+        );
         assert!(!nt.contains("shacl#nodeKind"), "no sh:nodeKind in:\n{}", nt);
         assert!(nt.contains(&h_act), "must emit prov:Activity:\n{}", nt);
         assert!(nt.contains(&h_used), "must emit prov:used:\n{}", nt);
@@ -198,9 +215,16 @@ fn gauntlet_warm_vs_hot_phrase_binding_no_drift() {
     let warm = warm_delta_for_hook(&field, "phrase_binding").expect("warm");
     let hot = hot_delta_for_slot(&snap, "phrase_binding").expect("hot");
 
-    let h_informed = format!("{:04x}", ccog::utils::dense::fnv1a_64("http://www.w3.org/ns/prov#wasInformedBy".as_bytes()) as u16);
+    let h_informed = format!(
+        "{:04x}",
+        ccog::utils::dense::fnv1a_64("http://www.w3.org/ns/prov#wasInformedBy".as_bytes()) as u16
+    );
     for nt in [&warm, &hot] {
-        assert!(nt.contains(&h_informed), "must emit prov:wasInformedBy:\n{}", nt);
+        assert!(
+            nt.contains(&h_informed),
+            "must emit prov:wasInformedBy:\n{}",
+            nt
+        );
         assert!(
             !nt.contains("derived from prefLabel"),
             "no placeholder phrasing:\n{}",
@@ -233,7 +257,11 @@ fn gauntlet_warm_vs_hot_missing_evidence_no_drift() {
             "must not fabricate prov:value:\n{}",
             nt
         );
-        assert!(!nt.contains("\"placeholder\""), "no placeholder literal:\n{}", nt);
+        assert!(
+            !nt.contains("\"placeholder\""),
+            "no placeholder literal:\n{}",
+            nt
+        );
     }
     assert!(
         semantic_eq(&warm, &hot),
@@ -266,7 +294,10 @@ fn gauntlet_metamorphic_triple_order_invariance() {
     let snap_b = snap_for(nt_b);
     let d_a = decide(&empty_context(std::sync::Arc::new(snap_a)));
     let d_b = decide(&empty_context(std::sync::Arc::new(snap_b)));
-    assert_eq!(d_a.fired, d_b.fired, "triple order must not change decision");
+    assert_eq!(
+        d_a.fired, d_b.fired,
+        "triple order must not change decision"
+    );
     assert_eq!(d_a.present_mask, d_b.present_mask);
 }
 
@@ -275,19 +306,26 @@ fn gauntlet_metamorphic_irrelevant_label_rename_invariance() {
     // Renaming the literal value of a prefLabel doesn't change the structural
     // decision — phrase_binding still fires, missing_evidence still fires
     // when DD lacks prov:value.
-    let nt_a = "<http://example.org/c1> <http://www.w3.org/2004/02/skos/core#prefLabel> \"alpha\" .\n";
-    let nt_b = "<http://example.org/c1> <http://www.w3.org/2004/02/skos/core#prefLabel> \"omega\" .\n";
+    let nt_a =
+        "<http://example.org/c1> <http://www.w3.org/2004/02/skos/core#prefLabel> \"alpha\" .\n";
+    let nt_b =
+        "<http://example.org/c1> <http://www.w3.org/2004/02/skos/core#prefLabel> \"omega\" .\n";
     let d_a = decide(&empty_context(std::sync::Arc::new(snap_for(nt_a))));
     let d_b = decide(&empty_context(std::sync::Arc::new(snap_for(nt_b))));
-    assert_eq!(d_a.fired, d_b.fired, "label literal rename must not alter fired mask");
+    assert_eq!(
+        d_a.fired, d_b.fired,
+        "label literal rename must not alter fired mask"
+    );
 }
 
 #[test]
 fn gauntlet_metamorphic_unrelated_triple_addition_invariance() {
     // Adding an unrelated triple (different subject + non-load-bearing
     // predicate) must not change the decision.
-    let nt_a = "<http://example.org/c1> <http://www.w3.org/2004/02/skos/core#prefLabel> \"alpha\" .\n";
-    let nt_b = "<http://example.org/c1> <http://www.w3.org/2004/02/skos/core#prefLabel> \"alpha\" .\n\
+    let nt_a =
+        "<http://example.org/c1> <http://www.w3.org/2004/02/skos/core#prefLabel> \"alpha\" .\n";
+    let nt_b =
+        "<http://example.org/c1> <http://www.w3.org/2004/02/skos/core#prefLabel> \"alpha\" .\n\
                 <http://example.org/n1> <http://example.org/p1> \"unrelated\" .\n";
     let d_a = decide(&empty_context(std::sync::Arc::new(snap_for(nt_a))));
     let d_b = decide(&empty_context(std::sync::Arc::new(snap_for(nt_b))));
@@ -338,7 +376,10 @@ fn gauntlet_adversarial_malformed_rdf_returns_error_not_panic() {
     let bad = "<not-an-iri ; \nbroken .\n";
     let mut f = FieldContext::new("adv-bad");
     let r = f.load_field_state(bad);
-    assert!(r.is_err(), "malformed RDF must return Err, not silent success");
+    assert!(
+        r.is_err(),
+        "malformed RDF must return Err, not silent success"
+    );
 }
 
 #[test]
@@ -448,7 +489,11 @@ fn gauntlet_regression_seed_no_fake_prov_value_on_gap_doc() {
             "regression seed: fake prov:value on gap doc:\n{}",
             nt
         );
-        assert!(!nt.contains("\"placeholder\""), "no placeholder literal:\n{}", nt);
+        assert!(
+            !nt.contains("\"placeholder\""),
+            "no placeholder literal:\n{}",
+            nt
+        );
     }
 }
 
@@ -460,7 +505,10 @@ fn gauntlet_regression_seed_receipt_identity_is_semantic_not_temporal() {
     let m1 = Receipt::canonical_material("h", 1, b"d", "f", None, 1);
     std::thread::sleep(std::time::Duration::from_millis(15));
     let m2 = Receipt::canonical_material("h", 1, b"d", "f", None, 1);
-    assert_eq!(m1, m2, "regression seed: canonical_material captured wall-clock");
+    assert_eq!(
+        m1, m2,
+        "regression seed: canonical_material captured wall-clock"
+    );
     assert_eq!(Receipt::derive_urn(&m1), Receipt::derive_urn(&m2));
 }
 
@@ -541,7 +589,11 @@ fn gauntlet_compute_present_mask_zero_alloc() {
     let snap = CompiledFieldSnapshot::from_field(&field).expect("snap");
     let _ = compute_present_mask(&snap); // warmup
     let (_, octets, count) = measure_alloc(|| compute_present_mask(&snap));
-    assert_eq!(octets, 0, "compute_present_mask must allocate zero octets; saw {}", octets);
+    assert_eq!(
+        octets, 0,
+        "compute_present_mask must allocate zero octets; saw {}",
+        octets
+    );
     assert_eq!(count, 0);
 }
 
@@ -588,9 +640,8 @@ fn gauntlet_execute_cog8_graph_allocates_zero_octets() {
     // Warm up
     let _ = execute_cog8_graph(&nodes, &edges, present, 0).unwrap();
 
-    let (decision, octets, count) = measure_alloc(|| {
-        execute_cog8_graph(&nodes, &edges, present, 0).unwrap()
-    });
+    let (decision, octets, count) =
+        measure_alloc(|| execute_cog8_graph(&nodes, &edges, present, 0).unwrap());
 
     assert_eq!(octets, 0, "execute_cog8_graph must allocate ZERO octets");
     assert_eq!(count, 0);
@@ -723,7 +774,11 @@ fn gauntlet_cog8_topology_partial_order() {
     ];
 
     let d = execute_cog8_graph(&nodes, &edges, 0b1, 0).expect("execute");
-    assert_eq!(d.response, Instinct::Settle, "node 1 fires after node 0 completes");
+    assert_eq!(
+        d.response,
+        Instinct::Settle,
+        "node 1 fires after node 0 completes"
+    );
 }
 
 #[test]
@@ -794,7 +849,11 @@ fn gauntlet_cog8_topology_override() {
     ];
 
     let d = execute_cog8_graph(&nodes_override, &edges, 0b1, 0).expect("execute");
-    assert_eq!(d.response, Instinct::Refuse, "override (higher priority) wins");
+    assert_eq!(
+        d.response,
+        Instinct::Refuse,
+        "override (higher priority) wins"
+    );
 }
 
 #[test]

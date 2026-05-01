@@ -1,0 +1,21 @@
+--- crates/ccog/src/admit.rs
++++ replace | with ^ in admit4
+@@ -67,17 +67,17 @@
+ }
+ 
+ /// Composes four admission verdicts via bitwise OR.
+ ///
+ /// The result is admitted (`0`) iff *all four* inputs are admitted.
+ #[must_use]
+ #[inline(always)]
+ pub const fn admit4(a: u64, b: u64, c: u64, d: u64) -> u64 {
+-    a | b | c | d
++    a | b ^ /* ~ changed by cargo-mutants ~ */ c | d
+ }
+ 
+ /// Returns `true` iff `verdict == 0` (i.e. the verdict is admitted).
+ ///
+ /// This is the only place that converts a denial-polarity bitmask back into
+ /// the `bool` world. Callers should compose admissions with `admit2`/`admit3`
+ /// /`admit4` and keep the bitmask form as long as possible.
+ #[must_use]

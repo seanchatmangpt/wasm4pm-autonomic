@@ -65,7 +65,11 @@ fn walk(v: &Value, extra: &[&str], found: &mut Vec<String>) -> Result<(), NonPub
     }
 }
 
-fn audit_context(v: &Value, extra: &[&str], found: &mut Vec<String>) -> Result<(), NonPublicOntology> {
+fn audit_context(
+    v: &Value,
+    extra: &[&str],
+    found: &mut Vec<String>,
+) -> Result<(), NonPublicOntology> {
     match v {
         Value::Object(map) => {
             for (_k, child) in map {
@@ -88,7 +92,11 @@ fn audit_context(v: &Value, extra: &[&str], found: &mut Vec<String>) -> Result<(
     }
 }
 
-fn collect_iris(v: &Value, extra: &[&str], found: &mut Vec<String>) -> Result<(), NonPublicOntology> {
+fn collect_iris(
+    v: &Value,
+    extra: &[&str],
+    found: &mut Vec<String>,
+) -> Result<(), NonPublicOntology> {
     match v {
         Value::String(s) => check_iri(s, extra, found),
         Value::Array(arr) => {
@@ -118,8 +126,7 @@ fn looks_like_iri(s: &str) -> bool {
 }
 
 fn is_allowed(iri: &str, extra: &[&str]) -> bool {
-    ALLOWED_PREFIXES.iter().any(|p| iri.starts_with(p))
-        || extra.iter().any(|p| iri.starts_with(p))
+    ALLOWED_PREFIXES.iter().any(|p| iri.starts_with(p)) || extra.iter().any(|p| iri.starts_with(p))
 }
 
 #[cfg(test)]

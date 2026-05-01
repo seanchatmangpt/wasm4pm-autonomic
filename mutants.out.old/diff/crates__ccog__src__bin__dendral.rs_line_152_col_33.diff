@@ -1,0 +1,21 @@
+--- crates/ccog/src/bin/dendral.rs
++++ delete ! in run
+@@ -144,17 +144,17 @@
+         } => {
+             let trace = fs::read(input.join("trace.jsonld"))?;
+             let receipt = fs::read(input.join("receipt.jsonld"))?;
+             let path = fs::read(input.join("powl64-path.bin"))?;
+             let refs_path = input.join("ontology-refs.txt");
+             let refs = if refs_path.exists() {
+                 fs::read_to_string(&refs_path)?
+                     .lines()
+-                    .filter(|l| !l.is_empty())
++                    .filter(|l|  /* ~ changed by cargo-mutants ~ */l.is_empty())
+                     .map(str::to_string)
+                     .collect()
+             } else {
+                 Vec::new()
+             };
+             let tier = parse_tier(&tier)?;
+             let bundle = ProofBundle::build(trace, receipt, path, refs, tier);
+             let bytes = bundle.write().map_err(|e| anyhow::anyhow!("write: {}", e))?;

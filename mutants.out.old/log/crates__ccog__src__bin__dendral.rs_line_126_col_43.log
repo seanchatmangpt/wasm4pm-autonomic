@@ -1,0 +1,1246 @@
+
+*** crates/ccog/src/bin/dendral.rs:126:43: replace - with + in run
+
+*** mutation diff:
+--- crates/ccog/src/bin/dendral.rs
++++ replace - with + in run
+@@ -118,17 +118,17 @@
+             println!("replay: trace JSON parsed; full Phase 7 replay pending Writer-7");
+             Ok(())
+         }
+         Cmd::Path { chain_head, field } => {
+             let bytes = fs::read(&field)?;
+             if bytes.is_empty() || bytes.len() % 32 != 0 {
+                 anyhow::bail!("path file is empty or not 32-byte aligned");
+             }
+-            let tail = &bytes[bytes.len() - 32..];
++            let tail = &bytes[bytes.len() + /* ~ changed by cargo-mutants ~ */ 32..];
+             let hex_actual = blake3_hex(tail);
+             if hex_actual.eq_ignore_ascii_case(&chain_head) {
+                 println!("path: chain head matches ({} entries)", bytes.len() / 32);
+                 Ok(())
+             } else {
+                 anyhow::bail!(
+                     "chain head mismatch: declared {}, actual {}",
+                     chain_head,
+
+
+*** /Users/sac/.rustup/toolchains/nightly-2026-04-15-aarch64-apple-darwin/bin/cargo test --no-run --verbose --package=ccog@0.1.0
+       Fresh unicode-ident v1.0.24
+       Fresh cfg-if v1.0.4
+       Fresh version_check v0.9.5
+       Fresh typenum v1.20.0
+       Fresh memchr v2.8.0
+       Fresh find-msvc-tools v0.1.9
+       Fresh shlex v1.3.0
+       Fresh once_cell v1.21.4
+       Fresh oxilangtag v0.1.5
+       Fresh libc v0.2.185
+       Fresh hex v0.4.3
+       Fresh oxiri v0.2.11
+       Fresh regex-syntax v0.8.10
+       Fresh aho-corasick v1.1.4
+       Fresh autocfg v1.5.0
+       Fresh bitflags v2.11.1
+       Fresh proc-macro2 v1.0.106
+       Fresh serde_core v1.0.228
+       Fresh getrandom v0.3.4
+       Fresh jobserver v0.1.34
+       Fresh cpufeatures v0.2.17
+       Fresh regex-automata v0.4.14
+       Fresh errno v0.3.14
+       Fresh pkg-config v0.3.33
+       Fresh fnv v1.0.7
+       Fresh quick-xml v0.37.5
+       Fresh quote v1.0.45
+       Fresh generic-array v0.14.7
+       Fresh rand_core v0.9.5
+       Fresh cc v1.2.60
+       Fresh crossbeam-utils v0.8.21
+       Fresh rustix v1.1.4
+       Fresh peg-runtime v0.8.5
+       Fresh json-event-parser v0.2.3
+       Fresh ident_case v1.0.1
+       Fresh semver v1.0.28
+       Fresh itoa v1.0.18
+       Fresh syn v2.0.117
+       Fresh block-buffer v0.10.4
+       Fresh crypto-common v0.1.7
+       Fresh num-traits v0.2.19
+       Fresh peg-macros v0.8.5
+       Fresh zmij v1.0.21
+       Fresh crossbeam-epoch v0.9.18
+       Fresh getrandom v0.4.2
+       Fresh rustc_version v0.4.1
+       Fresh regex v1.12.3
+       Fresh getrandom v0.2.17
+       Fresh tracing-core v0.1.36
+       Fresh scopeguard v1.2.0
+       Fresh zerocopy-derive v0.8.48
+       Fresh digest v0.10.7
+       Fresh thiserror-impl v2.0.18
+       Fresh serde_derive v1.0.228
+       Fresh peg v0.8.5
+       Fresh rustversion v1.0.22
+       Fresh darling_core v0.20.11
+       Fresh serde_json v1.0.149
+       Fresh ryu-js v1.0.2
+       Fresh fastrand v2.4.1
+       Fresh either v1.15.0
+       Fresh log v0.4.29
+       Fresh core-foundation-sys v0.8.7
+       Fresh zerocopy v0.8.48
+       Fresh serde v1.0.228
+       Fresh thiserror v2.0.18
+       Fresh sha2 v0.10.9
+       Fresh tempfile v3.27.0
+       Fresh sha1 v0.10.6
+       Fresh zstd-sys v2.0.16+zstd.1.5.7
+       Fresh darling_macro v0.20.11
+       Fresh md-5 v0.10.6
+       Fresh iana-time-zone v0.1.65
+       Fresh lock_api v0.4.14
+       Fresh crossbeam-deque v0.8.6
+       Fresh rand_core v0.6.4
+       Fresh ppv-lite86 v0.2.21
+       Fresh oxsdatatypes v0.2.2
+       Fresh smallvec v1.15.1
+       Fresh half v2.7.1
+       Fresh lazy_static v1.5.0
+       Fresh ciborium-io v0.2.2
+       Fresh anstyle v1.0.14
+       Fresh pin-project-lite v0.2.17
+       Fresh winnow v1.0.2
+       Fresh clap_lex v1.1.0
+       Fresh rustc-hash v2.1.2
+       Fresh plotters-backend v0.3.7
+       Fresh hashbrown v0.14.5
+       Fresh rayon-core v1.13.0
+       Fresh rand_chacha v0.9.0
+       Fresh parking_lot_core v0.9.12
+       Fresh clap_builder v4.6.0
+       Fresh toml_parser v1.1.2+spec-1.1.0
+       Fresh sharded-slab v0.1.7
+       Fresh rand_chacha v0.3.1
+       Fresh tracing v0.1.44
+       Fresh plotters-svg v0.3.7
+       Fresh ciborium-ll v0.2.2
+       Fresh cobs v0.3.0
+       Fresh chrono v0.4.44
+       Fresh zstd-safe v7.2.4
+       Fresh rand v0.9.4
+       Fresh dashmap v6.1.0
+       Fresh darling v0.20.11
+       Fresh tracing-log v0.2.0
+       Fresh itertools v0.10.5
+       Fresh thiserror-impl v1.0.69
+       Fresh xattr v1.6.1
+       Fresh matchers v0.2.0
+       Fresh toml_datetime v1.1.1+spec-1.1.0
+       Fresh serde_spanned v1.1.1
+       Fresh wait-timeout v0.2.1
+       Fresh filetime v0.2.27
+       Fresh thread_local v1.1.9
+       Fresh cast v0.3.0
+       Fresh same-file v1.0.6
+       Fresh equivalent v1.0.2
+       Fresh oxrdf v0.3.3
+       Fresh nu-ansi-term v0.50.3
+       Fresh toml_writer v1.1.1+spec-1.1.0
+       Fresh bit-vec v0.8.0
+       Fresh subtle v2.6.1
+       Fresh siphasher v1.0.2
+       Fresh arrayvec v0.7.6
+       Fresh quick-error v1.2.3
+       Fresh arrayref v0.3.9
+       Fresh zeroize v1.8.2
+       Fresh signature v2.2.0
+       Fresh constant_time_eq v0.4.2
+       Fresh hashbrown v0.17.0
+       Fresh dummy v0.8.0
+       Fresh criterion-plot v0.5.0
+       Fresh walkdir v2.5.0
+       Fresh tar v0.4.45
+       Fresh spargebra v0.4.6
+       Fresh oxrdfxml v0.2.3
+       Fresh oxttl v0.2.3
+       Fresh oxjsonld v0.2.5
+       Fresh sparesults v0.3.3
+       Fresh rusty-fork v0.3.1
+       Fresh ed25519 v2.2.3
+       Fresh blake3 v1.8.4
+       Fresh tracing-subscriber v0.3.23
+       Fresh toml v1.1.2+spec-1.1.0
+       Fresh bit-set v0.8.0
+       Fresh indexmap v2.14.0
+       Fresh curve25519-dalek v4.1.3
+       Fresh thiserror v1.0.69
+       Fresh generator v0.8.8
+       Fresh postcard v1.1.3
+       Fresh clap v4.6.1
+       Fresh sparopt v0.3.6
+       Fresh oxrdfio v0.2.5
+       Fresh rand v0.8.6
+       Fresh ciborium v0.2.2
+       Fresh anyhow v1.0.102
+       Fresh plotters v0.3.7
+       Fresh target-triple v1.0.0
+       Fresh zstd v0.13.3
+       Fresh rayon v1.12.0
+       Fresh tinytemplate v1.2.1
+       Fresh rand_xorshift v0.4.0
+       Fresh console v0.16.3
+       Fresh is-terminal v0.4.17
+       Fresh similar v2.7.0
+       Fresh unarray v0.1.4
+       Fresh termcolor v1.4.1
+       Fresh oorandom v11.1.5
+       Fresh spareval v0.2.6
+       Fresh scoped-tls v1.0.1
+       Fresh deunicode v1.6.2
+       Fresh anes v0.1.6
+       Fresh glob v0.3.3
+       Fresh insta v1.47.2
+       Fresh proptest v1.11.0
+       Fresh ed25519-dalek v2.2.0
+       Fresh oxigraph v0.5.8
+       Fresh loom v0.7.2
+       Fresh fake v2.10.0
+       Fresh criterion v0.5.1
+       Fresh trybuild v1.0.116
+warning: unused variable: `f`
+   --> crates/ccog/tests/earned_zero.rs:247:9
+    |
+247 |     let f = FieldContext::new("test");
+    |         ^ help: if this is intentional, prefix it with an underscore: `_f`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unexpected `cfg` condition name: `loom`
+ --> crates/ccog/tests/loom_concurrency.rs:2:8
+  |
+2 | #![cfg(loom)]
+  |        ^^^^
+  |
+  = help: expected names are: `docsrs`, `feature`, `kani`, and `test` and 32 more
+  = help: consider using a Cargo feature instead
+  = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+           [lints.rust]
+           unexpected_cfgs = { level = "warn", check-cfg = ['cfg(loom)'] }
+  = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(loom)");` to the top of the `build.rs`
+  = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+  = note: requested on the command line with `-W unexpected-cfgs`
+
+warning: unused variable: `context`
+   --> crates/ccog/tests/packs_jtbd.rs:496:9
+    |
+496 |     let context = ClosedFieldContext {
+    |         ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_context`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: `ccog` (test "earned_zero") generated 1 warning (run `cargo fix --test "earned_zero" -p ccog` to apply 1 suggestion)
+warning: `ccog` (test "loom_concurrency") generated 1 warning
+warning: `ccog` (test "packs_jtbd") generated 1 warning (run `cargo fix --test "packs_jtbd" -p ccog` to apply 1 suggestion)
+warning: unused variable: `context`
+   --> crates/ccog/tests/gauntlet.rs:584:9
+    |
+584 |     let context = empty_context(snap);
+    |         ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_context`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `ccog::runtime::cog8::*`
+ --> crates/ccog/tests/kani_harnesses.rs:1:5
+  |
+1 | use ccog::runtime::cog8::*;
+  |     ^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `ccog::ids::*`
+ --> crates/ccog/tests/kani_harnesses.rs:2:5
+  |
+2 | use ccog::ids::*;
+  |     ^^^^^^^^^^^^
+
+warning: unused import: `ccog::runtime::ClosedFieldContext`
+  --> crates/ccog/tests/fuzz_kernel.rs:13:5
+   |
+13 | use ccog::runtime::ClosedFieldContext;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `ccog::compiled::CompiledFieldSnapshot`
+  --> crates/ccog/tests/fuzz_kernel.rs:14:5
+   |
+14 | use ccog::compiled::CompiledFieldSnapshot;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `ContextBundle` and `PostureBundle`
+  --> crates/ccog/tests/fuzz_kernel.rs:15:24
+   |
+15 | use ccog::multimodal::{PostureBundle, ContextBundle};
+   |                        ^^^^^^^^^^^^^  ^^^^^^^^^^^^^
+
+warning: unused import: `ccog::packs::TierMasks`
+  --> crates/ccog/tests/fuzz_kernel.rs:16:5
+   |
+16 | use ccog::packs::TierMasks;
+   |     ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::sync::Arc`
+  --> crates/ccog/tests/fuzz_kernel.rs:19:5
+   |
+19 | use std::sync::Arc;
+   |     ^^^^^^^^^^^^^^
+
+warning: `ccog` (test "gauntlet") generated 1 warning (run `cargo fix --test "gauntlet" -p ccog` to apply 1 suggestion)
+warning: `ccog` (test "kani_harnesses") generated 2 warnings (run `cargo fix --test "kani_harnesses" -p ccog` to apply 2 suggestions)
+warning: `ccog` (test "fuzz_kernel") generated 5 warnings (run `cargo fix --test "fuzz_kernel" -p ccog` to apply 5 suggestions)
+       Fresh ccog v0.1.0 (/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/crates/ccog)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.15s
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/ccog-2c3686441a445efb`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/a2a_delegation_tests-a2aa29f150856f2d`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/adversarial_tournament-8960c5f9a3ecb1ca`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/decide_eq_with_trace-b02bbcf0d323a233`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/dendral_bundle_roundtrip-58a3efe06e8fc5a6`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/dendral_chain_test-3cae6c279bf66757`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/dense_drift-e8ebbc64a9ba1b06`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/earned_zero-27b37445c13ad190`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/fuzz_hooks-99febc65907bb0cc`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/fuzz_kernel-671cc86ac91a3535`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/gauntlet-e4a0628ad98527db`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/hearsay_fusion_test-f655ff60d2306998`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/hitl_role_tests-2306f50916a86e20`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/hook_integration_test-9f7063460797121c`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/jtbd_generated-45d560c2b9e9fd77`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/kani_harnesses-78bda4843826ce88`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/lifestyle_redesign_jtbd-6347670bcbba7a7d`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/loom_concurrency-7ad16060bcf5d4e7`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/mcp_projection_tests-307df852a989da42`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/pack_dev_conformance-1a8b1fc9093a9d0c`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/pack_edge_conformance-baf4a27cf40873e4`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/pack_enterprise_conformance-ffa11f0555d4e324`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/pack_lifestyle_conformance-bea92e6af8205408`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/pack_namespace_isolation-4cb4ad8495c918cf`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/packs_jtbd-9c378c756d1827e8`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/police_report_flow-1d810a946eed46a0`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/powl64_abi_conformance-673b75561ea0657d`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/powl64_chain_test-5a39a1819d18df50`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/powl8_admission_test-daccb0c025313e4b`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/prolog_relation_test-4a57bdc8c158b24e`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/proptest_construct8-ada6d88cce4cb9f3`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/prov_delta_test-f9bb751c3b25214f`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/runtime_step_test-1e7c12bcd2fb27b6`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/scheduler_tick_test-429c9f354889aecb`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/self_play_tournament-a3f7e2d84037a41f`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/shrdlu_affordance_test-4c96f4a8ea133a65`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/snapshot_tests-8059ff3b3cbd2668`
+
+*** result: Success
+
+*** /Users/sac/.rustup/toolchains/nightly-2026-04-15-aarch64-apple-darwin/bin/cargo test --verbose --package=ccog@0.1.0
+       Fresh unicode-ident v1.0.24
+       Fresh cfg-if v1.0.4
+       Fresh version_check v0.9.5
+       Fresh typenum v1.20.0
+       Fresh memchr v2.8.0
+       Fresh shlex v1.3.0
+       Fresh find-msvc-tools v0.1.9
+       Fresh once_cell v1.21.4
+       Fresh hex v0.4.3
+       Fresh libc v0.2.185
+       Fresh oxiri v0.2.11
+       Fresh oxilangtag v0.1.5
+       Fresh regex-syntax v0.8.10
+       Fresh aho-corasick v1.1.4
+       Fresh autocfg v1.5.0
+       Fresh bitflags v2.11.1
+       Fresh proc-macro2 v1.0.106
+       Fresh serde_core v1.0.228
+       Fresh getrandom v0.3.4
+       Fresh jobserver v0.1.34
+       Fresh cpufeatures v0.2.17
+       Fresh regex-automata v0.4.14
+       Fresh errno v0.3.14
+       Fresh fnv v1.0.7
+       Fresh pkg-config v0.3.33
+       Fresh quick-xml v0.37.5
+       Fresh quote v1.0.45
+       Fresh generic-array v0.14.7
+       Fresh rand_core v0.9.5
+       Fresh cc v1.2.60
+       Fresh crossbeam-utils v0.8.21
+       Fresh rustix v1.1.4
+       Fresh peg-runtime v0.8.5
+       Fresh json-event-parser v0.2.3
+       Fresh semver v1.0.28
+       Fresh itoa v1.0.18
+       Fresh ident_case v1.0.1
+       Fresh syn v2.0.117
+       Fresh block-buffer v0.10.4
+       Fresh crypto-common v0.1.7
+       Fresh num-traits v0.2.19
+       Fresh peg-macros v0.8.5
+       Fresh zmij v1.0.21
+       Fresh rustversion v1.0.22
+       Fresh rustc_version v0.4.1
+       Fresh crossbeam-epoch v0.9.18
+       Fresh regex v1.12.3
+       Fresh getrandom v0.2.17
+       Fresh tracing-core v0.1.36
+       Fresh scopeguard v1.2.0
+       Fresh zerocopy-derive v0.8.48
+       Fresh digest v0.10.7
+       Fresh serde_derive v1.0.228
+       Fresh thiserror-impl v2.0.18
+       Fresh peg v0.8.5
+       Fresh serde_json v1.0.149
+       Fresh getrandom v0.4.2
+       Fresh darling_core v0.20.11
+       Fresh fastrand v2.4.1
+       Fresh log v0.4.29
+       Fresh either v1.15.0
+       Fresh core-foundation-sys v0.8.7
+       Fresh ryu-js v1.0.2
+       Fresh rand_core v0.6.4
+       Fresh zerocopy v0.8.48
+       Fresh serde v1.0.228
+       Fresh thiserror v2.0.18
+       Fresh sha2 v0.10.9
+       Fresh tempfile v3.27.0
+       Fresh md-5 v0.10.6
+       Fresh iana-time-zone v0.1.65
+       Fresh darling_macro v0.20.11
+       Fresh zstd-sys v2.0.16+zstd.1.5.7
+       Fresh sha1 v0.10.6
+       Fresh lock_api v0.4.14
+       Fresh crossbeam-deque v0.8.6
+       Fresh ppv-lite86 v0.2.21
+       Fresh oxsdatatypes v0.2.2
+       Fresh smallvec v1.15.1
+       Fresh half v2.7.1
+       Fresh hashbrown v0.14.5
+       Fresh plotters-backend v0.3.7
+       Fresh winnow v1.0.2
+       Fresh anstyle v1.0.14
+       Fresh ciborium-io v0.2.2
+       Fresh clap_lex v1.1.0
+       Fresh rustc-hash v2.1.2
+       Fresh pin-project-lite v0.2.17
+       Fresh lazy_static v1.5.0
+       Fresh darling v0.20.11
+       Fresh rand_chacha v0.9.0
+       Fresh parking_lot_core v0.9.12
+       Fresh sharded-slab v0.1.7
+       Fresh rand_chacha v0.3.1
+       Fresh tracing v0.1.44
+       Fresh toml_parser v1.1.2+spec-1.1.0
+       Fresh ciborium-ll v0.2.2
+       Fresh plotters-svg v0.3.7
+       Fresh clap_builder v4.6.0
+       Fresh zstd-safe v7.2.4
+       Fresh cobs v0.3.0
+       Fresh rayon-core v1.13.0
+       Fresh chrono v0.4.44
+       Fresh rand v0.9.4
+       Fresh dashmap v6.1.0
+       Fresh tracing-log v0.2.0
+       Fresh itertools v0.10.5
+       Fresh thiserror-impl v1.0.69
+       Fresh xattr v1.6.1
+       Fresh matchers v0.2.0
+       Fresh toml_datetime v1.1.1+spec-1.1.0
+       Fresh serde_spanned v1.1.1
+       Fresh filetime v0.2.27
+       Fresh wait-timeout v0.2.1
+       Fresh thread_local v1.1.9
+       Fresh bit-vec v0.8.0
+       Fresh arrayvec v0.7.6
+       Fresh subtle v2.6.1
+       Fresh oxrdf v0.3.3
+       Fresh siphasher v1.0.2
+       Fresh toml_writer v1.1.1+spec-1.1.0
+       Fresh quick-error v1.2.3
+       Fresh nu-ansi-term v0.50.3
+       Fresh zeroize v1.8.2
+       Fresh arrayref v0.3.9
+       Fresh equivalent v1.0.2
+       Fresh cast v0.3.0
+       Fresh signature v2.2.0
+       Fresh hashbrown v0.17.0
+       Fresh same-file v1.0.6
+       Fresh constant_time_eq v0.4.2
+       Fresh bit-set v0.8.0
+       Fresh tar v0.4.45
+       Fresh thiserror v1.0.69
+       Fresh zstd v0.13.3
+       Fresh spargebra v0.4.6
+       Fresh oxjsonld v0.2.5
+       Fresh oxttl v0.2.3
+       Fresh sparesults v0.3.3
+       Fresh oxrdfxml v0.2.3
+       Fresh criterion-plot v0.5.0
+       Fresh tracing-subscriber v0.3.23
+       Fresh rusty-fork v0.3.1
+       Fresh walkdir v2.5.0
+       Fresh toml v1.1.2+spec-1.1.0
+       Fresh ed25519 v2.2.3
+       Fresh blake3 v1.8.4
+       Fresh curve25519-dalek v4.1.3
+       Fresh indexmap v2.14.0
+       Fresh generator v0.8.8
+       Fresh rand v0.8.6
+       Fresh clap v4.6.1
+       Fresh sparopt v0.3.6
+       Fresh oxrdfio v0.2.5
+       Fresh anyhow v1.0.102
+       Fresh plotters v0.3.7
+       Fresh rayon v1.12.0
+       Fresh postcard v1.1.3
+       Fresh ciborium v0.2.2
+       Fresh target-triple v1.0.0
+       Fresh dummy v0.8.0
+       Fresh tinytemplate v1.2.1
+       Fresh rand_xorshift v0.4.0
+       Fresh is-terminal v0.4.17
+       Fresh console v0.16.3
+       Fresh anes v0.1.6
+       Fresh unarray v0.1.4
+       Fresh termcolor v1.4.1
+       Fresh oorandom v11.1.5
+       Fresh spareval v0.2.6
+       Fresh glob v0.3.3
+       Fresh similar v2.7.0
+       Fresh deunicode v1.6.2
+       Fresh scoped-tls v1.0.1
+       Fresh proptest v1.11.0
+       Fresh criterion v0.5.1
+       Fresh ed25519-dalek v2.2.0
+       Fresh oxigraph v0.5.8
+       Fresh trybuild v1.0.116
+       Fresh loom v0.7.2
+       Fresh fake v2.10.0
+       Fresh insta v1.47.2
+warning: unused import: `ccog::runtime::ClosedFieldContext`
+  --> crates/ccog/tests/fuzz_kernel.rs:13:5
+   |
+13 | use ccog::runtime::ClosedFieldContext;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `ccog::compiled::CompiledFieldSnapshot`
+  --> crates/ccog/tests/fuzz_kernel.rs:14:5
+   |
+14 | use ccog::compiled::CompiledFieldSnapshot;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `ContextBundle` and `PostureBundle`
+  --> crates/ccog/tests/fuzz_kernel.rs:15:24
+   |
+15 | use ccog::multimodal::{PostureBundle, ContextBundle};
+   |                        ^^^^^^^^^^^^^  ^^^^^^^^^^^^^
+
+warning: unused import: `ccog::packs::TierMasks`
+  --> crates/ccog/tests/fuzz_kernel.rs:16:5
+   |
+16 | use ccog::packs::TierMasks;
+   |     ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::sync::Arc`
+  --> crates/ccog/tests/fuzz_kernel.rs:19:5
+   |
+19 | use std::sync::Arc;
+   |     ^^^^^^^^^^^^^^
+
+warning: unexpected `cfg` condition name: `loom`
+ --> crates/ccog/tests/loom_concurrency.rs:2:8
+  |
+2 | #![cfg(loom)]
+  |        ^^^^
+  |
+  = help: expected names are: `docsrs`, `feature`, `kani`, and `test` and 32 more
+  = help: consider using a Cargo feature instead
+  = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+           [lints.rust]
+           unexpected_cfgs = { level = "warn", check-cfg = ['cfg(loom)'] }
+  = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(loom)");` to the top of the `build.rs`
+  = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+  = note: requested on the command line with `-W unexpected-cfgs`
+
+warning: unused variable: `context`
+   --> crates/ccog/tests/gauntlet.rs:584:9
+    |
+584 |     let context = empty_context(snap);
+    |         ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_context`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: `ccog` (test "fuzz_kernel") generated 5 warnings (run `cargo fix --test "fuzz_kernel" -p ccog` to apply 5 suggestions)
+warning: `ccog` (test "loom_concurrency") generated 1 warning
+warning: `ccog` (test "gauntlet") generated 1 warning (run `cargo fix --test "gauntlet" -p ccog` to apply 1 suggestion)
+warning: unused variable: `context`
+   --> crates/ccog/tests/packs_jtbd.rs:496:9
+    |
+496 |     let context = ClosedFieldContext {
+    |         ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_context`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `ccog::runtime::cog8::*`
+ --> crates/ccog/tests/kani_harnesses.rs:1:5
+  |
+1 | use ccog::runtime::cog8::*;
+  |     ^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `ccog::ids::*`
+ --> crates/ccog/tests/kani_harnesses.rs:2:5
+  |
+2 | use ccog::ids::*;
+  |     ^^^^^^^^^^^^
+
+warning: unused variable: `f`
+   --> crates/ccog/tests/earned_zero.rs:247:9
+    |
+247 |     let f = FieldContext::new("test");
+    |         ^ help: if this is intentional, prefix it with an underscore: `_f`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: `ccog` (test "packs_jtbd") generated 1 warning (run `cargo fix --test "packs_jtbd" -p ccog` to apply 1 suggestion)
+warning: `ccog` (test "kani_harnesses") generated 2 warnings (run `cargo fix --test "kani_harnesses" -p ccog` to apply 2 suggestions)
+warning: `ccog` (test "earned_zero") generated 1 warning (run `cargo fix --test "earned_zero" -p ccog` to apply 1 suggestion)
+       Fresh ccog v0.1.0 (/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/crates/ccog)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.13s
+     Running `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/ccog-2c3686441a445efb`
+
+running 217 tests
+test admit::tests::admit2_admits_when_both_zero ... ok
+test admit::tests::admit3_composes_via_or ... ok
+test abi::binary::tests::powl8_roundtrip_through_postcard_preserves_choice_loop ... ok
+test abi::debug::tests::powl8_debug_string_includes_choice_loop ... ok
+test admit::tests::admit4_composes_via_or ... ok
+test abi::jsonld::tests::powl8_jsonld_keys_are_deterministic ... ok
+test abi::jsonld::tests::powl8_jsonld_emits_choice_and_loop_types ... ok
+test admit::tests::admitted_returns_true_only_for_zero ... ok
+test admit::tests::commit_masked_generic_selects_correctly ... ok
+test admit::tests::bool_mask_denied_is_all_ones ... ok
+test admit::tests::commit_masked_u64_selects_fallback_when_denied ... ok
+test admit::tests::commit_masked_bool_selects_correctly ... ok
+test admit::tests::bool_mask_admitted_is_zero ... ok
+test admit::tests::commit_masked_u64_selects_value_when_admitted ... ok
+test bark_artifact::tests::const_table_has_four_builtins ... ok
+test bark_artifact::tests::bark_table_dispatches_custom_const ... ok
+test bark_artifact::tests::bark_fires_receipt_on_empty_field ... ok
+test bark_artifact::tests::seal_uses_blake3_urn ... ok
+test bark_kernel::tests::decide_skips_unsatisfied_mask ... ok
+test bark_kernel::tests::decide_does_not_allocate_construct8 ... ok
+test bark_artifact::tests::phrase_binding_emits_was_informed_by ... ok
+test bark_kernel::tests::empty_kernel_yields_no_outcomes ... ok
+test bark_artifact::tests::transition_emits_prov_activity_not_shacl_shape ... ok
+test bark_artifact::tests::missing_evidence_emits_ask_action_not_placeholder ... ok
+test bark_artifact::tests::bark_fires_full_set_on_loaded_field ... ok
+test bark_kernel::tests::kernel_skips_unsatisfied_masks ... ok
+test bark_artifact::tests::decide_then_materialize_matches_bark ... ok
+test breeds::cbr::tests::cbr_denied_on_empty_library ... ok
+test bark_kernel::tests::linear_kernel_fires_in_plan_order ... ok
+test bark_kernel::tests::seal_uses_blake3_urn ... ok
+test breeds::cbr::tests::cbr_admitted_when_case_library_present ... ok
+test bark_kernel::tests::decide_then_materialize_matches_fire ... ok
+test breeds::cbr::tests::cbr_denied_when_case_lacks_blake3_fingerprint ... ok
+test breeds::gps::tests::gps_admitted_when_goal_and_current_present ... ok
+test breeds::gps::tests::gps_denied_when_goal_missing ... ok
+test breeds::hearsay::tests::four_confirmed_is_settled ... ok
+test breeds::hearsay::tests::missing_evidence_escalates ... ok
+test breeds::gps::tests::gps_materialize_pairs_sorted_subjects ... ok
+test breeds::hearsay::tests::no_receipt_does_not_count ... ok
+test breeds::hearsay::tests::one_confirmed_is_alert ... ok
+test breeds::hearsay::tests::zero_outcomes_is_calm ... ok
+test breeds::hearsay::tests::two_confirmed_is_engaged ... ok
+test breeds::soar::tests::soar_denied_on_empty_field ... ok
+test breeds::prs::tests::prs_denied_missing_intention ... ok
+test breeds::prs::tests::prs_admitted_with_full_bdi_triple ... ok
+test breeds::strips::breed_probe_tests::compiled_hook_always_admitted ... ok
+test breeds::strips::breed_probe_tests::eliza_denied_on_empty_field ... ok
+test breeds::soar::tests::soar_admitted_with_three_matching_traces ... ok
+test breeds::strips::breed_probe_tests::dendral_admitted_when_prov_was_generated_by_present ... ok
+test breeds::strips::breed_probe_tests::eliza_admitted_when_pref_label_present ... ok
+test breeds::soar::tests::soar_denied_when_history_diverges ... ok
+test breeds::strips::breed_probe_tests::mycin_admitted_when_no_dd_present ... ok
+test breeds::strips::breed_probe_tests::hearsay_admitted_when_prov_was_informed_by_present ... ok
+test breeds::strips::breed_probe_tests::mycin_admitted_when_prov_value_present ... ok
+test breeds::strips::breed_probe_tests::mycin_denied_when_dd_missing_prov_value ... ok
+test breeds::strips::breed_probe_tests::prolog_admitted_when_skos_broader_present ... ok
+test breeds::strips::breed_probe_tests::shrdlu_admitted_when_rdf_type_present ... ok
+test breeds::strips::breed_probe_tests::strips_admitted_when_all_dds_have_value ... ok
+test breeds::strips::breed_probe_tests::strips_denied_when_dd_missing_value ... ok
+test compiled::tests::snapshot_has_any_with_predicate ... ok
+test compiled::tests::snapshot_indexes_instances_by_class ... ok
+test compiled::tests::snapshot_indexes_labels_lowercase ... ok
+test compiled_hook::tests::compile_builtin_recognizes_all_four ... ok
+test compiled::tests::snapshot_tracks_subject_predicate_presence ... ok
+test compiled::tests::snapshot_pairs_with_predicate ... ok
+test compiled_hook::tests::compiled_table_fires_receipt_unconditionally ... ok
+test compiled::tests::subject_predicate_present_collision_test ... ok
+test compiled_hook::tests::compiled_table_fires_missing_evidence ... ok
+test compiled_hook::tests::compiled_table_skips_when_mask_unmet ... ok
+test conformance::tests::replay_matches_self_on_empty_field ... ok
+test construct8::tests::empty_construct8_has_len_zero ... ok
+test construct8::tests::push_to_capacity_succeeds ... ok
+test compiled_hook::tests::present_mask_detects_dd_and_gap ... ok
+test construct8::tests::receipt_bytes_deterministic ... ok
+test conformance::tests::replay_matches_self_on_loaded_field ... ok
+test construct8::tests::to_ntriples_valid ... ok
+test export::jsonld::tests::jsonld_context_only_public_iris ... ok
+test export::ontology::tests::allows_prov_and_blake3_iris ... ok
+test export::ontology::tests::extra_allow_admits_custom_prefix ... ok
+test export::ontology::tests::rejects_example_org ... ok
+test export::ontology::tests::rejects_private_ccog_internal ... ok
+test hooks::tests::always_trigger_fires_in_registry ... ok
+test hooks::tests::fire_one_invokes_manual_only_hook ... ok
+test hooks::tests::manual_only_trigger_skipped_in_registry ... ok
+test hooks::tests::hook_registry_fires_all_matching ... ok
+test hooks::tests::hook_registry_returns_receipts ... ok
+test export::jsonld::tests::jsonld_trace_roundtrip_stable_bytes ... ok
+test hooks::tests::missing_evidence_hook_does_not_fire_complete ... ok
+test hooks::tests::missing_evidence_hook_emits_ask_action_not_placeholder ... ok
+test hooks::tests::snapshot_admit_check_dispatches ... ok
+test hooks::tests::missing_evidence_does_not_fill_evidence ... ok
+test hooks::tests::missing_evidence_hook_fires_on_gap ... ok
+test hooks::tests::phrase_binding_hook_emits_was_informed_by ... ok
+test instinct::tests::calm_with_no_signals_yields_ignore ... ok
+test instinct::tests::default_falls_back_to_ask ... ok
+test instinct::tests::inspect_affordance_with_engaged_yields_inspect ... ok
+test hooks::tests::transition_admissibility_hook_fires_on_typed_subject_not_shacl_shape ... ok
+test instinct::tests::must_escalate_overrides_other_signals ... ok
+test instinct::tests::must_escalate_overrides_retrieve ... ok
+test instinct::tests::missing_evidence_yields_ask ... ok
+test instinct::tests::package_expected_plus_delivery_cadence_yields_retrieve ... ok
+test instinct::tests::partner_due_plus_cadence_yields_settle ... ok
+test instinct::tests::safety_risk_without_inspect_affordance_escalates ... ok
+test instinct::tests::settled_overrides_must_escalate ... ok
+test instinct::tests::settled_yields_settle ... ok
+test instinct::tests::theft_risk_with_alert_yields_refuse ... ok
+test mask::build::tests::k128_const_builder_spans_words ... ok
+test mask::build::tests::k256_const_builder_drops_oob ... ok
+test mask::build::tests::k64_const_builder ... ok
+test mask::ktier::tests::k128_spans_word_boundary ... ok
+test mask::ktier::tests::k256_zero_and_oob ... ok
+test mask::ktier::tests::k64_bit_and_count_ones ... ok
+test mask::ktier::tests::k_widths ... ok
+test mask::simd::tests::k256_simd_and_matches_scalar ... ok
+test mask::simd::tests::k256_simd_or_matches_scalar ... ok
+test hooks::tests::sparql_ask_trigger_does_not_fire_when_false ... ok
+test hooks::tests::sparql_ask_trigger_fires_when_true ... ok
+test multimodal::tests::afford_has_isolates_affordance_channel ... ok
+test multimodal::tests::expect_has_isolates_expectation_channel ... ok
+test multimodal::tests::posture_has_returns_true_for_set_bit ... ok
+test multimodal::tests::risk_has_isolates_risk_channel ... ok
+test packs::bits::tests::dev_range_terminates_at_canonical_boundary ... ok
+test packs::bits::tests::in_range_boundary_is_half_open ... ok
+test packs::bits::tests::ranges_are_pairwise_disjoint ... ok
+test packs::dev::tests::escalate_is_clamped_to_ask ... ok
+test packs::dev::tests::refuse_is_clamped_to_ask ... ok
+test packs::dev::tests::settle_passes_through ... ok
+test packs::edge::tests::all_acts_emit_only_deterministic_ids ... ok
+test packs::edge::tests::pii_marker_detector_flags_at_sign ... ok
+test packs::lifestyle::tests::all_acts_emit_one_triple ... ok
+test packs::lifestyle::tests::fatigued_rewrites_refuse_to_ask ... ok
+test packs::enterprise::tests::every_act_emits_was_informed_by_and_used ... ok
+test packs::lifestyle_overlap::tests::pack_validates_clean ... ok
+test packs::lifestyle::tests::unfatigued_passes_through ... ok
+test packs::lifestyle_overlap::tests::precedence_ranks_are_distinct_and_ordered ... ok
+test packs::lifestyle_overlap::tests::safety_outranks_routine_in_precedence_table ... ok
+test packs::metadata_ids::tests::display_writes_underlying_str ... ok
+test packs::metadata_ids::tests::ids_are_copy_repr_transparent ... ok
+test packs::metadata_ids::tests::ids_compare_to_str_literals ... ok
+test packs::metadata_ids::tests::ids_serialize_as_plain_strings ... ok
+test packs::tests::iri_is_public_accepts_blake3 ... ok
+test packs::tests::iri_is_public_rejects_unknown_namespace ... ok
+test packs::tests::load_compiled_admits_valid_digest ... ok
+test packs::tests::load_compiled_rejects_tampered_content ... ok
+test packs::tests::load_compiled_rejects_tampered_digest ... ok
+test powl::tests::binary_relation_oob_ignored ... ok
+test powl::tests::binary_relation_set_and_query ... ok
+test powl::tests::compile_linear_plan_yields_topological_order ... ok
+test powl::tests::compile_partial_order_respects_rel_edges ... ok
+test powl::tests::compile_propagates_shape_match_errors ... ok
+test powl::tests::compile_returns_malformed_on_excess_runtime_nodes ... ok
+test powl::tests::compile_strips_operator_nodes ... ok
+test powl::tests::powl8_push_caps_at_max_nodes ... ok
+test powl::tests::shape_match_acyclic_partial_order_is_sound ... ok
+test powl::tests::shape_match_cyclic_partial_order_is_cyclic ... ok
+test powl::tests::shape_match_empty_is_malformed ... ok
+test powl::tests::shape_match_root_oob_is_malformed ... ok
+test powl::tests::shape_match_self_referencing_operator_is_malformed ... ok
+test powl::tests::shape_match_seq_cycle_detected_globally ... ok
+test powl::tests::shape_match_seq_oob_child_is_malformed ... ok
+test powl::tests::try_add_edge_accepts_valid ... ok
+test powl::tests::try_add_edge_rejects_oob ... ok
+test receipt::tests::canonical_material_layout_is_nul_separated ... ok
+test receipt::tests::derive_urn_format_is_urn_blake3_with_64_hex ... ok
+test receipt::tests::derive_urn_is_deterministic ... ok
+test receipt::tests::distinct_inputs_distinct_urns ... ok
+test receipt::tests::polarity_changes_urn ... ok
+test receipt::tests::prior_chain_none_matches_some_zeros ... ok
+test runtime::alignment::tests::test_alignment_insert ... ok
+test runtime::alignment::tests::test_alignment_perfect ... ok
+test runtime::alignment::tests::test_alignment_skip ... ok
+test runtime::coevo::tests::test_enhancement_logic ... ok
+test runtime::conformance::tests::test_fitness_violation ... ok
+test runtime::conformance::tests::test_generalization_and_simplicity ... ok
+test runtime::conformance::tests::test_perfect_conformance ... ok
+test runtime::event::tests::event_attribute_table_usage ... ok
+test runtime::event::tests::event_basic_construction ... ok
+test runtime::mcp::tests::test_mcp_projection ... ok
+test runtime::mcp_transport::tests::test_strips_guard_blocks_unfulfilled_precondition ... ok
+test runtime::mining::tests::test_heuristic_mining_logic ... ok
+test runtime::mining::tests::test_map_to_xes ... ok
+test runtime::ocel::tests::test_object_centric_closure ... ok
+test runtime::ocel::tests::test_ocel_event_binding ... ok
+test runtime::mcp_transport::tests::test_mcp_transport_full_loop ... ok
+test runtime::ocel::tests::test_ocel_from_powl64 ... ok
+test runtime::posture::tests::display_strings ... ok
+test runtime::posture::tests::settle_resets ... ok
+test runtime::posture::tests::transitions_through_bands ... ok
+test runtime::posture::tests::zero_observes_calm ... ok
+test runtime::reentry::tests::test_cold_reentry_overflow ... ok
+test runtime::reentry::tests::test_deduplication ... ok
+test runtime::reentry::tests::test_hot_reentry ... ok
+test runtime::tournament::cold_arena::tests::test_cold_arena_ingestion ... ok
+test runtime::tournament::cold_arena::tests::test_reject_routes ... ok
+test runtime::tournament::l1_arena::tests::test_arena_size_constraints ... ok
+test runtime::tournament::cold_arena::tests::test_receipt_flood_benchmark ... ok
+test runtime::tournament::cold_arena::tests::test_replay_flood_benchmark ... ok
+test runtime::tournament::l2_arena::tests::test_l2_arena_size ... ok
+test runtime::tournament::l1_arena::tests::test_duplicate_storm ... ok
+test runtime::tournament::l1_arena::tests::test_unsafe_command_storm ... ok
+test runtime::xes::tests::test_xes_log_serialization ... ok
+test trace::tests::skipped_count_matches_skip_reason_some ... ok
+test trace::tests::trace_default_builtins_on_empty_field_skips_three ... ok
+test utils::dense::tests::fnv1a_64_is_deterministic_and_distinct ... ok
+test utils::dense::tests::packed_key_table_basic_insert_get ... ok
+test utils::dense::tests::packed_key_table_clear_resets_len_but_keeps_capacity ... ok
+test utils::dense::tests::packed_key_table_default_equals_new ... ok
+test trace::tests::trace_default_builtins_on_loaded_field_fires_all ... ok
+test trace::tests::trace_present_mask_matches_compute_present_mask ... ok
+test utils::dense::tests::packed_key_table_iter_yields_all_entries ... ok
+test utils::dense::tests::packed_key_table_replaces_on_same_hash ... ok
+test utils::dense::tests::packed_key_table_grows_through_rebuild ... ok
+test export::bundle::tests::bundle_write_read_roundtrip ... ok
+test export::bundle::tests::bundle_deterministic_bytes ... ok
+test runtime::tournament::l2_arena::tests::test_stress_storms ... ok
+test runtime::tournament::l2_arena::tests::test_load_and_bench ... ok
+test runtime::tournament::l1_arena::tests::bench_pure_closure_reflex ... ok
+
+test result: ok. 217 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.56s
+
+     Running `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/a2a_delegation_tests-a2aa29f150856f2d`
+
+running 3 tests
+test test_a2a_delegation_via_mcp_projection ... ok
+test test_a2a_delegation_perturbation_invariant ... ok
+test test_a2a_delegation_metamorphic_invariant ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/adversarial_tournament-8960c5f9a3ecb1ca`
+
+running 3 tests
+test test_greedy_search_adversary_false_settle ... ok
+test test_stale_evidence_adversarial_pressure ... ok
+test test_adversarial_tournament_discovery ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/decide_eq_with_trace-b02bbcf0d323a233`
+
+running 3 tests
+test decide_eq_decide_with_trace_on_empty_field ... ok
+test decide_eq_decide_with_trace_on_loaded_field ... ok
+test decide_eq_decide_with_trace_proptest ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+     Running `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/dendral_bundle_roundtrip-58a3efe06e8fc5a6`
+
+running 13 tests
+test bundle_with_private_namespace_rejected ... ok
+test inject_unknown_iri_fails_ontology_audit ... ok
+test powl64_path_matches_chain_head ... ok
+test jsonld_context_only_public_iris ... ok
+test replay_verifier_accepts_genuine_bundle ... ok
+test truncate_chain_one_node_fails_chain_match ... ok
+test tamper_powl64_path_breaks_chain_match ... ok
+test jsonld_trace_roundtrip_stable_bytes ... ok
+test swap_two_path_hashes_fails_chain_match ... ok
+test bundle_write_read_roundtrip ... ok
+test tamper_trace_jsonld_fails_manifest ... ok
+test bundle_deterministic_bytes ... ok
+test tamper_receipt_polarity_fails_replay ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/dendral_chain_test-3cae6c279bf66757`
+
+running 2 tests
+test dendral_handles_unknown_entity ... ok
+test dendral_walks_back_one_step_from_process_output ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/dense_drift-e8ebbc64a9ba1b06`
+
+running 1 test
+test dense_kernel_upstream_hash_pinned ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/earned_zero-27b37445c13ad190`
+
+running 8 tests
+test zero_by_cog8_missing_required_bit ... ok
+test zero_by_cog8_unsatisfied_guard ... ok
+test zero_by_manual_only ... ok
+test zero_by_closure ... ok
+test zero_byfloor ... ok
+test zero_by_skipped_predecessor ... ok
+test zero_by_context_deny ... ok
+test zero_by_require_maskfail ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/fuzz_hooks-99febc65907bb0cc`
+
+running 1 test
+test fuzz_hooks_never_panic ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/fuzz_kernel-671cc86ac91a3535`
+
+running 1 test
+test prop_kernel_fuzz ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 22.81s
+
+     Running `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/gauntlet-e4a0628ad98527db`
+
+running 24 tests
+test gauntlet_cog8_topology_override ... ok
+test gauntlet_cog8_metamorphic_invariants ... ok
+test gauntlet_cog8_topology_partial_order ... ok
+test gauntlet_cog8_topology_choice_graph ... ok
+test gauntlet_adversarial_malformed_rdf_returns_error_not_panic ... ok
+test gauntlet_adversarial_blank_node_does_not_panic ... ok
+test gauntlet_execute_cog8_graph_allocates_zero_octets ... ok
+test gauntlet_metamorphic_irrelevant_label_rename_invariance ... ok
+test gauntlet_adversarial_self_reference_does_not_fabricate_closure ... ok
+test gauntlet_metamorphic_unrelated_triple_addition_invariance ... ok
+test gauntlet_compute_present_mask_zero_alloc ... ok
+test gauntlet_metamorphic_triple_order_invariance ... ok
+test gauntlet_decide_allocates_zero_octets ... ok
+test gauntlet_metamorphic_load_bearing_removal_changes_decision ... ok
+test gauntlet_regression_seed_no_fake_prov_value_on_gap_doc ... ok
+test gauntlet_regression_seed_no_derived_from_pref_label_string ... ok
+test gauntlet_regression_seed_no_shacl_target_class_in_warm_or_hot ... ok
+test gauntlet_warm_vs_hot_phrase_binding_no_drift ... ok
+test gauntlet_warm_vs_hot_missing_evidence_no_drift ... ok
+test gauntlet_warm_vs_hot_transition_admissibility_no_drift ... ok
+test gauntlet_adversarial_huge_number_of_triples_no_panic ... ok
+test gauntlet_regression_seed_receipt_identity_is_semantic_not_temporal ... ok
+test proptest_gauntlet_decide_zero_alloc_under_generated_fields ... ok
+test proptest_gauntlet_decide_equals_decide_with_trace ... ok
+
+test result: ok. 24 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/hearsay_fusion_test-f655ff60d2306998`
+
+running 1 test
+test hearsay_empty_outcomes_returns_calm ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/hitl_role_tests-2306f50916a86e20`
+
+running 4 tests
+test test_human_role_burden_and_selection ... ok
+test test_hitl_role_perturbation_invariant ... ok
+test test_hitl_role_consultation_via_mcp_projection ... ok
+test test_hitl_role_metamorphic_invariant ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/hook_integration_test-9f7063460797121c`
+
+running 2 tests
+test autonomic_loop_no_hook_when_evidence_complete ... ok
+test autonomic_loop_fires_missing_evidence_hook ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/jtbd_generated-45d560c2b9e9fd77`
+
+running 16 tests
+test jtbd_missing_invoice_financials_triggers_ask ... ok
+test jtbd_policy_ambiguity_resolved_by_priority ... ok
+test jtbd_receipt_identity_changes_with_semantic_material ... ok
+test jtbd_missing_evidence_perturbation_no_dd_no_fire ... ok
+test jtbd_cog8_graph_perturbation_changes_response ... ok
+test jtbd_transition_admissibility_perturbation_no_type_no_fire ... ok
+test jtbd_phrase_binding_perturbation_no_label_no_fire ... ok
+test jtbd_field_packs_response_class_canonical_only ... ok
+test jtbd_breed_admission_changes_when_precondition_removed ... ok
+test jtbd_powl64_replay_detects_path_tampering ... ok
+test jtbd_cog8_graph_evaluation_is_deterministic ... ok
+test jtbd_transition_admissibility_records_finding_not_shape ... ok
+test jtbd_phrase_binding_links_label_provenance ... ok
+test jtbd_missing_evidence_requests_gap_without_filling_it ... ok
+test jtbd_bark_pipeline_self_consistent ... ok
+test jtbd_trace_replays_decision_for_generated_fields ... ok
+
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/kani_harnesses-78bda4843826ce88`
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/lifestyle_redesign_jtbd-6347670bcbba7a7d`
+
+running 7 tests
+test jtbd_lifestyle_pack_acts_emit_only_urn_blake3_iris ... ok
+test jtbd_lifestyle_fatigue_bias_does_not_alter_base_lattice_v0 ... ok
+test jtbd_lifestyle_trace_replays_response ... ok
+test proptest_lifestyle_response_changes_when_key_context_removed ... ok
+test proptest_lifestyle_fatigue_never_escalates_nonurgent ... ok
+test proptest_lifestyle_response_class_canonical ... ok
+test proptest_lifestyle_lattice_is_context_sensitive ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/loom_concurrency-7ad16060bcf5d4e7`
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/mcp_projection_tests-307df852a989da42`
+
+running 4 tests
+test test_mcp_projection_positive ... ok
+test test_mcp_projection_multiple_rules ... ok
+test test_mcp_projection_negative_mismatch ... ok
+test test_mcp_projection_perturbation_empty_table ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/pack_dev_conformance-1a8b1fc9093a9d0c`
+
+running 5 tests
+test pack_dev_builtins_count_in_band ... ok
+test pack_dev_acts_emit_ask_action ... ok
+test pack_dev_negative_settle_passes_through ... ok
+test pack_dev_positive_clamps_refuse_to_ask ... ok
+test pack_dev_boundary_does_not_auto_merge ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/pack_edge_conformance-baf4a27cf40873e4`
+
+running 4 tests
+test pack_edge_builtins_count_in_band ... ok
+test pack_edge_negative_no_response_class_invented ... ok
+test pack_edge_positive_passes_canonical_lattice_through ... ok
+test pack_edge_boundary_no_pii_in_iri ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/pack_enterprise_conformance-ffa11f0555d4e324`
+
+running 4 tests
+test pack_enterprise_admits_all_canonical_breeds ... ok
+test pack_enterprise_negative_no_example_org_iris ... ok
+test pack_enterprise_positive_emits_was_informed_by_and_used ... ok
+test pack_enterprise_boundary_response_class_canonical_only ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/pack_lifestyle_conformance-bea92e6af8205408`
+
+running 5 tests
+test pack_lifestyle_builtins_match_pack_table ... ok
+test pack_lifestyle_boundary_overstim_also_clamps ... ok
+test pack_lifestyle_positive_fatigued_refuse_becomes_ask ... ok
+test pack_lifestyle_negative_unfatigued_keeps_refuse ... ok
+test pack_lifestyle_boundary_does_not_introduce_new_variants ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/pack_namespace_isolation-4cb4ad8495c918cf`
+
+running 3 tests
+test pack_namespace_each_pack_lands_in_its_band ... ok
+test pack_namespace_isolation_no_bit_overlap ... ok
+test pack_response_class_canonical_only ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/packs_jtbd-9c378c756d1827e8`
+
+running 16 tests
+test jtbd_cog8_edge_pack_reproduction ... ok
+test jtbd_dev_pack_clamps_escalate_to_ask ... ok
+test jtbd_edge_must_escalate_dominates_theft_risk ... ok
+test jtbd_edge_package_expected_with_capacity_selects_retrieve ... ok
+test jtbd_edge_theft_risk_alert_selects_refuse ... ok
+test jtbd_dev_pack_clamps_refuse_to_ask ... ok
+test jtbd_dev_pack_never_emits_refuse_or_escalate_under_any_input ... ok
+test jtbd_enterprise_must_escalate_compliance_path ... ok
+test jtbd_dev_pack_acts_emit_urn_blake3_only ... ok
+test jtbd_enterprise_pack_acts_emit_prov_activity_with_urn_blake3 ... ok
+test jtbd_edge_pack_acts_emit_only_urn_blake3_no_pii ... ok
+test jtbd_all_pack_acts_use_public_ontology_only ... ok
+test jtbd_enterprise_evidence_gap_selects_ask ... ok
+test proptest_dev_pack_never_surfaces_refuse_or_escalate ... ok
+test proptest_enterprise_pack_passes_through_canonical_lattice ... ok
+test proptest_edge_pack_passes_through_canonical_lattice ... ok
+
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/police_report_flow-1d810a946eed46a0`
+
+running 1 test
+test test_police_report_mvp ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/powl64_abi_conformance-673b75561ea0657d`
+
+running 4 tests
+test chain_len_equals_path_len ... ok
+test replay_preserves_path ... ok
+test powl64_postcard_roundtrip_preserves_path ... ok
+test powl64_jsonld_emits_blake3_urn_per_chain_entry ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/powl64_chain_test-5a39a1819d18df50`
+
+running 3 tests
+test chain_links_prior_receipt_into_subsequent_chain_hash ... ok
+test determinism_same_cell_sequence_yields_same_chain_head ... ok
+test genesis_extend_has_no_prior_and_polarity_folded_chain ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/powl8_admission_test-daccb0c025313e4b`
+
+running 17 tests
+test activity_without_compiled_slot_is_admitted_but_unfireable ... ok
+test choice_zero_len_is_malformed ... ok
+test choice_oob_branch_index_malformed ... ok
+test loop_boundary_unrolls_within_cap ... ok
+test compiled_mask_is_runtime_slot_indexed ... ok
+test choice_cyclic_through_branch_is_cyclic ... ok
+test malformed_self_cycle_detected ... ok
+test choice_branch_selection_admissible ... ok
+test choice_two_branches_both_admissible ... ok
+test linear_plan_ready_advances_in_order ... ok
+test diamond_join_fan_in ... ok
+test diamond_plan_joins_after_both_branches ... ok
+test loop_exceeds_max_nodes_malformed ... ok
+test parallel_independent_no_predecessor ... ok
+test vector_order_diverges_from_execution_order ... ok
+test cyclic_plan_rejected_with_admission_cyclic ... ok
+test manual_only_activity_advances_only_on_external_signal ... ok
+
+test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/prolog_relation_test-4a57bdc8c158b24e`
+
+running 2 tests
+test prolog_returns_none_when_no_path ... ok
+test prolog_proves_transitive_skos_broader ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/proptest_construct8-ada6d88cce4cb9f3`
+
+running 7 tests
+test prop_construct8_iter_in_push_order ... ok
+test prop_construct8_receipt_bytes_deterministic ... ok
+test prop_construct8_never_exceeds_eight ... ok
+test prop_construct8_materialize_round_trip ... ok
+test prop_cog8_matches_logic ... ok
+test prop_cog8_graph_deterministic ... ok
+test prop_cog8_law_of_8_never_violated ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.14s
+
+     Running `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/prov_delta_test-f9bb751c3b25214f`
+
+running 2 tests
+test prov_delta_is_idempotent ... ok
+test prov_delta_materializes_activity_triples ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/runtime_step_test-1e7c12bcd2fb27b6`
+
+running 1 test
+test runtime_step_chains_receipts_across_cycles ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/scheduler_tick_test-429c9f354889aecb`
+
+running 1 test
+test scheduler_first_tick_fires_then_idempotent_then_refires ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/self_play_tournament-a3f7e2d84037a41f`
+
+running 1 test
+test tournament_missing_evidence_closes_successfully ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/shrdlu_affordance_test-4c96f4a8ea133a65`
+
+running 2 tests
+test shrdlu_empty_actions_for_unknown_object ... ok
+test shrdlu_returns_admissible_actions_for_object ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/snapshot_tests-8059ff3b3cbd2668`
+
+running 2 tests
+test test_powl64_postcard_snapshot ... ok
+test test_powl64_jsonld_snapshot ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+   Doc-tests ccog
+     Running `/Users/sac/.rustup/toolchains/nightly-2026-04-15-aarch64-apple-darwin/bin/rustdoc --edition=2021 --crate-type lib --color auto --crate-name ccog --test crates/ccog/src/lib.rs --test-run-directory /Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/crates/ccog -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/blake3-84e40adff58301cc/out -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/zstd-sys-6fb87390c04c8ffc/out --warn=unexpected_cfgs --check-cfg 'cfg(kani)' --extern anyhow=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libanyhow-aff6f3e0116cccfd.rlib --extern blake3=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libblake3-4f0149d32871b2bb.rlib --extern ccog=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libccog-0889369a51ab47fe.rlib --extern chrono=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libchrono-d56374dc65014386.rlib --extern criterion=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libcriterion-1844379568b6fb99.rlib --extern ed25519_dalek=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libed25519_dalek-6edaec6f8f733580.rlib --extern fake=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libfake-220a3a31afce4a93.rlib --extern indexmap=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libindexmap-8f6d6688a7ff8118.rlib --extern insta=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libinsta-5e144c527fd86885.rlib --extern loom=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libloom-d31fc1d6cdf3a57f.rlib --extern oxigraph=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/liboxigraph-53b66421d59d8cb1.rlib --extern postcard=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libpostcard-680151f9b81c2831.rlib --extern proptest=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libproptest-9165d43d45711efe.rlib --extern rand=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/librand-4b0ddd3fc83f19e9.rlib --extern serde=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde-140d582b280e1dae.rlib --extern serde_json=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde_json-f2799c6c5333a109.rlib --extern smallvec=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libsmallvec-779b396a54a70ff8.rlib --extern tar=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtar-038da34c6b7041bb.rlib --extern thiserror=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libthiserror-0e007d25e7592466.rlib --extern trybuild=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtrybuild-aa30eb16f8ddc8b9.rlib --extern zstd=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libzstd-46a6e1a3f1a5502a.rlib -L dependency=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps -C embed-bitcode=no --cfg 'feature="default"' --cfg 'feature="nightly"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("default", "dendral-cli", "nightly", "phase7", "transparency"))' --error-format human`
+
+running 6 tests
+test crates/ccog/src/admit.rs - admit (line 8) ... ignored
+test crates/ccog/src/admit.rs - admit::bool_mask (line 40) ... ignored
+test crates/ccog/src/construct8.rs - construct8 (line 9) ... ignored
+test crates/ccog/src/hooks.rs - hooks (line 17) ... ignored
+test crates/ccog/src/macros.rs - macros::cog8_graph (line 9) ... ok
+test crates/ccog/src/runtime/cog8.rs - runtime::cog8::cog8_matches (line 210) ... ok
+
+test result: ok. 2 passed; 0 failed; 4 ignored; 0 measured; 0 filtered out; finished in 0.82s
+
+
+*** result: Success

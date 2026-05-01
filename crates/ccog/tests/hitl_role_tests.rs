@@ -1,10 +1,12 @@
-use ccog::runtime::mcp::{MCPProjectionTable, ProjectionRule, ToolCallTemplate, ToolId, ExpectedResultType, EffectPolicy};
-use ccog::runtime::cog8::{Cog8Decision, Instinct};
 use ccog::compiled::CompiledFieldSnapshot;
 use ccog::field::FieldContext;
-use ccog::runtime::ClosedFieldContext;
-use ccog::multimodal::{PostureBundle, ContextBundle};
+use ccog::multimodal::{ContextBundle, PostureBundle};
 use ccog::packs::TierMasks;
+use ccog::runtime::cog8::{Cog8Decision, Instinct};
+use ccog::runtime::mcp::{
+    EffectPolicy, ExpectedResultType, MCPProjectionTable, ProjectionRule, ToolCallTemplate, ToolId,
+};
+use ccog::runtime::ClosedFieldContext;
 use oxigraph::model::NamedNode;
 use std::sync::Arc;
 
@@ -18,28 +20,23 @@ fn empty_context(snap: Arc<CompiledFieldSnapshot>) -> ClosedFieldContext {
     }
 }
 
-
-static ASK_RULES: [ProjectionRule; 1] = [
-    ProjectionRule {
-        trigger_instinct: Instinct::Ask,
-        collapse_fn: Some(ccog::ids::CollapseFn::ExpertRule),
-        template: ToolCallTemplate {
-            tool_id: ToolId(303), // mcp:tool:ask_human_operator
-            expected_result_type: ExpectedResultType::Construct8,
-            effect_policy: EffectPolicy::Read,
-            required_vars: 0x0,
-        },
-    }
-];
+static ASK_RULES: [ProjectionRule; 1] = [ProjectionRule {
+    trigger_instinct: Instinct::Ask,
+    collapse_fn: Some(ccog::ids::CollapseFn::ExpertRule),
+    template: ToolCallTemplate {
+        tool_id: ToolId(303), // mcp:tool:ask_human_operator
+        expected_result_type: ExpectedResultType::Construct8,
+        effect_policy: EffectPolicy::Read,
+        required_vars: 0x0,
+    },
+}];
 
 /// HITL Role Test:
 /// Tests the pattern where a decision to Ask is projected into an MCP
 /// tool call that includes human role identification from the graph.
 #[test]
 fn test_hitl_role_consultation_via_mcp_projection() {
-    let table = MCPProjectionTable {
-        rules: &ASK_RULES,
-    };
+    let table = MCPProjectionTable { rules: &ASK_RULES };
 
     // Simulate a decision that triggers a request for clarification.
     let decision = Cog8Decision {
@@ -62,7 +59,9 @@ fn test_hitl_role_consultation_via_mcp_projection() {
     let operators = snap.instances_of(&role_type);
     assert!(!operators.is_empty());
 
-    let call = table.project(&decision, &context).expect("Ask should project to HITL call");
+    let call = table
+        .project(&decision, &context)
+        .expect("Ask should project to HITL call");
     assert_eq!(call.tool_id, ToolId(303));
 }
 
@@ -70,9 +69,7 @@ fn test_hitl_role_consultation_via_mcp_projection() {
 /// Adding more roles should still project to the same tool ID (lexicographical selection happens inside the tool/breed).
 #[test]
 fn test_hitl_role_metamorphic_invariant() {
-    let table = MCPProjectionTable {
-        rules: &ASK_RULES,
-    };
+    let table = MCPProjectionTable { rules: &ASK_RULES };
 
     let decision = Cog8Decision {
         response: Instinct::Ask,
@@ -103,9 +100,7 @@ fn test_hitl_role_metamorphic_invariant() {
 /// If the decision is changed to Ignore, no HITL call should be produced.
 #[test]
 fn test_hitl_role_perturbation_invariant() {
-    let table = MCPProjectionTable {
-        rules: &ASK_RULES,
-    };
+    let table = MCPProjectionTable { rules: &ASK_RULES };
 
     let mut field = FieldContext::new("hitl-test");
     field.load_field_state("<http://example.org/op1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <urn:ccog:Role> .\n").unwrap();
@@ -128,8 +123,8 @@ fn test_hitl_role_perturbation_invariant() {
 
 #[test]
 fn test_human_role_burden_and_selection() {
-    use ccog::runtime::hitl::{HumanRoleProfile, LeastCostHandler};
     use ccog::ids::HumanRoleId;
+    use ccog::runtime::hitl::{HumanRoleProfile, LeastCostHandler};
 
     let mut op1 = HumanRoleProfile::new(HumanRoleId(1), 10, 0.9);
     let op2 = HumanRoleProfile::new(HumanRoleId(2), 5, 0.7);

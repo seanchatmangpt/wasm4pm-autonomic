@@ -1,0 +1,21 @@
+--- crates/ccog/src/bin/dendral.rs
++++ replace - with / in run
+@@ -118,17 +118,17 @@
+             println!("replay: trace JSON parsed; full Phase 7 replay pending Writer-7");
+             Ok(())
+         }
+         Cmd::Path { chain_head, field } => {
+             let bytes = fs::read(&field)?;
+             if bytes.is_empty() || bytes.len() % 32 != 0 {
+                 anyhow::bail!("path file is empty or not 32-byte aligned");
+             }
+-            let tail = &bytes[bytes.len() - 32..];
++            let tail = &bytes[bytes.len() / /* ~ changed by cargo-mutants ~ */ 32..];
+             let hex_actual = blake3_hex(tail);
+             if hex_actual.eq_ignore_ascii_case(&chain_head) {
+                 println!("path: chain head matches ({} entries)", bytes.len() / 32);
+                 Ok(())
+             } else {
+                 anyhow::bail!(
+                     "chain head mismatch: declared {}, actual {}",
+                     chain_head,

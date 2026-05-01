@@ -5,7 +5,9 @@ use serde::{Deserialize, Serialize};
 
 /// Formalized Case ID for L3 event correlation.
 #[repr(transparent)]
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Default, Hash, Serialize, Deserialize)]
+#[derive(
+    Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Default, Hash, Serialize, Deserialize,
+)]
 pub struct CaseId(pub u64);
 
 impl From<u64> for CaseId {
@@ -35,8 +37,8 @@ pub enum Lifecycle {
 
 /// Formal Event Model for Process Mining and Traceability.
 ///
-/// Designed to be zero-allocation on the hot path. 
-/// Identifiers (activity, resource, attributes, provenance) are represented 
+/// Designed to be zero-allocation on the hot path.
+/// Identifiers (activity, resource, attributes, provenance) are represented
 /// as hashed URNs (u64) derived via `fnv1a_64`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Event {
@@ -81,7 +83,7 @@ impl Event {
 
 /// A zero-allocation (pre-allocated) table for storing event attributes or metadata.
 ///
-/// Uses `PackedKeyTable` from `utils::dense` to provide deterministic, 
+/// Uses `PackedKeyTable` from `utils::dense` to provide deterministic,
 /// alloc-free lookups after initial capacity is established.
 pub type EventAttributeTable<V> = PackedKeyTable<u64, V>;
 
@@ -96,16 +98,8 @@ mod tests {
         let activity = fnv1a_64(b"urn:ccog:activity:test");
         let timestamp = 1625097600000000; // Example timestamp
         let resource = fnv1a_64(b"urn:ccog:resource:agent-1");
-        
-        let event = Event::new(
-            case,
-            activity,
-            timestamp,
-            Lifecycle::Start,
-            resource,
-            0,
-            0,
-        );
+
+        let event = Event::new(case, activity, timestamp, Lifecycle::Start, resource, 0, 0);
 
         assert_eq!(event.case, CaseId(12345));
         assert_eq!(event.activity, activity);

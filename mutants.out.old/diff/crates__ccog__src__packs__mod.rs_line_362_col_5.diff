@@ -1,0 +1,73 @@
+--- crates/ccog/src/packs/mod.rs
++++ replace validate -> Result<(), PackLoadError> with Ok(())
+@@ -354,69 +354,17 @@
+ ///   responses — i.e. the same input could fire both rules with different
+ ///   admitted responses.
+ ///
+ /// # Errors
+ ///
+ /// Returns `PackLoadError::ValidationFailed` describing the first conflict.
+ pub fn validate(pack: &LoadedFieldPack) -> Result<(), PackLoadError> {
+     // 1. Validate ungrouped mask_rules amongst themselves.
+-    for (i, r1) in pack.mask_rules.iter().enumerate() {
+-        for r2 in pack.mask_rules.iter().skip(i + 1) {
+-            if r1.id == r2.id {
+-                return Err(PackLoadError::ValidationFailed(format!(
+-                    "duplicate rule id: {}",
+-                    r1.id
+-                )));
+-            }
+-            if rules_overlap_with_conflicting_responses(r1, r2) {
+-                return Err(PackLoadError::ValidationFailed(format!(
+-                    "overlapping bit requirements between `{}` and `{}` with conflicting responses",
+-                    r1.id, r2.id
+-                )));
+-            }
+-        }
+-    }
+-    // 2. Validate group ids unique and ranks distinct.
+-    for (i, g1) in pack.groups.iter().enumerate() {
+-        for g2 in pack.groups.iter().skip(i + 1) {
+-            if g1.id == g2.id {
+-                return Err(PackLoadError::ValidationFailed(format!(
+-                    "duplicate group id: {}",
+-                    g1.id
+-                )));
+-            }
+-            if g1.precedence_rank == g2.precedence_rank {
+-                return Err(PackLoadError::ValidationFailed(format!(
+-                    "duplicate precedence_rank {} between groups `{}` and `{}`",
+-                    g1.precedence_rank, g1.id, g2.id
+-                )));
+-            }
+-        }
+-    }
+-    // 3. Validate rules within each group amongst themselves.
+-    for g in &pack.groups {
+-        for (i, r1) in g.rules.iter().enumerate() {
+-            for r2 in g.rules.iter().skip(i + 1) {
+-                if r1.id == r2.id {
+-                    return Err(PackLoadError::ValidationFailed(format!(
+-                        "duplicate rule id `{}` in group `{}`",
+-                        r1.id, g.id
+-                    )));
+-                }
+-                if rules_overlap_with_conflicting_responses(r1, r2) {
+-                    return Err(PackLoadError::ValidationFailed(format!(
+-                        "overlapping bit requirements in group `{}` between `{}` and `{}` with conflicting responses",
+-                        g.id, r1.id, r2.id
+-                    )));
+-                }
+-            }
+-        }
+-    }
+-    Ok(())
++    Ok(()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ #[inline]
+ fn rules_overlap_with_conflicting_responses(r1: &LoadedPackRule, r2: &LoadedPackRule) -> bool {
+     let overlap = (r1.require_posture_mask & r2.require_posture_mask)
+         | (r1.require_expectation_mask & r2.require_expectation_mask)
+         | (r1.require_risk_mask & r2.require_risk_mask)
+         | (r1.require_affordance_mask & r2.require_affordance_mask)

@@ -3,12 +3,12 @@
 //! Uses a per-call label index built from `quads_for_pattern` over `skos:prefLabel`,
 //! `skos:altLabel`, and `schema:name`. No SPARQL parsing on the hot path.
 
-use anyhow::Result;
-use oxigraph::model::{NamedNode, Term};
 use crate::field::FieldContext;
 use crate::graph::GraphIri;
+use crate::utils::dense::{fnv1a_64, PackedKeyTable};
 use crate::verdict::BoundTerms;
-use crate::utils::dense::{PackedKeyTable, fnv1a_64};
+use anyhow::Result;
+use oxigraph::model::{NamedNode, Term};
 
 /// ELIZA: Phrase binding to public ontology terms.
 /// Admits only job-language phrases that bind to SKOS concepts.

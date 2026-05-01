@@ -1,0 +1,17 @@
+--- crates/ccog/src/bin/dendral.rs
++++ replace print_verdict with ()
+@@ -181,13 +181,10 @@
+     let mut out = String::with_capacity(bytes.len() * 2);
+     for b in bytes {
+         out.push_str(&format!("{:02x}", b));
+     }
+     out
+ }
+ 
+ fn print_verdict(v: &ReplayVerdict) {
+-    println!(
+-        "verify: manifest_intact={} ontology_intact={} chain_match={} decision_match={}",
+-        v.manifest_intact, v.ontology_intact, v.chain_match, v.decision_match,
+-    );
++    () /* ~ changed by cargo-mutants ~ */
+ }

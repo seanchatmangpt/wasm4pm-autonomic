@@ -4,11 +4,14 @@
 //! Provides automated model enhancement by suggesting 'shortcuts' through
 //! high-latency cognitive delegations (MCP/A2A) based on frequent trace patterns.
 
-use crate::runtime::{CompiledCcogConfig, cog8::{NodeId, EdgeId, EdgeKind, Cog8Edge, Powl8Instr, Powl8Op, Cog8Row, CollapseFn}};
-use crate::runtime::mining::{EvidenceLedger, MiningWorkspace, HeuristicMiner, DiscoveryConfig};
-use crate::runtime::hitl::ExternalBurden;
-use crate::powl64::{ProjectionTarget};
 use crate::ids::*;
+use crate::powl64::ProjectionTarget;
+use crate::runtime::hitl::ExternalBurden;
+use crate::runtime::mining::{DiscoveryConfig, EvidenceLedger, HeuristicMiner, MiningWorkspace};
+use crate::runtime::{
+    cog8::{Cog8Edge, Cog8Row, CollapseFn, EdgeId, EdgeKind, NodeId, Powl8Instr, Powl8Op},
+    CompiledCcogConfig,
+};
 
 /// A suggested improvement to the cognitive graph.
 #[derive(Debug, Clone)]
@@ -43,7 +46,8 @@ impl CoevolutionEnhancer {
         let discovery_config = DiscoveryConfig::default();
         workspace.reset();
         HeuristicMiner::mine(ledger, workspace);
-        let frequent_routes: Vec<_> = HeuristicMiner::discover_frequent_routes(workspace, &discovery_config).collect();
+        let frequent_routes: Vec<_> =
+            HeuristicMiner::discover_frequent_routes(workspace, &discovery_config).collect();
 
         // 2. Identify high-burden external delegations (MCP/A2A/HITL).
         // We use the ledger traces to identify which nodes result in external projections.
@@ -63,7 +67,7 @@ impl CoevolutionEnhancer {
                     if b == b2 && a != c {
                         // Pattern A -> B (external burden) -> C discovered.
                         // Suggest a shortcut A -> C.
-                        
+
                         // Look up the row for node C to copy its response and logic.
                         if let Some(c_row) = config.nodes.get(c.0 as usize) {
                             let mut suggested_node = *c_row;
@@ -112,8 +116,8 @@ impl CoevolutionEnhancer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::powl64::{Powl64RouteCell, Polarity, PartnerId};
-    use crate::runtime::cog8::{LoadedFieldPack, Instinct};
+    use crate::powl64::{PartnerId, Polarity, Powl64RouteCell};
+    use crate::runtime::cog8::{Instinct, LoadedFieldPack};
     use crate::runtime::MCPProjectionTable;
 
     #[test]
@@ -233,12 +237,11 @@ mod tests {
             ..Default::default()
         });
 
-        let ledger = EvidenceLedger {
-            traces: &[trace],
-        };
+        let ledger = EvidenceLedger { traces: &[trace] };
 
         let mut workspace = MiningWorkspace::new();
-        let candidates = CoevolutionEnhancer::generate_candidate_chunks(&config, &ledger, &mut workspace);
+        let candidates =
+            CoevolutionEnhancer::generate_candidate_chunks(&config, &ledger, &mut workspace);
 
         assert!(!candidates.is_empty());
         let chunk = &candidates[0];

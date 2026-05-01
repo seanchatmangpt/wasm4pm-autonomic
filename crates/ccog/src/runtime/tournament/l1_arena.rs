@@ -3,7 +3,7 @@
 //! High-performance reflexive execution environment for COG8 graphs,
 //! designed to fit entirely within a 64KiB L1 TruthBlock.
 
-use crate::runtime::cog8::{Cog8Row, Cog8Edge, Cog8Decision, execute_cog8};
+use crate::runtime::cog8::{execute_cog8, Cog8Decision, Cog8Edge, Cog8Row};
 
 /// L1 Reflex Arena (64KiB).
 ///
@@ -38,7 +38,11 @@ impl L1ReflexArena {
     ///
     /// This is the hot path for reflexive cognitive response.
     #[inline(always)]
-    pub fn execute(&self, context: &crate::runtime::ClosedFieldContext, completed: u64) -> Cog8Decision {
+    pub fn execute(
+        &self,
+        context: &crate::runtime::ClosedFieldContext,
+        completed: u64,
+    ) -> Cog8Decision {
         execute_cog8(&self.nodes, &self.edges, context, completed).unwrap_or_default()
     }
 }
@@ -46,12 +50,12 @@ impl L1ReflexArena {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::time::Instant;
-    use crate::runtime::cog8::*;
-    use crate::runtime::ClosedFieldContext;
     use crate::multimodal::{ContextBundle, PostureBundle};
     use crate::packs::TierMasks;
+    use crate::runtime::cog8::*;
+    use crate::runtime::ClosedFieldContext;
     use std::sync::Arc;
+    use std::time::Instant;
 
     fn empty_context(snap: Arc<crate::compiled::CompiledFieldSnapshot>) -> ClosedFieldContext {
         ClosedFieldContext {
@@ -76,14 +80,14 @@ mod tests {
         let field = crate::field::FieldContext::new("bench");
         let snap = Arc::new(crate::compiled::CompiledFieldSnapshot::from_field(&field).unwrap());
         let context = empty_context(snap);
-        
+
         // Setup a single active node that matches everything
         arena.nodes[0] = Cog8Row {
             priority: 100,
             response: Instinct::Settle,
             ..Default::default()
         };
-        
+
         // Setup one edge to it
         arena.edges[0] = Cog8Edge {
             to: NodeId(0),
@@ -97,14 +101,14 @@ mod tests {
 
         let iterations = 200_000;
         let start = Instant::now();
-        
+
         for _ in 0..iterations {
             let _ = arena.execute(&context, 0);
         }
-        
+
         let duration = start.elapsed();
         let rate = iterations as f64 / duration.as_secs_f64();
-        
+
         println!("Pure closure reflex rate: {:.2} closures/sec", rate);
     }
 
@@ -123,7 +127,7 @@ mod tests {
                 ..Default::default()
             };
         }
-        
+
         for i in 0..1024 {
             arena.edges[i] = Cog8Edge {
                 to: NodeId((i % 512) as u16),
@@ -139,7 +143,7 @@ mod tests {
         let start = Instant::now();
         let decision = arena.execute(&context, 0);
         let duration = start.elapsed();
-        
+
         println!("Duplicate storm execution took: {:?}", duration);
         assert_eq!(decision.response, Instinct::Settle);
     }
@@ -158,7 +162,7 @@ mod tests {
                 ..Default::default()
             };
         }
-        
+
         for i in 0..1024 {
             arena.edges[i] = Cog8Edge {
                 to: NodeId((i % 512) as u16),
@@ -176,7 +180,7 @@ mod tests {
         let start = Instant::now();
         let _ = arena.execute(&context, 0);
         let duration = start.elapsed();
-        
+
         println!("Unsafe-command storm execution took: {:?}", duration);
     }
 }

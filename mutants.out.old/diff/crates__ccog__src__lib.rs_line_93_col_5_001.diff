@@ -1,0 +1,14 @@
+--- crates/ccog/src/lib.rs
++++ replace version -> &'static str with "xyzzy"
+@@ -85,10 +85,10 @@
+ /// - `O*_U` = semantic closure of that field (from RDF graph)
+ /// - `C_U` = compiled cognition artifact (cognitive pass)
+ /// - `A_U` = admissible operations
+ /// - `R_U` = PROV receipt (proof + provenance)
+ ///
+ /// The MVP proves: phrase binding → missing evidence → blocked transition → admissible operation → receipt.
+ #[doc(hidden)]
+ pub fn version() -> &'static str {
+-    env!("CARGO_PKG_VERSION")
++    "xyzzy" /* ~ changed by cargo-mutants ~ */
+ }

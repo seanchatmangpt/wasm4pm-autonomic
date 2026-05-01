@@ -39,7 +39,10 @@ fn btreemap_to_value(m: BTreeMap<String, Value>) -> Value {
 pub fn trace_to_jsonld(trace: &CcogTrace) -> Value {
     let mut root: BTreeMap<String, Value> = BTreeMap::new();
     root.insert("@context".into(), context_value());
-    root.insert("@type".into(), Value::String("urn:ccog:vocab:CcogTrace".into()));
+    root.insert(
+        "@type".into(),
+        Value::String("urn:ccog:vocab:CcogTrace".into()),
+    );
     root.insert(
         "urn:ccog:vocab:presentMask".into(),
         Value::String(format!("0x{:016x}", trace.present_mask)),
@@ -52,9 +55,18 @@ pub fn trace_to_jsonld(trace: &CcogTrace) -> Value {
     let mut nodes: Vec<Value> = Vec::with_capacity(trace.nodes.len());
     for n in &trace.nodes {
         let mut node: BTreeMap<String, Value> = BTreeMap::new();
-        node.insert("@type".into(), Value::String("urn:ccog:vocab:BarkNodeTrace".into()));
-        node.insert("urn:ccog:vocab:slotIdx".into(), Value::String(n.slot_idx.to_string()));
-        node.insert("urn:ccog:vocab:hookId".into(), Value::String(n.hook_id.to_string()));
+        node.insert(
+            "@type".into(),
+            Value::String("urn:ccog:vocab:BarkNodeTrace".into()),
+        );
+        node.insert(
+            "urn:ccog:vocab:slotIdx".into(),
+            Value::String(n.slot_idx.to_string()),
+        );
+        node.insert(
+            "urn:ccog:vocab:hookId".into(),
+            Value::String(n.hook_id.to_string()),
+        );
         node.insert(
             "urn:ccog:vocab:requireMask".into(),
             Value::String(format!("0x{:016x}", n.require_mask)),
@@ -63,8 +75,14 @@ pub fn trace_to_jsonld(trace: &CcogTrace) -> Value {
             "urn:ccog:vocab:predecessorMask".into(),
             Value::String(format!("0x{:016x}", n.predecessor_mask)),
         );
-        node.insert("urn:ccog:vocab:triggerFired".into(), Value::Bool(n.trigger_fired));
-        node.insert("urn:ccog:vocab:checkPassed".into(), Value::Bool(n.check_passed));
+        node.insert(
+            "urn:ccog:vocab:triggerFired".into(),
+            Value::Bool(n.trigger_fired),
+        );
+        node.insert(
+            "urn:ccog:vocab:checkPassed".into(),
+            Value::Bool(n.check_passed),
+        );
         node.insert(
             "urn:ccog:vocab:actEmittedTriples".into(),
             Value::String(n.act_emitted_triples.to_string()),
@@ -76,7 +94,10 @@ pub fn trace_to_jsonld(trace: &CcogTrace) -> Value {
             );
         }
         if let Some(urn) = &n.receipt_urn {
-            node.insert("urn:ccog:vocab:receiptUrn".into(), Value::String(urn.clone()));
+            node.insert(
+                "urn:ccog:vocab:receiptUrn".into(),
+                Value::String(urn.clone()),
+            );
         }
         nodes.push(btreemap_to_value(node));
     }
@@ -100,12 +121,18 @@ fn skip_reason_token(s: BarkSkipReason) -> &'static str {
 pub fn receipt_to_jsonld(receipt: &Receipt) -> Value {
     let mut m: BTreeMap<String, Value> = BTreeMap::new();
     m.insert("@context".into(), context_value());
-    m.insert("@id".into(), Value::String(receipt.activity_iri.as_str().to_string()));
+    m.insert(
+        "@id".into(),
+        Value::String(receipt.activity_iri.as_str().to_string()),
+    );
     m.insert(
         "@type".into(),
         Value::String("http://www.w3.org/ns/prov#Activity".into()),
     );
-    m.insert("urn:ccog:vocab:hash".into(), Value::String(receipt.hash.clone()));
+    m.insert(
+        "urn:ccog:vocab:hash".into(),
+        Value::String(receipt.hash.clone()),
+    );
     m.insert(
         "urn:ccog:vocab:generatedAtTime".into(),
         Value::String(receipt.timestamp.to_rfc3339()),

@@ -1,9 +1,12 @@
-use proptest::prelude::*;
+use ccog::hooks::{
+    missing_evidence_hook, phrase_binding_hook, receipt_hook, transition_admissibility_hook,
+};
 use ccog::{FieldContext, HookRegistry};
-use ccog::hooks::{missing_evidence_hook, phrase_binding_hook,
-                  transition_admissibility_hook, receipt_hook};
+use proptest::prelude::*;
 
-fn arb_hook_idx() -> impl Strategy<Value = usize> { 0usize..4 }
+fn arb_hook_idx() -> impl Strategy<Value = usize> {
+    0usize..4
+}
 
 fn arb_ntriples() -> impl Strategy<Value = String> {
     "[a-z]{3,6}".prop_map(|s| format!(

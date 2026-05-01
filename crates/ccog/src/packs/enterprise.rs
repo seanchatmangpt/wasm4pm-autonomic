@@ -255,10 +255,7 @@ pub static BUILTINS: &[BarkSlot] = &[
 fn prov_full_activity(tag: &[u8]) -> Result<Construct8> {
     let h = blake3::hash(tag);
     let activity = format!("urn:blake3:{}", h.to_hex());
-    let informed_by = format!(
-        "urn:blake3:{}",
-        blake3::hash(b"enterprise/source").to_hex()
-    );
+    let informed_by = format!("urn:blake3:{}", blake3::hash(b"enterprise/source").to_hex());
     let used = format!(
         "urn:blake3:{}",
         blake3::hash(b"enterprise/evidence").to_hex()
@@ -271,7 +268,11 @@ fn prov_full_activity(tag: &[u8]) -> Result<Construct8> {
 
     let mut delta = Construct8::empty();
     let _ = delta.push(Triple::from_strings(&activity, rt, prov_activity));
-    let _ = delta.push(Triple::from_strings(&activity, p_was_informed_by, &informed_by));
+    let _ = delta.push(Triple::from_strings(
+        &activity,
+        p_was_informed_by,
+        &informed_by,
+    ));
     let _ = delta.push(Triple::from_strings(&activity, p_used, &used));
     Ok(delta)
 }
@@ -321,7 +322,11 @@ mod tests {
             let delta = (slot.act)(&context).expect("act");
             let nt = delta.to_ntriples();
             // prov:wasInformedBy hash (u16)
-            let h_informed = format!("{:04x}", crate::utils::dense::fnv1a_64("http://www.w3.org/ns/prov#wasInformedBy".as_bytes()) as u16);
+            let h_informed = format!(
+                "{:04x}",
+                crate::utils::dense::fnv1a_64("http://www.w3.org/ns/prov#wasInformedBy".as_bytes())
+                    as u16
+            );
             assert!(
                 nt.contains(&h_informed),
                 "enterprise slot {} missing wasInformedBy ({})",
@@ -329,7 +334,10 @@ mod tests {
                 h_informed
             );
             // prov:used hash (u16)
-            let h_used = format!("{:04x}", crate::utils::dense::fnv1a_64("http://www.w3.org/ns/prov#used".as_bytes()) as u16);
+            let h_used = format!(
+                "{:04x}",
+                crate::utils::dense::fnv1a_64("http://www.w3.org/ns/prov#used".as_bytes()) as u16
+            );
             assert!(
                 nt.contains(&h_used),
                 "enterprise slot {} missing prov:used ({})",

@@ -1,0 +1,30 @@
+--- crates/ccog/src/packs/mod.rs
++++ replace <impl std::fmt::Display for PackLoadError>::fmt -> std::fmt::Result with Ok(Default::default())
+@@ -108,26 +108,17 @@
+     /// Pack response class is outside canonical lattice.
+     InvalidResponseClass(String),
+     /// Pack contains other validation failure.
+     ValidationFailed(String),
+ }
+ 
+ impl std::fmt::Display for PackLoadError {
+     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+-        match self {
+-            PackLoadError::EmptyRules => write!(f, "pack has no rules"),
+-            PackLoadError::ManifestTamper(detail) => write!(f, "manifest tamper: {}", detail),
+-            PackLoadError::MissingOntologyProfile => write!(f, "pack missing ontology profile"),
+-            PackLoadError::PrivateOntologyTerm(iri) => {
+-                write!(f, "private ontology term not allowed: {}", iri)
+-            }
+-            PackLoadError::InvalidResponseClass(r) => write!(f, "invalid response class: {}", r),
+-            PackLoadError::ValidationFailed(detail) => write!(f, "validation failed: {}", detail),
+-        }
++        Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ impl std::error::Error for PackLoadError {}
+ 
+ /// Phase 7 K-tier mask bundle — fixed-arity, no allocations.
+ ///
+ /// K0 is the existing `(posture, expectation, risk, affordance)` four-mask

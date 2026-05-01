@@ -44,10 +44,7 @@ fn linear_plan_ready_advances_in_order() {
     rel.add_edge(ELIZA_IDX, MYCIN_IDX);
     rel.add_edge(MYCIN_IDX, STRIPS_IDX_LINEAR);
 
-    let plan = build_breed_plan(
-        &[Breed::Eliza, Breed::Mycin, Breed::Strips],
-        rel,
-    );
+    let plan = build_breed_plan(&[Breed::Eliza, Breed::Mycin, Breed::Strips], rel);
     assert!(plan.shape_match().is_ok(), "linear plan should be Sound");
 
     // Step 1 — nothing advanced.
@@ -128,11 +125,11 @@ fn cyclic_plan_rejected_with_admission_cyclic() {
     rel.add_edge(1, 2);
     rel.add_edge(2, 0);
 
-    let plan = build_breed_plan(
-        &[Breed::Eliza, Breed::Mycin, Breed::Strips],
-        rel,
+    let plan = build_breed_plan(&[Breed::Eliza, Breed::Mycin, Breed::Strips], rel);
+    assert!(
+        plan.shape_match().is_err(),
+        "cyclic plan must fail shape_match"
     );
-    assert!(plan.shape_match().is_err(), "cyclic plan must fail shape_match");
     assert_eq!(
         plan.shape_match().unwrap_err(),
         PlanAdmission::Cyclic,
@@ -160,13 +157,16 @@ fn vector_order_diverges_from_execution_order() {
     let mut p = Powl8::new();
     let b = p.push(Powl8Node::Activity(Breed::Mycin)).unwrap(); // 0
     let a = p.push(Powl8Node::Activity(Breed::Eliza)).unwrap(); // 1
-    p.push(Powl8Node::OperatorSequence { a, b }).unwrap();      // 2
+    p.push(Powl8Node::OperatorSequence { a, b }).unwrap(); // 2
     p.root = a;
 
     let compiled = p.compile().expect("compile must succeed");
     let pos_a = compiled.order.iter().position(|&x| x == a).unwrap();
     let pos_b = compiled.order.iter().position(|&x| x == b).unwrap();
-    assert!(pos_a < pos_b, "A must precede B at runtime even though A's vec idx > B's");
+    assert!(
+        pos_a < pos_b,
+        "A must precede B at runtime even though A's vec idx > B's"
+    );
 }
 
 #[test]
@@ -209,10 +209,14 @@ fn parallel_independent_no_predecessor() {
 #[test]
 fn choice_two_branches_both_admissible() {
     let mut p = Powl8::new();
-    p.push(Powl8Node::StartNode).unwrap();          // 0
+    p.push(Powl8Node::StartNode).unwrap(); // 0
     p.push(Powl8Node::Activity(Breed::Eliza)).unwrap(); // 1
     p.push(Powl8Node::Activity(Breed::Mycin)).unwrap(); // 2
-    p.push(Powl8Node::Choice { branches: [1, 2, 0, 0], len: 2 }).unwrap(); // 3
+    p.push(Powl8Node::Choice {
+        branches: [1, 2, 0, 0],
+        len: 2,
+    })
+    .unwrap(); // 3
     assert!(p.shape_match().is_ok());
     let preds = p.predecessor_masks();
     // Both branches must list the Choice node (idx 3) as predecessor.
@@ -224,7 +228,11 @@ fn choice_two_branches_both_admissible() {
 fn choice_oob_branch_index_malformed() {
     let mut p = Powl8::new();
     p.push(Powl8Node::StartNode).unwrap();
-    p.push(Powl8Node::Choice { branches: [99, 0, 0, 0], len: 1 }).unwrap();
+    p.push(Powl8Node::Choice {
+        branches: [99, 0, 0, 0],
+        len: 1,
+    })
+    .unwrap();
     assert_eq!(p.shape_match().unwrap_err(), PlanAdmission::Malformed);
 }
 
@@ -232,29 +240,43 @@ fn choice_oob_branch_index_malformed() {
 fn choice_cyclic_through_branch_is_cyclic() {
     let mut p = Powl8::new();
     p.push(Powl8Node::Activity(Breed::Eliza)).unwrap(); // 0
-    p.push(Powl8Node::Choice { branches: [0, 0, 0, 0], len: 1 }).unwrap(); // 1 → 0
-    // 0 -> 1 via OperatorSequence; 1 -> 0 via Choice → cycle.
+    p.push(Powl8Node::Choice {
+        branches: [0, 0, 0, 0],
+        len: 1,
+    })
+    .unwrap(); // 1 → 0
+               // 0 -> 1 via OperatorSequence; 1 -> 0 via Choice → cycle.
     p.push(Powl8Node::OperatorSequence { a: 0, b: 1 }).unwrap();
     let res = p.shape_match();
-    assert!(matches!(res, Err(PlanAdmission::Cyclic)),
-        "Choice → branch with reverse edge must classify as Cyclic, got {res:?}");
+    assert!(
+        matches!(res, Err(PlanAdmission::Cyclic)),
+        "Choice → branch with reverse edge must classify as Cyclic, got {res:?}"
+    );
 }
 
 #[test]
 fn choice_zero_len_is_malformed() {
     let mut p = Powl8::new();
     p.push(Powl8Node::StartNode).unwrap();
-    p.push(Powl8Node::Choice { branches: [0; 4], len: 0 }).unwrap();
+    p.push(Powl8Node::Choice {
+        branches: [0; 4],
+        len: 0,
+    })
+    .unwrap();
     assert_eq!(p.shape_match().unwrap_err(), PlanAdmission::Malformed);
 }
 
 #[test]
 fn choice_branch_selection_admissible() {
     let mut p = Powl8::new();
-    p.push(Powl8Node::StartNode).unwrap();           // 0
+    p.push(Powl8Node::StartNode).unwrap(); // 0
     p.push(Powl8Node::Activity(Breed::Eliza)).unwrap(); // 1
-    p.push(Powl8Node::Activity(Breed::Cbr)).unwrap();   // 2
-    p.push(Powl8Node::Choice { branches: [1, 2, 0, 0], len: 2 }).unwrap(); // 3
+    p.push(Powl8Node::Activity(Breed::Cbr)).unwrap(); // 2
+    p.push(Powl8Node::Choice {
+        branches: [1, 2, 0, 0],
+        len: 2,
+    })
+    .unwrap(); // 3
     let mut advanced = [false; MAX_NODES];
     advanced[0] = true;
     advanced[3] = true; // Choice itself advanced (selector chose).
@@ -270,7 +292,8 @@ fn loop_boundary_unrolls_within_cap() {
     let s = p.push(Powl8Node::StartNode).unwrap();
     p.root = s;
     let body = p.push(Powl8Node::Activity(Breed::Eliza)).unwrap();
-    p.push(Powl8Node::OperatorSequence { a: s, b: body }).unwrap();
+    p.push(Powl8Node::OperatorSequence { a: s, b: body })
+        .unwrap();
     p.push(Powl8Node::Loop { body, max_iters: 3 }).unwrap();
 
     let compiled = p.compile().expect("compile must succeed");
@@ -291,7 +314,11 @@ fn loop_exceeds_max_nodes_malformed() {
         p.push(Powl8Node::Silent).unwrap();
     }
     // Now add Loop with max_iters that would unroll past 64.
-    p.push(Powl8Node::Loop { body, max_iters: 16 }).unwrap();
+    p.push(Powl8Node::Loop {
+        body,
+        max_iters: 16,
+    })
+    .unwrap();
     match p.compile() {
         Err(PlanAdmission::Malformed) => {}
         other => panic!("expected Malformed (>64 runtime), got {other:?}"),
@@ -303,7 +330,11 @@ fn malformed_self_cycle_detected() {
     let mut p = Powl8::new();
     p.push(Powl8Node::StartNode).unwrap();
     // Loop body == self → malformed.
-    p.push(Powl8Node::Loop { body: 1, max_iters: 2 }).unwrap();
+    p.push(Powl8Node::Loop {
+        body: 1,
+        max_iters: 2,
+    })
+    .unwrap();
     assert_eq!(p.shape_match().unwrap_err(), PlanAdmission::Malformed);
 }
 
@@ -333,9 +364,14 @@ fn manual_only_activity_advances_only_on_external_signal() {
     // once an external signal arrives).
     let field = FieldContext::new("manual-only");
     let v = admit_powl8(&p, &field).unwrap();
-    assert!(v.admissible, "plan must remain admissible even when only an external signal can advance the manual node");
-    assert!(v.ready.contains(&1) || v.blocked.contains(&1),
-        "manual node 1 must be classified somewhere (ready or blocked), not omitted");
+    assert!(
+        v.admissible,
+        "plan must remain admissible even when only an external signal can advance the manual node"
+    );
+    assert!(
+        v.ready.contains(&1) || v.blocked.contains(&1),
+        "manual node 1 must be classified somewhere (ready or blocked), not omitted"
+    );
 }
 
 #[test]
@@ -347,7 +383,7 @@ fn compiled_mask_is_runtime_slot_indexed() {
     let mut p = Powl8::new();
     let b = p.push(Powl8Node::Activity(Breed::Mycin)).unwrap(); // plan idx 0
     let a = p.push(Powl8Node::Activity(Breed::Eliza)).unwrap(); // plan idx 1
-    p.push(Powl8Node::OperatorSequence { a, b }).unwrap();      // plan idx 2
+    p.push(Powl8Node::OperatorSequence { a, b }).unwrap(); // plan idx 2
     p.root = a;
     let compiled = p.compile().expect("compile must succeed");
 

@@ -5,8 +5,8 @@
 //! It implements the "Object-Centric Field Closure" logic where closure is
 //! computed per-object lifecycle.
 
-use crate::ids::NodeId;
 use crate::construct8::ObjectId;
+use crate::ids::NodeId;
 use crate::powl64::Powl64RouteCell;
 
 /// Maximum number of objects that can be bound to a single OCEL event.
@@ -49,7 +49,10 @@ impl OcelEvent {
     }
 
     /// Create an OcelEvent from a POWL64 route cell and a set of objects.
-    pub fn from_powl64(cell: &Powl64RouteCell, objects: [Option<ObjectId>; MAX_OCEL_OBJECTS]) -> Self {
+    pub fn from_powl64(
+        cell: &Powl64RouteCell,
+        objects: [Option<ObjectId>; MAX_OCEL_OBJECTS],
+    ) -> Self {
         Self {
             activity: cell.to_node,
             objects,
@@ -99,10 +102,7 @@ pub struct ObjectCentricFieldClosure<'a> {
 impl<'a> ObjectCentricFieldClosure<'a> {
     /// Creates a new closure view for a specific object.
     pub const fn new(object_id: ObjectId, log: &'a [OcelEvent]) -> Self {
-        Self {
-            object_id,
-            log,
-        }
+        Self { object_id, log }
     }
 
     /// Returns an iterator over events that belong to this object's lifecycle.
@@ -160,7 +160,7 @@ impl OcelMiningWorkspace {
         for event in log {
             let idx = (event.activity.0 % 64) as usize;
             self.frequencies[idx] += 1;
-            
+
             let mut count = 0;
             for obj in event.objects {
                 if obj.is_some() {
@@ -180,11 +180,11 @@ pub fn mine_ocel(log: &[OcelEvent], workspace: &mut OcelMiningWorkspace) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ids::NodeId;
     use crate::construct8::ObjectId;
-    use crate::powl64::{Powl64RouteCell, Polarity, ProjectionTarget, PartnerId};
-    use crate::runtime::cog8::EdgeKind;
     use crate::ids::EdgeId;
+    use crate::ids::NodeId;
+    use crate::powl64::{PartnerId, Polarity, Powl64RouteCell, ProjectionTarget};
+    use crate::runtime::cog8::EdgeKind;
 
     #[test]
     fn test_ocel_event_binding() {
@@ -192,7 +192,7 @@ mod tests {
         assert!(event.bind_object(ObjectId(10)));
         assert!(event.bind_object(ObjectId(20)));
         assert!(event.bind_object(ObjectId(30)));
-        
+
         assert!(event.has_object(ObjectId(10)));
         assert!(event.has_object(ObjectId(20)));
         assert!(event.has_object(ObjectId(30)));
@@ -203,7 +203,7 @@ mod tests {
     fn test_object_centric_closure() {
         let obj1 = ObjectId(1);
         let obj2 = ObjectId(2);
-        
+
         let log = [
             OcelEvent::new(NodeId(10), obj1, 100),
             OcelEvent::new(NodeId(20), obj2, 200),
@@ -212,15 +212,15 @@ mod tests {
                 e.bind_object(obj1);
                 e.bind_object(obj2);
                 e
-            }
+            },
         ];
-        
+
         let closure1 = ObjectCentricFieldClosure::new(obj1, &log);
         let events1: Vec<_> = closure1.events().collect();
         assert_eq!(events1.len(), 2);
         assert_eq!(events1[0].activity, NodeId(10));
         assert_eq!(events1[1].activity, NodeId(30));
-        
+
         let mask1 = closure1.activity_mask();
         assert_eq!(mask1, (1 << 10) | (1 << 30));
     }
@@ -246,7 +246,7 @@ mod tests {
 
         let mut objects = [None; 8];
         objects[0] = Some(ObjectId(500));
-        
+
         let event = OcelEvent::from_powl64(&cell, objects);
         assert_eq!(event.activity, NodeId(2));
         assert_eq!(event.chain_head, 999);

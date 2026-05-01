@@ -59,16 +59,22 @@ fn field_with_predicates(pred_bits: u8) -> FieldContext {
         nt.push_str("<http://example.org/d1> <http://www.w3.org/ns/prov#value> \"v\" .\n");
     }
     if pred_bits & 0b0000_0100 != 0 {
-        nt.push_str("<http://example.org/c1> <http://www.w3.org/2004/02/skos/core#prefLabel> \"x\" .\n");
+        nt.push_str(
+            "<http://example.org/c1> <http://www.w3.org/2004/02/skos/core#prefLabel> \"x\" .\n",
+        );
     }
     if pred_bits & 0b0000_1000 != 0 {
         nt.push_str("<http://example.org/c2> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2004/02/skos/core#Concept> .\n");
     }
     if pred_bits & 0b0001_0000 != 0 {
-        nt.push_str("<http://example.org/c3> <http://purl.org/dc/terms/type> <http://example.org/Foo> .\n");
+        nt.push_str(
+            "<http://example.org/c3> <http://purl.org/dc/terms/type> <http://example.org/Foo> .\n",
+        );
     }
     if pred_bits & 0b0010_0000 != 0 {
-        nt.push_str("<http://example.org/c4> <http://www.w3.org/2000/01/rdf-schema#label> \"y\" .\n");
+        nt.push_str(
+            "<http://example.org/c4> <http://www.w3.org/2000/01/rdf-schema#label> \"y\" .\n",
+        );
     }
     if pred_bits & 0b0100_0000 != 0 {
         nt.push_str("<http://example.org/d2> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/DigitalDocument> .\n");

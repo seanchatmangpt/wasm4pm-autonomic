@@ -41,9 +41,9 @@ use crate::field::FieldContext;
 use crate::graph::GraphIri;
 use crate::receipt::Receipt;
 use crate::runtime::ClosedFieldContext;
-use std::sync::Arc;
 use anyhow::Result;
 use chrono::Utc;
+use std::sync::Arc;
 
 /// Trigger condition for a hook to fire.
 ///
@@ -141,7 +141,10 @@ impl std::fmt::Debug for HookCheck {
                 .finish(),
             Self::Admit(_) => f.debug_tuple("Admit").field(&"<admit>").finish(),
             Self::SnapshotFn(_) => f.debug_tuple("SnapshotFn").field(&"<snap>").finish(),
-            Self::SnapshotAdmit(_) => f.debug_tuple("SnapshotAdmit").field(&"<snap-admit>").finish(),
+            Self::SnapshotAdmit(_) => f
+                .debug_tuple("SnapshotAdmit")
+                .field(&"<snap-admit>")
+                .finish(),
         }
     }
 }
@@ -538,9 +541,11 @@ fn emit_missing_evidence_delta_snap(context: &ClosedFieldContext) -> Result<Cons
             break;
         }
         if !snap.has_value_for(d, &pv) {
-            let activity =
-                format!("urn:blake3:{}", blake3::hash(d.as_str().as_bytes()).to_hex());
-            
+            let activity = format!(
+                "urn:blake3:{}",
+                blake3::hash(d.as_str().as_bytes()).to_hex()
+            );
+
             let _ = delta.push(Triple::from_strings(&activity, rt, ask_action));
             let _ = delta.push(Triple::from_strings(&activity, schema_object, d.as_str()));
             gaps_emitted += 1;
@@ -583,7 +588,11 @@ fn emit_phrase_definition_delta_snap(context: &ClosedFieldContext) -> Result<Con
         };
         let h = blake3::hash(label_str.as_bytes());
         let label_urn = format!("urn:blake3:{}", h.to_hex());
-        let _ = delta.push(Triple::from_strings(concept.as_str(), was_informed_by, &label_urn));
+        let _ = delta.push(Triple::from_strings(
+            concept.as_str(),
+            was_informed_by,
+            &label_urn,
+        ));
     }
     Ok(delta)
 }
@@ -775,7 +784,10 @@ mod tests {
 
         let snapshot = CompiledFieldSnapshot::from_field(&field)?;
         let result = evaluate_trigger(&trigger, &field, &snapshot)?;
-        assert!(!result, "SPARQL ASK trigger should not fire when query does not match");
+        assert!(
+            !result,
+            "SPARQL ASK trigger should not fire when query does not match"
+        );
 
         Ok(())
     }
@@ -793,9 +805,15 @@ mod tests {
         registry.register(hook);
 
         let outcomes = registry.fire_matching(&field)?;
-        assert!(!outcomes.is_empty(), "Hook should fire on missing prov:value");
+        assert!(
+            !outcomes.is_empty(),
+            "Hook should fire on missing prov:value"
+        );
         assert_eq!(outcomes[0].hook_name, "missing_evidence");
-        assert!(!outcomes[0].delta.is_empty(), "Delta should contain constructed triple");
+        assert!(
+            !outcomes[0].delta.is_empty(),
+            "Delta should contain constructed triple"
+        );
 
         Ok(())
     }
@@ -833,7 +851,10 @@ mod tests {
             nt
         );
         // The delta must not contain placeholder strings.
-        assert!(!nt.contains("placeholder"), "no placeholder strings in delta");
+        assert!(
+            !nt.contains("placeholder"),
+            "no placeholder strings in delta"
+        );
 
         // Apply the delta and re-check: gap must still be detectable.
         field.graph.insert_ntriples(&nt)?;
@@ -886,10 +907,17 @@ mod tests {
             .find(|o| o.hook_name == "missing_evidence")
             .expect("missing_evidence should fire");
         let nt = me.delta.to_ntriples();
-        assert!(!nt.contains("\"placeholder\""), "no fabricated placeholder: {}", nt);
-        
+        assert!(
+            !nt.contains("\"placeholder\""),
+            "no fabricated placeholder: {}",
+            nt
+        );
+
         // ask_action = https://schema.org/AskAction
-        let h_ask = format!("{:08x}", crate::utils::dense::fnv1a_64("https://schema.org/AskAction".as_bytes()) as u32);
+        let h_ask = format!(
+            "{:08x}",
+            crate::utils::dense::fnv1a_64("https://schema.org/AskAction".as_bytes()) as u32
+        );
         assert!(
             nt.contains(&h_ask),
             "must reference schema:AskAction ({}): {}",
@@ -917,9 +945,17 @@ mod tests {
             .find(|o| o.hook_name == "phrase_binding")
             .expect("phrase_binding should fire");
         let nt = pb.delta.to_ntriples();
-        assert!(!nt.contains("derived from prefLabel"), "no placeholder: {}", nt);
-        
-        let h_informed = format!("{:04x}", crate::utils::dense::fnv1a_64("http://www.w3.org/ns/prov#wasInformedBy".as_bytes()) as u16);
+        assert!(
+            !nt.contains("derived from prefLabel"),
+            "no placeholder: {}",
+            nt
+        );
+
+        let h_informed = format!(
+            "{:04x}",
+            crate::utils::dense::fnv1a_64("http://www.w3.org/ns/prov#wasInformedBy".as_bytes())
+                as u16
+        );
         assert!(
             nt.contains(&h_informed),
             "must use prov:wasInformedBy ({}): {}",
@@ -948,10 +984,16 @@ mod tests {
         // Warm path emits PROV-O provenance — never SHACL shapes on instances.
         let nt = ta.delta.to_ntriples();
         assert!(!ta.delta.is_empty(), "delta must be non-empty");
-        
-        let h_activity = format!("{:08x}", crate::utils::dense::fnv1a_64("http://www.w3.org/ns/prov#Activity".as_bytes()) as u32);
-        let h_used = format!("{:04x}", crate::utils::dense::fnv1a_64("http://www.w3.org/ns/prov#used".as_bytes()) as u16);
-        
+
+        let h_activity = format!(
+            "{:08x}",
+            crate::utils::dense::fnv1a_64("http://www.w3.org/ns/prov#Activity".as_bytes()) as u32
+        );
+        let h_used = format!(
+            "{:04x}",
+            crate::utils::dense::fnv1a_64("http://www.w3.org/ns/prov#used".as_bytes()) as u16
+        );
+
         assert!(
             nt.contains(&h_activity),
             "warm path must emit prov:Activity ({}), got:\n{}",
@@ -964,8 +1006,11 @@ mod tests {
             h_used,
             nt
         );
-        
-        let h_target = format!("{:x}", crate::utils::dense::fnv1a_64("http://www.w3.org/ns/shacl#targetClass".as_bytes()));
+
+        let h_target = format!(
+            "{:x}",
+            crate::utils::dense::fnv1a_64("http://www.w3.org/ns/shacl#targetClass".as_bytes())
+        );
         assert!(
             !nt.contains(&h_target),
             "warm path MUST NOT emit sh:targetClass ({}) on instance, got:\n{}",
@@ -1043,7 +1088,11 @@ mod tests {
         registry.register(hook);
 
         let outcomes = registry.fire_matching(&field)?;
-        assert_eq!(outcomes.len(), 1, "Always trigger should fire in fire_matching");
+        assert_eq!(
+            outcomes.len(),
+            1,
+            "Always trigger should fire in fire_matching"
+        );
         assert_eq!(outcomes[0].hook_name, "always_hook");
 
         Ok(())
@@ -1093,16 +1142,25 @@ mod tests {
 
         // fire_matching skips it
         let warm = registry.fire_matching(&field)?;
-        assert!(warm.is_empty(), "ManualOnly hook must be skipped in warm path");
+        assert!(
+            warm.is_empty(),
+            "ManualOnly hook must be skipped in warm path"
+        );
 
         // fire_one runs it
         let outcome = registry.fire_one(&field, "manual_only_invoked")?;
-        assert!(outcome.is_some(), "fire_one should invoke ManualOnly hook by name");
+        assert!(
+            outcome.is_some(),
+            "fire_one should invoke ManualOnly hook by name"
+        );
         assert_eq!(outcome.unwrap().hook_name, "manual_only_invoked");
 
         // Unknown name returns None
         let missing = registry.fire_one(&field, "no_such_hook")?;
-        assert!(missing.is_none(), "fire_one should return None for unknown hook name");
+        assert!(
+            missing.is_none(),
+            "fire_one should return None for unknown hook name"
+        );
 
         Ok(())
     }

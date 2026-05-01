@@ -128,11 +128,7 @@ impl GraphDelta {
 
     /// Treat every triple as added (used on the first tick when no prior snapshot exists).
     pub fn all_added(snapshot: &GraphSnapshot) -> Self {
-        let added: Vec<Triple> = snapshot
-            .table
-            .iter()
-            .map(|(_, _, t)| t.clone())
-            .collect();
+        let added: Vec<Triple> = snapshot.table.iter().map(|(_, _, t)| t.clone()).collect();
         Self {
             added,
             removed: Vec::new(),

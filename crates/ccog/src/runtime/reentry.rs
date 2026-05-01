@@ -90,7 +90,9 @@ fn normalize_to_outcome(triples: &[Triple]) -> ReentryOutcome {
     for triple in unique {
         if !construct.push(triple) {
             // Defensive: should be unreachable due to check above.
-            return ReentryOutcome::Cold(ColdEvidence { triples: vec![triple] });
+            return ReentryOutcome::Cold(ColdEvidence {
+                triples: vec![triple],
+            });
         }
     }
 
@@ -111,7 +113,7 @@ mod tests {
         let reentry = DefaultReentry;
         let triples = vec![make_triple(1), make_triple(2)];
         let artifact = A2AArtifact { triples };
-        
+
         let outcome = reentry.reenter(&artifact);
         match outcome {
             ReentryOutcome::Hot(delta) => assert_eq!(delta.len(), 2),
@@ -127,7 +129,7 @@ mod tests {
             triples.push(make_triple(i));
         }
         let artifact = A2AArtifact { triples };
-        
+
         let outcome = reentry.reenter(&artifact);
         match outcome {
             ReentryOutcome::Cold(evidence) => assert_eq!(evidence.triples.len(), 9),
@@ -140,7 +142,7 @@ mod tests {
         let reentry = DefaultReentry;
         let triples = vec![make_triple(1), make_triple(1), make_triple(1)];
         let artifact = A2AArtifact { triples };
-        
+
         let outcome = reentry.reenter(&artifact);
         match outcome {
             ReentryOutcome::Hot(delta) => assert_eq!(delta.len(), 1),

@@ -1,0 +1,21 @@
+--- crates/ccog/src/packs/mod.rs
++++ replace + with - in validate
+@@ -372,17 +372,17 @@
+                     "overlapping bit requirements between `{}` and `{}` with conflicting responses",
+                     r1.id, r2.id
+                 )));
+             }
+         }
+     }
+     // 2. Validate group ids unique and ranks distinct.
+     for (i, g1) in pack.groups.iter().enumerate() {
+-        for g2 in pack.groups.iter().skip(i + 1) {
++        for g2 in pack.groups.iter().skip(i - /* ~ changed by cargo-mutants ~ */ 1) {
+             if g1.id == g2.id {
+                 return Err(PackLoadError::ValidationFailed(format!(
+                     "duplicate group id: {}",
+                     g1.id
+                 )));
+             }
+             if g1.precedence_rank == g2.precedence_rank {
+                 return Err(PackLoadError::ValidationFailed(format!(

@@ -210,7 +210,11 @@ fn zero_by_cog8_unsatisfied_guard() {
 
     // present has the bit, but guard_mask in edge prevents execution.
     let d = execute_cog8(&nodes, &edges, &context, 0).expect("execute");
-    assert_eq!(d.response, Instinct::Ignore, "unsatisfied guard mask yields Ignore (Zero)");
+    assert_eq!(
+        d.response,
+        Instinct::Ignore,
+        "unsatisfied guard mask yields Ignore (Zero)"
+    );
 }
 
 #[test]
@@ -256,5 +260,9 @@ fn zero_by_cog8_missing_required_bit() {
 
     // present is empty → required bit 0 is missing.
     let d = execute_cog8(&nodes, &edges, &context, 0).expect("execute");
-    assert_eq!(d.response, Instinct::Ignore, "missing required bit yields Ignore (Zero)");
+    assert_eq!(
+        d.response,
+        Instinct::Ignore,
+        "missing required bit yields Ignore (Zero)"
+    );
 }

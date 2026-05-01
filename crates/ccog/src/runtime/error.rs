@@ -1,5 +1,5 @@
+use crate::ids::{EdgeId, NodeId};
 use thiserror::Error;
-use crate::ids::{NodeId, EdgeId};
 
 /// Internal runtime errors with 'compiler-grade' diagnostics.
 #[derive(Error, Debug)]

@@ -1,0 +1,21 @@
+--- crates/ccog/src/packs/mod.rs
++++ replace cold_intern -> &'static str with "xyzzy"
+@@ -191,17 +191,17 @@
+ /// Internal helper for promoting a dynamic `String` identifier to a
+ /// `&'static str` by leaking it.
+ ///
+ /// **WARNING:** Only call this during load-time configuration. Leaking
+ /// in the hot path is a memory-exhaustion vulnerability.
+ #[inline]
+ #[must_use]
+ pub fn cold_intern(s: &str) -> &'static str {
+-    Box::leak(s.to_string().into_boxed_str())
++    "xyzzy" /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// Declarative precedence group of rules. Groups are evaluated in
+ /// ascending [`LoadedRuleGroup::precedence_rank`] order; the first
+ /// matching rule wins. Groups are how Lifestyle fields express
+ /// `Safety > Evidence > Capacity > Meaning > Routine` without a
+ /// hard-coded ladder in code.
+ #[derive(Clone, Debug, PartialEq, Eq)]

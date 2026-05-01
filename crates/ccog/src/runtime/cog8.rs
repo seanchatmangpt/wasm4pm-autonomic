@@ -13,7 +13,9 @@ pub use crate::ids::*;
 
 /// Canonical response class.
 #[repr(u8)]
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+#[derive(
+    Clone, Copy, Debug, Default, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize,
+)]
 pub enum Instinct {
     /// Known harmless event — return to baseline.
     Settle = 0,

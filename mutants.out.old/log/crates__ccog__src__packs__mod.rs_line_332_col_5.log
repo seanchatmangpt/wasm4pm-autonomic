@@ -1,0 +1,245 @@
+
+*** crates/ccog/src/packs/mod.rs:332:5: replace compute_manifest_digest -> blake3::Hash with Default::default()
+
+*** mutation diff:
+--- crates/ccog/src/packs/mod.rs
++++ replace compute_manifest_digest -> blake3::Hash with Default::default()
+@@ -324,30 +324,17 @@
+ /// The digest covers the pack name, ontology profile, and rules table.
+ /// This is used for tamper detection at the `ainst` -> `ccog` boundary.
+ #[must_use]
+ pub fn compute_manifest_digest(
+     name: &str,
+     ontology_profile: &[String],
+     rules: &[(String, String)],
+ ) -> blake3::Hash {
+-    let mut hasher = blake3::Hasher::new();
+-    hasher.update(name.as_bytes());
+-    hasher.update(b"\0");
+-    for iri in ontology_profile {
+-        hasher.update(iri.as_bytes());
+-        hasher.update(b"\0");
+-    }
+-    for (ctx, resp) in rules {
+-        hasher.update(ctx.as_bytes());
+-        hasher.update(b"\0");
+-        hasher.update(resp.as_bytes());
+-        hasher.update(b"\0");
+-    }
+-    hasher.finalize()
++    Default::default() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// Validate a [`LoadedFieldPack`]'s mask rules.
+ ///
+ /// A pack is rejected when:
+ /// - Two rules share an `id` (duplicate identity).
+ /// - Two rules have a non-zero bit intersection across any dimension
+ ///   (posture, expectation, risk, affordance) AND declare conflicting
+
+
+*** /Users/sac/.rustup/toolchains/nightly-2026-04-15-aarch64-apple-darwin/bin/cargo test --no-run --verbose --package=ccog@0.1.0
+       Fresh unicode-ident v1.0.24
+       Fresh cfg-if v1.0.4
+       Fresh version_check v0.9.5
+       Fresh typenum v1.20.0
+       Fresh memchr v2.8.0
+       Fresh find-msvc-tools v0.1.9
+       Fresh shlex v1.3.0
+       Fresh once_cell v1.21.4
+       Fresh hex v0.4.3
+       Fresh libc v0.2.185
+       Fresh oxiri v0.2.11
+       Fresh oxilangtag v0.1.5
+       Fresh regex-syntax v0.8.10
+       Fresh aho-corasick v1.1.4
+       Fresh autocfg v1.5.0
+       Fresh bitflags v2.11.1
+       Fresh proc-macro2 v1.0.106
+       Fresh serde_core v1.0.228
+       Fresh getrandom v0.3.4
+       Fresh jobserver v0.1.34
+       Fresh cpufeatures v0.2.17
+       Fresh regex-automata v0.4.14
+       Fresh errno v0.3.14
+       Fresh pkg-config v0.3.33
+       Fresh fnv v1.0.7
+       Fresh quick-xml v0.37.5
+       Fresh peg-runtime v0.8.5
+       Fresh quote v1.0.45
+       Fresh generic-array v0.14.7
+       Fresh rand_core v0.9.5
+       Fresh cc v1.2.60
+       Fresh crossbeam-utils v0.8.21
+       Fresh rustix v1.1.4
+       Fresh json-event-parser v0.2.3
+       Fresh ident_case v1.0.1
+       Fresh semver v1.0.28
+       Fresh itoa v1.0.18
+       Fresh regex v1.12.3
+       Fresh syn v2.0.117
+       Fresh block-buffer v0.10.4
+       Fresh crypto-common v0.1.7
+       Fresh num-traits v0.2.19
+       Fresh peg-macros v0.8.5
+       Fresh zmij v1.0.21
+       Fresh rustc_version v0.4.1
+       Fresh crossbeam-epoch v0.9.18
+       Fresh getrandom v0.2.17
+       Fresh tracing-core v0.1.36
+       Fresh ryu-js v1.0.2
+       Fresh zerocopy-derive v0.8.48
+       Fresh digest v0.10.7
+       Fresh serde_derive v1.0.228
+       Fresh thiserror-impl v2.0.18
+       Fresh peg v0.8.5
+       Fresh serde_json v1.0.149
+       Fresh rustversion v1.0.22
+       Fresh getrandom v0.4.2
+       Fresh darling_core v0.20.11
+       Fresh fastrand v2.4.1
+       Fresh either v1.15.0
+       Fresh log v0.4.29
+       Fresh core-foundation-sys v0.8.7
+       Fresh scopeguard v1.2.0
+       Fresh zerocopy v0.8.48
+       Fresh serde v1.0.228
+       Fresh thiserror v2.0.18
+       Fresh sha2 v0.10.9
+       Fresh darling_macro v0.20.11
+       Fresh iana-time-zone v0.1.65
+       Fresh md-5 v0.10.6
+       Fresh tempfile v3.27.0
+       Fresh sha1 v0.10.6
+       Fresh zstd-sys v2.0.16+zstd.1.5.7
+       Fresh lock_api v0.4.14
+       Fresh crossbeam-deque v0.8.6
+       Fresh rand_core v0.6.4
+       Fresh ppv-lite86 v0.2.21
+       Fresh oxsdatatypes v0.2.2
+       Fresh smallvec v1.15.1
+       Fresh half v2.7.1
+       Fresh rustc-hash v2.1.2
+       Fresh pin-project-lite v0.2.17
+       Fresh anstyle v1.0.14
+       Fresh winnow v1.0.2
+       Fresh plotters-backend v0.3.7
+       Fresh lazy_static v1.5.0
+       Fresh clap_lex v1.1.0
+       Fresh hashbrown v0.14.5
+       Fresh ciborium-io v0.2.2
+       Fresh rand_chacha v0.9.0
+       Fresh parking_lot_core v0.9.12
+       Fresh clap_builder v4.6.0
+       Fresh ciborium-ll v0.2.2
+       Fresh sharded-slab v0.1.7
+       Fresh tracing v0.1.44
+       Fresh rand_chacha v0.3.1
+       Fresh toml_parser v1.1.2+spec-1.1.0
+       Fresh plotters-svg v0.3.7
+       Fresh rayon-core v1.13.0
+       Fresh zstd-safe v7.2.4
+       Fresh darling v0.20.11
+       Fresh rand v0.9.4
+       Fresh dashmap v6.1.0
+       Fresh chrono v0.4.44
+       Fresh cobs v0.3.0
+       Fresh itertools v0.10.5
+       Fresh tracing-log v0.2.0
+       Fresh thiserror-impl v1.0.69
+       Fresh xattr v1.6.1
+       Fresh serde_spanned v1.1.1
+       Fresh toml_datetime v1.1.1+spec-1.1.0
+       Fresh matchers v0.2.0
+       Fresh filetime v0.2.27
+       Fresh wait-timeout v0.2.1
+       Fresh thread_local v1.1.9
+       Fresh toml_writer v1.1.1+spec-1.1.0
+       Fresh zeroize v1.8.2
+       Fresh quick-error v1.2.3
+       Fresh oxrdf v0.3.3
+       Fresh arrayvec v0.7.6
+       Fresh bit-vec v0.8.0
+       Fresh signature v2.2.0
+       Fresh same-file v1.0.6
+       Fresh hashbrown v0.17.0
+       Fresh arrayref v0.3.9
+       Fresh subtle v2.6.1
+       Fresh equivalent v1.0.2
+       Fresh cast v0.3.0
+       Fresh constant_time_eq v0.4.2
+       Fresh nu-ansi-term v0.50.3
+       Fresh siphasher v1.0.2
+       Fresh rusty-fork v0.3.1
+       Fresh tar v0.4.45
+       Fresh thiserror v1.0.69
+       Fresh postcard v1.1.3
+       Fresh spargebra v0.4.6
+       Fresh oxrdfxml v0.2.3
+       Fresh sparesults v0.3.3
+       Fresh oxjsonld v0.2.5
+       Fresh oxttl v0.2.3
+       Fresh bit-set v0.8.0
+       Fresh ed25519 v2.2.3
+       Fresh walkdir v2.5.0
+       Fresh indexmap v2.14.0
+       Fresh curve25519-dalek v4.1.3
+       Fresh blake3 v1.8.4
+       Fresh criterion-plot v0.5.0
+       Fresh tracing-subscriber v0.3.23
+       Fresh toml v1.1.2+spec-1.1.0
+       Fresh rayon v1.12.0
+       Fresh rand v0.8.6
+       Fresh target-triple v1.0.0
+       Fresh sparopt v0.3.6
+       Fresh oxrdfio v0.2.5
+       Fresh ciborium v0.2.2
+       Fresh zstd v0.13.3
+       Fresh clap v4.6.1
+       Fresh plotters v0.3.7
+       Fresh dummy v0.8.0
+       Fresh anyhow v1.0.102
+       Fresh generator v0.8.8
+       Fresh tinytemplate v1.2.1
+       Fresh rand_xorshift v0.4.0
+       Fresh is-terminal v0.4.17
+       Fresh console v0.16.3
+       Fresh oorandom v11.1.5
+       Fresh termcolor v1.4.1
+       Fresh deunicode v1.6.2
+       Fresh anes v0.1.6
+       Fresh spareval v0.2.6
+       Fresh similar v2.7.0
+       Fresh unarray v0.1.4
+       Fresh scoped-tls v1.0.1
+       Fresh glob v0.3.3
+       Fresh fake v2.10.0
+       Fresh criterion v0.5.1
+       Fresh ed25519-dalek v2.2.0
+       Fresh oxigraph v0.5.8
+       Fresh trybuild v1.0.116
+       Fresh proptest v1.11.0
+       Fresh insta v1.47.2
+       Fresh loom v0.7.2
+       Dirty ccog v0.1.0 (/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/crates/ccog): the file `crates/ccog/src/packs/mod.rs` has changed (1777658814.003697798s, 9s after last build at 1777658805.287071357s)
+   Compiling ccog v0.1.0 (/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/crates/ccog)
+     Running `/Users/sac/.rustup/toolchains/nightly-2026-04-15-aarch64-apple-darwin/bin/rustc --crate-name ccog --edition=2021 crates/ccog/src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --warn=unexpected_cfgs --check-cfg 'cfg(kani)' --test --cfg 'feature="default"' --cfg 'feature="nightly"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("default", "dendral-cli", "nightly", "phase7", "transparency"))' -C metadata=5bd7781d33137c40 -C extra-filename=-2c3686441a445efb --out-dir /Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps -C incremental=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/incremental -L dependency=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps --extern anyhow=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libanyhow-aff6f3e0116cccfd.rlib --extern blake3=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libblake3-4f0149d32871b2bb.rlib --extern chrono=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libchrono-d56374dc65014386.rlib --extern criterion=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libcriterion-1844379568b6fb99.rlib --extern ed25519_dalek=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libed25519_dalek-6edaec6f8f733580.rlib --extern fake=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libfake-220a3a31afce4a93.rlib --extern indexmap=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libindexmap-8f6d6688a7ff8118.rlib --extern insta=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libinsta-5e144c527fd86885.rlib --extern loom=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libloom-d31fc1d6cdf3a57f.rlib --extern oxigraph=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/liboxigraph-53b66421d59d8cb1.rlib --extern postcard=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libpostcard-680151f9b81c2831.rlib --extern proptest=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libproptest-9165d43d45711efe.rlib --extern rand=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/librand-4b0ddd3fc83f19e9.rlib --extern serde=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde-140d582b280e1dae.rlib --extern serde_json=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde_json-f2799c6c5333a109.rlib --extern smallvec=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libsmallvec-779b396a54a70ff8.rlib --extern tar=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtar-038da34c6b7041bb.rlib --extern thiserror=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libthiserror-0e007d25e7592466.rlib --extern trybuild=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtrybuild-aa30eb16f8ddc8b9.rlib --extern zstd=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libzstd-46a6e1a3f1a5502a.rlib -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/blake3-84e40adff58301cc/out -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/zstd-sys-6fb87390c04c8ffc/out`
+     Running `/Users/sac/.rustup/toolchains/nightly-2026-04-15-aarch64-apple-darwin/bin/rustc --crate-name ccog --edition=2021 crates/ccog/src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type lib --emit=dep-info,metadata,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --warn=unexpected_cfgs --check-cfg 'cfg(kani)' --cfg 'feature="default"' --cfg 'feature="nightly"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("default", "dendral-cli", "nightly", "phase7", "transparency"))' -C metadata=e6122a5d3fb7a13a -C extra-filename=-0889369a51ab47fe --out-dir /Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps -C incremental=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/incremental -L dependency=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps --extern anyhow=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libanyhow-aff6f3e0116cccfd.rmeta --extern blake3=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libblake3-4f0149d32871b2bb.rmeta --extern chrono=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libchrono-d56374dc65014386.rmeta --extern indexmap=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libindexmap-8f6d6688a7ff8118.rmeta --extern oxigraph=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/liboxigraph-53b66421d59d8cb1.rmeta --extern postcard=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libpostcard-680151f9b81c2831.rmeta --extern serde=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde-140d582b280e1dae.rmeta --extern serde_json=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde_json-f2799c6c5333a109.rmeta --extern smallvec=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libsmallvec-779b396a54a70ff8.rmeta --extern tar=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtar-038da34c6b7041bb.rmeta --extern thiserror=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libthiserror-0e007d25e7592466.rmeta --extern zstd=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libzstd-46a6e1a3f1a5502a.rmeta -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/blake3-84e40adff58301cc/out -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/zstd-sys-6fb87390c04c8ffc/out`
+error[E0277]: the trait bound `blake3::Hash: Default` is not satisfied
+   --> crates/ccog/src/packs/mod.rs:332:5
+    |
+332 |     Default::default() /* ~ changed by cargo-mutants ~ */
+    |     ^^^^^^^^^^^^^^^^^^ the trait `Default` is not implemented for `blake3::Hash`
+
+For more information about this error, try `rustc --explain E0277`.
+error: could not compile `ccog` (lib) due to 1 previous error
+
+Caused by:
+  process didn't exit successfully: `/Users/sac/.rustup/toolchains/nightly-2026-04-15-aarch64-apple-darwin/bin/rustc --crate-name ccog --edition=2021 crates/ccog/src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type lib --emit=dep-info,metadata,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --warn=unexpected_cfgs --check-cfg 'cfg(kani)' --cfg 'feature="default"' --cfg 'feature="nightly"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("default", "dendral-cli", "nightly", "phase7", "transparency"))' -C metadata=e6122a5d3fb7a13a -C extra-filename=-0889369a51ab47fe --out-dir /Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps -C incremental=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/incremental -L dependency=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps --extern anyhow=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libanyhow-aff6f3e0116cccfd.rmeta --extern blake3=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libblake3-4f0149d32871b2bb.rmeta --extern chrono=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libchrono-d56374dc65014386.rmeta --extern indexmap=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libindexmap-8f6d6688a7ff8118.rmeta --extern oxigraph=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/liboxigraph-53b66421d59d8cb1.rmeta --extern postcard=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libpostcard-680151f9b81c2831.rmeta --extern serde=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde-140d582b280e1dae.rmeta --extern serde_json=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde_json-f2799c6c5333a109.rmeta --extern smallvec=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libsmallvec-779b396a54a70ff8.rmeta --extern tar=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtar-038da34c6b7041bb.rmeta --extern thiserror=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libthiserror-0e007d25e7592466.rmeta --extern zstd=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libzstd-46a6e1a3f1a5502a.rmeta -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/blake3-84e40adff58301cc/out -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/zstd-sys-6fb87390c04c8ffc/out` (exit status: 1)
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `ccog` (lib test) due to 1 previous error
+
+Caused by:
+  process didn't exit successfully: `/Users/sac/.rustup/toolchains/nightly-2026-04-15-aarch64-apple-darwin/bin/rustc --crate-name ccog --edition=2021 crates/ccog/src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --warn=unexpected_cfgs --check-cfg 'cfg(kani)' --test --cfg 'feature="default"' --cfg 'feature="nightly"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("default", "dendral-cli", "nightly", "phase7", "transparency"))' -C metadata=5bd7781d33137c40 -C extra-filename=-2c3686441a445efb --out-dir /Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps -C incremental=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/incremental -L dependency=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps --extern anyhow=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libanyhow-aff6f3e0116cccfd.rlib --extern blake3=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libblake3-4f0149d32871b2bb.rlib --extern chrono=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libchrono-d56374dc65014386.rlib --extern criterion=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libcriterion-1844379568b6fb99.rlib --extern ed25519_dalek=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libed25519_dalek-6edaec6f8f733580.rlib --extern fake=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libfake-220a3a31afce4a93.rlib --extern indexmap=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libindexmap-8f6d6688a7ff8118.rlib --extern insta=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libinsta-5e144c527fd86885.rlib --extern loom=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libloom-d31fc1d6cdf3a57f.rlib --extern oxigraph=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/liboxigraph-53b66421d59d8cb1.rlib --extern postcard=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libpostcard-680151f9b81c2831.rlib --extern proptest=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libproptest-9165d43d45711efe.rlib --extern rand=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/librand-4b0ddd3fc83f19e9.rlib --extern serde=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde-140d582b280e1dae.rlib --extern serde_json=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde_json-f2799c6c5333a109.rlib --extern smallvec=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libsmallvec-779b396a54a70ff8.rlib --extern tar=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtar-038da34c6b7041bb.rlib --extern thiserror=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libthiserror-0e007d25e7592466.rlib --extern trybuild=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtrybuild-aa30eb16f8ddc8b9.rlib --extern zstd=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libzstd-46a6e1a3f1a5502a.rlib -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/blake3-84e40adff58301cc/out -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/zstd-sys-6fb87390c04c8ffc/out` (exit status: 1)
+
+*** result: Failure(101)

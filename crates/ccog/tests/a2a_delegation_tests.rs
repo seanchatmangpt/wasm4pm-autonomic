@@ -1,10 +1,12 @@
-use ccog::runtime::mcp::{MCPProjectionTable, ProjectionRule, ToolCallTemplate, ToolId, ExpectedResultType, EffectPolicy};
-use ccog::runtime::cog8::{Cog8Decision, Instinct};
 use ccog::compiled::CompiledFieldSnapshot;
 use ccog::field::FieldContext;
-use ccog::runtime::ClosedFieldContext;
-use ccog::multimodal::{PostureBundle, ContextBundle};
+use ccog::multimodal::{ContextBundle, PostureBundle};
 use ccog::packs::TierMasks;
+use ccog::runtime::cog8::{Cog8Decision, Instinct};
+use ccog::runtime::mcp::{
+    EffectPolicy, ExpectedResultType, MCPProjectionTable, ProjectionRule, ToolCallTemplate, ToolId,
+};
+use ccog::runtime::ClosedFieldContext;
 use std::sync::Arc;
 
 fn empty_context(snap: Arc<CompiledFieldSnapshot>) -> ClosedFieldContext {
@@ -17,18 +19,16 @@ fn empty_context(snap: Arc<CompiledFieldSnapshot>) -> ClosedFieldContext {
     }
 }
 
-static DELEGATION_RULES: [ProjectionRule; 1] = [
-    ProjectionRule {
-        trigger_instinct: Instinct::Escalate,
-        collapse_fn: Some(ccog::ids::CollapseFn::ExpertRule),
-        template: ToolCallTemplate {
-            tool_id: ToolId(101), // mcp:tool:delegate_to_agent
-            expected_result_type: ExpectedResultType::Construct8,
-            effect_policy: EffectPolicy::Write,
-            required_vars: 0x0,
-        },
-    }
-];
+static DELEGATION_RULES: [ProjectionRule; 1] = [ProjectionRule {
+    trigger_instinct: Instinct::Escalate,
+    collapse_fn: Some(ccog::ids::CollapseFn::ExpertRule),
+    template: ToolCallTemplate {
+        tool_id: ToolId(101), // mcp:tool:delegate_to_agent
+        expected_result_type: ExpectedResultType::Construct8,
+        effect_policy: EffectPolicy::Write,
+        required_vars: 0x0,
+    },
+}];
 
 /// A2A Delegation Test:
 /// Tests the pattern where a decision to Escalate is projected into an MCP
@@ -50,7 +50,9 @@ fn test_a2a_delegation_via_mcp_projection() {
     let snap = CompiledFieldSnapshot::from_field(&field).unwrap();
     let context = empty_context(std::sync::Arc::new(snap.clone()));
 
-    let call = table.project(&decision, &context).expect("Escalate should project to delegation call");
+    let call = table
+        .project(&decision, &context)
+        .expect("Escalate should project to delegation call");
     assert_eq!(call.tool_id, ToolId(101));
 }
 
@@ -74,10 +76,10 @@ static MULTI_DELEGATION_RULES: [ProjectionRule; 2] = [
             effect_policy: EffectPolicy::Read,
             required_vars: 0x0,
         },
-    }
+    },
 ];
 
-/// Metamorphic Invariant: 
+/// Metamorphic Invariant:
 /// Adding unrelated rules to the projection table should not change the delegation outcome.
 #[test]
 fn test_a2a_delegation_metamorphic_invariant() {

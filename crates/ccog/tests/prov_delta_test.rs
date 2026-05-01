@@ -3,7 +3,7 @@
 //! Tests that the ccog process correctly materializes PROV-O triples
 //! when processing phrases through the field context.
 
-use ccog::{FieldContext, process};
+use ccog::{process, FieldContext};
 
 /// Field state fixture with PROV-compatible ontology.
 ///
@@ -24,13 +24,22 @@ const NT_PROV_FIELD: &str = r#"
 #[test]
 fn prov_delta_materializes_activity_triples() {
     let mut field = FieldContext::new("claims-prov");
-    field.load_field_state(NT_PROV_FIELD).expect("Failed to load field state");
+    field
+        .load_field_state(NT_PROV_FIELD)
+        .expect("Failed to load field state");
 
     let verdict = process("The photo evidence is missing", &mut field).expect("process() failed");
 
     // Assert: graph contains prov:Activity (hashed URN)
-    let h_act = format!("urn:ccog:id:{:08x}", ccog::utils::dense::fnv1a_64("http://www.w3.org/ns/prov#Activity".as_bytes()) as u32);
-    let h_rt = format!("urn:ccog:p:{:04x}", ccog::utils::dense::fnv1a_64("http://www.w3.org/1999/02/22-rdf-syntax-ns#type".as_bytes()) as u16);
+    let h_act = format!(
+        "urn:ccog:id:{:08x}",
+        ccog::utils::dense::fnv1a_64("http://www.w3.org/ns/prov#Activity".as_bytes()) as u32
+    );
+    let h_rt = format!(
+        "urn:ccog:p:{:04x}",
+        ccog::utils::dense::fnv1a_64("http://www.w3.org/1999/02/22-rdf-syntax-ns#type".as_bytes())
+            as u16
+    );
     let query = format!("ASK {{ ?a <{}> <{}> }}", h_rt, h_act);
     let has_activity = field.graph.ask(&query).expect("ASK failed");
     assert!(
@@ -39,9 +48,10 @@ fn prov_delta_materializes_activity_triples() {
     );
 
     // Assert: no http://ccog: namespace (URNs are OK)
-    let has_ccog_http = field.graph.ask(
-        "ASK { ?s ?p ?o . FILTER(STRSTARTS(STR(?s), 'http://ccog')) }"
-    ).expect("ASK namespace check failed");
+    let has_ccog_http = field
+        .graph
+        .ask("ASK { ?s ?p ?o . FILTER(STRSTARTS(STR(?s), 'http://ccog')) }")
+        .expect("ASK namespace check failed");
     assert!(
         !has_ccog_http,
         "No http://ccog: IRIs allowed; only urn: scheme"
@@ -63,19 +73,25 @@ fn prov_delta_materializes_activity_triples() {
 #[test]
 fn prov_delta_is_idempotent() {
     let mut field = FieldContext::new("claims-prov-idem");
-    field.load_field_state(NT_PROV_FIELD).expect("Failed to load");
+    field
+        .load_field_state(NT_PROV_FIELD)
+        .expect("Failed to load");
 
     process("The photo evidence is missing", &mut field).expect("First process() failed");
     process("The photo evidence is missing", &mut field).expect("Second process() failed");
 
     // Count activities — should be exactly 1 (Oxigraph set semantics)
-    let h_act = format!("urn:ccog:id:{:08x}", ccog::utils::dense::fnv1a_64("http://www.w3.org/ns/prov#Activity".as_bytes()) as u32);
-    let h_rt = format!("urn:ccog:p:{:04x}", ccog::utils::dense::fnv1a_64("http://www.w3.org/1999/02/22-rdf-syntax-ns#type".as_bytes()) as u16);
+    let h_act = format!(
+        "urn:ccog:id:{:08x}",
+        ccog::utils::dense::fnv1a_64("http://www.w3.org/ns/prov#Activity".as_bytes()) as u32
+    );
+    let h_rt = format!(
+        "urn:ccog:p:{:04x}",
+        ccog::utils::dense::fnv1a_64("http://www.w3.org/1999/02/22-rdf-syntax-ns#type".as_bytes())
+            as u16
+    );
     let query = format!("SELECT ?a WHERE {{ ?a <{}> <{}> }}", h_rt, h_act);
-    let rows = field
-        .graph
-        .select(&query)
-        .expect("SELECT failed");
+    let rows = field.graph.select(&query).expect("SELECT failed");
     assert_eq!(
         rows.len(),
         1,

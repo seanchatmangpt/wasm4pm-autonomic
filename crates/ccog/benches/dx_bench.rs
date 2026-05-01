@@ -1,12 +1,12 @@
 use ccog::compiled::CompiledFieldSnapshot;
 use ccog::field::FieldContext;
-use ccog::hooks::{KnowledgeHook, HookTrigger, HookCheck, HookAct};
-use ccog::runtime::ClosedFieldContext;
-use ccog::packs::TierMasks;
+use ccog::hooks::{HookAct, HookCheck, HookTrigger, KnowledgeHook};
 use ccog::multimodal::{ContextBundle, PostureBundle};
-use ccog::{BarkKernel, compile_builtin, Construct8};
-use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
-use oxigraph::model::{NamedNode, Triple, Term};
+use ccog::packs::TierMasks;
+use ccog::runtime::ClosedFieldContext;
+use ccog::{compile_builtin, BarkKernel, Construct8};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+use oxigraph::model::{NamedNode, Term, Triple};
 
 use std::sync::Arc;
 
@@ -82,7 +82,7 @@ fn bench_baseline_comparison(c: &mut Criterion) {
     let context = empty_context(Arc::new(snap));
 
     let target_type = NamedNode::new("http://example.org/TargetType").unwrap();
-    
+
     // Create a simple hook: if TargetType is present, return empty delta.
     let hook = KnowledgeHook {
         name: "baseline_hook",

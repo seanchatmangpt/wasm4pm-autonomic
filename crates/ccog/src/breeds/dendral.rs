@@ -1,12 +1,12 @@
 //! DENDRAL breed: backward PROV walk from an entity through generating activities.
 
+use crate::field::FieldContext;
+use crate::graph::GraphIri;
+use crate::utils::dense::{fnv1a_64, PackedKeyTable};
+use crate::verdict::{ProvenanceChain, ProvenanceStep};
 use anyhow::Result;
 use oxigraph::model::NamedNode;
 use std::collections::HashSet;
-use crate::utils::dense::{fnv1a_64, PackedKeyTable};
-use crate::field::FieldContext;
-use crate::graph::GraphIri;
-use crate::verdict::{ProvenanceChain, ProvenanceStep};
 
 const MAX_DEPTH: usize = 8;
 
@@ -17,16 +17,25 @@ pub fn reconstruct_chain(entity_iri: &GraphIri, field: &FieldContext) -> Result<
     let prov_used = NamedNode::new("http://www.w3.org/ns/prov#used")?;
 
     // Numeric equivalents (Phase 6/v0.8)
-    let h_gen = format!("urn:ccog:p:{:04x}", crate::utils::dense::fnv1a_64("http://www.w3.org/ns/prov#wasGeneratedBy".as_bytes()) as u16);
+    let h_gen = format!(
+        "urn:ccog:p:{:04x}",
+        crate::utils::dense::fnv1a_64("http://www.w3.org/ns/prov#wasGeneratedBy".as_bytes()) as u16
+    );
     let p_gen_num = NamedNode::new(&h_gen)?;
-    let h_used = format!("urn:ccog:p:{:04x}", crate::utils::dense::fnv1a_64("http://www.w3.org/ns/prov#used".as_bytes()) as u16);
+    let h_used = format!(
+        "urn:ccog:p:{:04x}",
+        crate::utils::dense::fnv1a_64("http://www.w3.org/ns/prov#used".as_bytes()) as u16
+    );
     let p_used_num = NamedNode::new(&h_used)?;
 
     let mut steps: Vec<ProvenanceStep> = Vec::new();
     let mut frontier: Vec<NamedNode> = vec![entity_iri.0.clone()];
-    
+
     // Also add the hashed URN equivalent to the frontier
-    let h_ent = format!("urn:ccog:id:{:08x}", crate::utils::dense::fnv1a_64(entity_iri.as_str().as_bytes()) as u32);
+    let h_ent = format!(
+        "urn:ccog:id:{:08x}",
+        crate::utils::dense::fnv1a_64(entity_iri.as_str().as_bytes()) as u32
+    );
     if let Ok(bn) = NamedNode::new(&h_ent) {
         frontier.push(bn);
     }
@@ -42,7 +51,8 @@ pub fn reconstruct_chain(entity_iri: &GraphIri, field: &FieldContext) -> Result<
             activities.sort_by(|a, b| a.as_str().cmp(b.as_str()));
             activities.dedup();
 
-            let mut by_activity: PackedKeyTable<String, (NamedNode, Vec<NamedNode>)> = PackedKeyTable::new();
+            let mut by_activity: PackedKeyTable<String, (NamedNode, Vec<NamedNode>)> =
+                PackedKeyTable::new();
             for act in activities {
                 let mut inputs = field.graph.objects_of(&act, &prov_used)?;
                 inputs.extend(field.graph.objects_of(&act, &p_used_num)?);
@@ -59,7 +69,8 @@ pub fn reconstruct_chain(entity_iri: &GraphIri, field: &FieldContext) -> Result<
                         next_frontier.push(inp.clone());
                     }
                 }
-                let inputs_wrapped: Vec<GraphIri> = inputs.iter().map(|n| GraphIri(n.clone())).collect();
+                let inputs_wrapped: Vec<GraphIri> =
+                    inputs.iter().map(|n| GraphIri(n.clone())).collect();
                 steps.push(ProvenanceStep {
                     activity: GraphIri(activity.clone()),
                     inputs: inputs_wrapped,

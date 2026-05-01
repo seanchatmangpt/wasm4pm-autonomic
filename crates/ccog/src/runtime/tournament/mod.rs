@@ -13,12 +13,12 @@ pub use cold_arena::ColdEvidenceArena;
 pub use l1_arena::L1ReflexArena;
 pub use l2_arena::L2WorkingSkillArena;
 
-use crate::runtime::self_play::{CcogEnvironment, CcogCritic, CcogCounterfactual, ScenarioFamily};
 use crate::runtime::cog8::Instinct;
+use crate::runtime::self_play::{CcogCounterfactual, CcogCritic, CcogEnvironment, ScenarioFamily};
 use anyhow::Result;
-use std::time::Instant;
 use std::sync::Arc;
 use std::thread;
+use std::time::Instant;
 
 /// Execution modes for the Maximum Concurrency Tournament.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -126,7 +126,8 @@ where
 
         scorecard.performance.total_duration_ms = start.elapsed().as_millis() as u64;
         if scorecard.performance.total_duration_ms > 0 {
-            scorecard.performance.throughput_decisions_sec = (scorecard.correctness.total_decisions as f64)
+            scorecard.performance.throughput_decisions_sec = (scorecard.correctness.total_decisions
+                as f64)
                 / (scorecard.performance.total_duration_ms as f64 / 1000.0);
         }
 
@@ -138,37 +139,37 @@ where
             return Ok(());
         }
         let env = &mut self.environments[0];
-        
+
         for scenario in &self.scenarios {
             env.setup(*scenario)?;
-            
+
             // Run up to 10 steps per scenario or until Settle/Refuse
             for _ in 0..10 {
                 let mut ctx = env.context();
                 self.counterfactual.mutate(&mut ctx)?;
-                
+
                 let instinct = crate::instinct::select_instinct_v0(&ctx);
                 let decision = crate::runtime::cog8::Cog8Decision {
                     response: instinct.into(),
                     ..Default::default()
                 };
-                
+
                 let proof = crate::powl64::Powl64::default();
                 let critique_res = self.critic.critique(&ctx, &decision, &proof);
-                
+
                 scorecard.correctness.total_decisions += 1;
                 if critique_res.is_ok() {
                     scorecard.correctness.lawful_decisions += 1;
                 } else {
                     scorecard.correctness.violations += 1;
                 }
-                
+
                 scorecard.ecology.total_human_burden += ctx.human_burden;
                 // TruthBlock footprint estimation (1 TruthBlock ~ 1024 octets)
                 scorecard.ecology.resource_footprint += 1024;
 
                 env.step(&decision)?;
-                
+
                 if decision.response == Instinct::Settle || decision.response == Instinct::Refuse {
                     break;
                 }
@@ -198,33 +199,38 @@ where
                 let mut local_scorecard = AuditScorecard::default();
                 for scenario in scenarios.iter() {
                     env.setup(*scenario)?;
-                    
+
                     for _ in 0..10 {
                         let mut ctx = env.context();
                         counterfactual.mutate(&mut ctx)?;
-                        
+
                         let instinct = crate::instinct::select_instinct_v0(&ctx);
                         let decision = crate::runtime::cog8::Cog8Decision {
                             response: instinct.into(),
                             ..Default::default()
                         };
-                        
+
                         let proof = crate::powl64::Powl64::default();
                         let critique_res = critic.critique(&ctx, &decision, &proof);
-                        
+
                         local_scorecard.correctness.total_decisions += 1;
                         if critique_res.is_ok() {
                             local_scorecard.correctness.lawful_decisions += 1;
                         } else {
                             local_scorecard.correctness.violations += 1;
                         }
-                        
-                        local_scorecard.ecology.total_human_burden += local_scorecard.ecology.total_human_burden.saturating_add(ctx.human_burden);
+
+                        local_scorecard.ecology.total_human_burden += local_scorecard
+                            .ecology
+                            .total_human_burden
+                            .saturating_add(ctx.human_burden);
                         local_scorecard.ecology.resource_footprint += 1024; // TruthBlock usage
 
                         env.step(&decision)?;
-                        
-                        if decision.response == Instinct::Settle || decision.response == Instinct::Refuse {
+
+                        if decision.response == Instinct::Settle
+                            || decision.response == Instinct::Refuse
+                        {
                             break;
                         }
                     }
@@ -236,7 +242,9 @@ where
 
         let mut final_scorecard = AuditScorecard::default();
         for handle in handles {
-            let res = handle.join().map_err(|_| anyhow::anyhow!("Tournament thread panicked"))??;
+            let res = handle
+                .join()
+                .map_err(|_| anyhow::anyhow!("Tournament thread panicked"))??;
             final_scorecard.correctness.total_decisions += res.correctness.total_decisions;
             final_scorecard.correctness.lawful_decisions += res.correctness.lawful_decisions;
             final_scorecard.correctness.violations += res.correctness.violations;

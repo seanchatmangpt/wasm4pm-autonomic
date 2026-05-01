@@ -1,0 +1,58 @@
+--- crates/ccog/src/packs/mod.rs
++++ replace load_compiled -> Result<LoadedFieldPack, PackLoadError> with Ok(Default::default())
+@@ -274,54 +274,17 @@
+ pub fn load_compiled(
+     name: &str,
+     ontology_profile: &[String],
+     rules: &[(String, String)],
+     default_response: &str,
+     digest_urn: &str,
+ ) -> Result<LoadedFieldPack, PackLoadError> {
+     // Validate rules non-empty.
+-    if rules.is_empty() {
+-        return Err(PackLoadError::EmptyRules);
+-    }
+-
+-    // Validate ontology profile non-empty.
+-    if ontology_profile.is_empty() {
+-        return Err(PackLoadError::MissingOntologyProfile);
+-    }
+-
+-    // Validate all ontology IRIs are public-only.
+-    for iri in ontology_profile {
+-        if !iri_is_public(iri) {
+-            return Err(PackLoadError::PrivateOntologyTerm(iri.clone()));
+-        }
+-    }
+-
+-    // Enforce cryptographic admission (Phase 3).
+-    // Recompute the BLAKE3 digest of the load-bearing content.
+-    let recomputed_hash = compute_manifest_digest(name, ontology_profile, rules);
+-    let expected_urn = format!("urn:blake3:{}", recomputed_hash.to_hex());
+-
+-    if digest_urn != expected_urn {
+-        return Err(PackLoadError::ManifestTamper(format!(
+-            "declared {}, recomputed {}",
+-            digest_urn, expected_urn
+-        )));
+-    }
+-
+-    // Create loaded pack.
+-    Ok(LoadedFieldPack {
+-        name: PackId::new(cold_intern(name)),
+-        ontology_profile: ontology_profile.to_vec(),
+-        rules: rules.to_vec(),
+-        mask_rules: Vec::new(),
+-        groups: Vec::new(),
+-        default_response: default_response.to_string(),
+-        digest_urn: digest_urn.to_string(),
+-    })
++    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// Deterministically compute the manifest digest for a field pack.
+ ///
+ /// The digest covers the pack name, ontology profile, and rules table.
+ /// This is used for tamper detection at the `ainst` -> `ccog` boundary.
+ #[must_use]
+ pub fn compute_manifest_digest(

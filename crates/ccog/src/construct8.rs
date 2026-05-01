@@ -12,9 +12,9 @@
 //! let bytes = delta.receipt_bytes(); // BLAKE3-hashable N-Triples bytes
 //! ```
 
-use anyhow::Result;
 use crate::graph::GraphStore;
 use crate::utils::dense::fnv1a_64;
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
 /// CONSTRUCT query result overflow error.
@@ -104,9 +104,7 @@ impl Construct8 {
     /// Creates an empty CONSTRUCT8 delta.
     pub fn empty() -> Self {
         Self {
-            triples: [
-                None, None, None, None, None, None, None, None,
-            ],
+            triples: [None, None, None, None, None, None, None, None],
             len: 0,
         }
     }
@@ -194,11 +192,11 @@ impl Construct8 {
         let mut bytes = Vec::new();
         for triple in self.iter() {
             bytes.extend_from_slice(
-                format!("<urn:ccog:id:{:08x}> <urn:ccog:p:{:04x}> <urn:ccog:id:{:08x}> .\n",
-                    triple.subject.0,
-                    triple.predicate.0,
-                    triple.object.0
-                ).as_bytes()
+                format!(
+                    "<urn:ccog:id:{:08x}> <urn:ccog:p:{:04x}> <urn:ccog:id:{:08x}> .\n",
+                    triple.subject.0, triple.predicate.0, triple.object.0
+                )
+                .as_bytes(),
             );
         }
         bytes
@@ -208,13 +206,10 @@ impl Construct8 {
     pub fn to_ntriples(&self) -> String {
         let mut output = String::new();
         for triple in self.iter() {
-            output.push_str(
-                &format!("<urn:ccog:id:{:08x}> <urn:ccog:p:{:04x}> <urn:ccog:id:{:08x}> .\n",
-                    triple.subject.0,
-                    triple.predicate.0,
-                    triple.object.0
-                )
-            );
+            output.push_str(&format!(
+                "<urn:ccog:id:{:08x}> <urn:ccog:p:{:04x}> <urn:ccog:id:{:08x}> .\n",
+                triple.subject.0, triple.predicate.0, triple.object.0
+            ));
         }
         output
     }
@@ -292,6 +287,9 @@ mod tests {
 
         let ntriples = delta.to_ntriples();
         assert!(!ntriples.is_empty(), "to_ntriples should not be empty");
-        assert!(ntriples.ends_with(" .\n"), "N-Triples must end with ' .\\n'");
+        assert!(
+            ntriples.ends_with(" .\n"),
+            "N-Triples must end with ' .\\n'"
+        );
     }
 }

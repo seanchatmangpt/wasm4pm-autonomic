@@ -23,7 +23,10 @@ use ccog::export::replay::{verify_bundle_bytes, ReplayVerdict};
 use ccog::trace::BenchmarkTier;
 
 #[derive(Parser, Debug)]
-#[command(name = "dendral", about = "DENDRAL: ccog external proof / transparency CLI")]
+#[command(
+    name = "dendral",
+    about = "DENDRAL: ccog external proof / transparency CLI"
+)]
 struct Cli {
     #[command(subcommand)]
     cmd: Cmd,
@@ -157,7 +160,9 @@ fn run(cli: Cli) -> anyhow::Result<()> {
             };
             let tier = parse_tier(&tier)?;
             let bundle = ProofBundle::build(trace, receipt, path, refs, tier);
-            let bytes = bundle.write().map_err(|e| anyhow::anyhow!("write: {}", e))?;
+            let bytes = bundle
+                .write()
+                .map_err(|e| anyhow::anyhow!("write: {}", e))?;
             fs::write(&out, bytes)?;
             println!("bundle: wrote {}", out.display());
             Ok(())

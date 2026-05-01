@@ -1,9 +1,9 @@
 //! Hearsay-II breed: blackboard fusion of HookOutcomes into a PackPosture.
 
-use anyhow::Result;
 use crate::field::FieldContext;
 use crate::hooks::HookOutcome;
 use crate::verdict::PackPosture;
+use anyhow::Result;
 
 /// Fuse a slice of `HookOutcome`s into a single `PackPosture`.
 ///
@@ -19,7 +19,9 @@ pub fn fuse_posture(outcomes: &[HookOutcome], _field: &FieldContext) -> Result<P
         2..=3 => PackPosture::Engaged,
         _ => PackPosture::Settled,
     };
-    let escalate = outcomes.iter().any(|o| o.hook_name.contains("missing_evidence"));
+    let escalate = outcomes
+        .iter()
+        .any(|o| o.hook_name.contains("missing_evidence"));
     let posture = if escalate {
         match base {
             PackPosture::Calm => PackPosture::Alert,
@@ -36,8 +38,8 @@ pub fn fuse_posture(outcomes: &[HookOutcome], _field: &FieldContext) -> Result<P
 mod tests {
     use super::*;
     use crate::construct8::Construct8;
-    use crate::receipt::Receipt;
     use crate::graph::GraphIri;
+    use crate::receipt::Receipt;
     use chrono::Utc;
 
     /// Deterministic test-only constructor for a single `HookOutcome`.
@@ -48,8 +50,14 @@ mod tests {
                 Receipt::blake3_hex(b""),
                 Utc::now(),
             ))
-        } else { None };
-        HookOutcome { hook_name: name, delta: Construct8::empty(), receipt }
+        } else {
+            None
+        };
+        HookOutcome {
+            hook_name: name,
+            delta: Construct8::empty(),
+            receipt,
+        }
     }
 
     #[test]
@@ -72,7 +80,12 @@ mod tests {
     #[test]
     fn four_confirmed_is_settled() {
         let f = FieldContext::new("t");
-        let o = vec![make_outcome("a", true), make_outcome("b", true), make_outcome("c", true), make_outcome("d", true)];
+        let o = vec![
+            make_outcome("a", true),
+            make_outcome("b", true),
+            make_outcome("c", true),
+            make_outcome("d", true),
+        ];
         assert_eq!(fuse_posture(&o, &f).unwrap(), PackPosture::Settled);
     }
     #[test]

@@ -44,14 +44,23 @@ fn posture(bits: &[u32]) -> PostureBundle {
     for b in bits {
         mask |= 1u64 << b;
     }
-    PostureBundle { posture_mask: mask, confidence: 200 }
+    PostureBundle {
+        posture_mask: mask,
+        confidence: 200,
+    }
 }
 
 fn ctx_with(exp: u64, risk: u64, aff: u64) -> ContextBundle {
-    ContextBundle { expectation_mask: exp, risk_mask: risk, affordance_mask: aff }
+    ContextBundle {
+        expectation_mask: exp,
+        risk_mask: risk,
+        affordance_mask: aff,
+    }
 }
 
-fn b(bit: u32) -> u64 { 1u64 << bit }
+fn b(bit: u32) -> u64 {
+    1u64 << bit
+}
 
 // =============================================================================
 // EDGE PACK — Mark-style local cognition
@@ -61,7 +70,11 @@ fn b(bit: u32) -> u64 { 1u64 << bit }
 fn jtbd_edge_package_expected_with_capacity_selects_retrieve() {
     let snap = empty_snap();
     let p = posture(&[PostureBit::CADENCE_DELIVERY, PostureBit::ALERT]);
-    let c = ctx_with(b(ContextBit::PACKAGE_EXPECTED), 0, b(ContextBit::CAN_RETRIEVE_NOW));
+    let c = ctx_with(
+        b(ContextBit::PACKAGE_EXPECTED),
+        0,
+        b(ContextBit::CAN_RETRIEVE_NOW),
+    );
 
     let r = edge::select_instinct(&ClosedFieldContext {
         snapshot: std::sync::Arc::new(snap.clone()),
@@ -70,21 +83,31 @@ fn jtbd_edge_package_expected_with_capacity_selects_retrieve() {
         tiers: TierMasks::ZERO,
         human_burden: 0,
     });
-    assert_eq!(r, AutonomicInstinct::Retrieve, "package expected + can retrieve + cadence → Retrieve");
+    assert_eq!(
+        r,
+        AutonomicInstinct::Retrieve,
+        "package expected + can retrieve + cadence → Retrieve"
+    );
 
     // Perturbation: drop CAN_RETRIEVE_NOW.
     let c2 = ctx_with(b(ContextBit::PACKAGE_EXPECTED), 0, 0);
-    let r2 = edge::select_instinct(&ClosedFieldContext { human_burden: 0,
+    let r2 = edge::select_instinct(&ClosedFieldContext {
+        human_burden: 0,
         snapshot: std::sync::Arc::new(snap.clone()),
         posture: p,
         context: c2,
         tiers: TierMasks::ZERO,
     });
-    assert_ne!(r2, AutonomicInstinct::Retrieve, "no affordance → no Retrieve");
+    assert_ne!(
+        r2,
+        AutonomicInstinct::Retrieve,
+        "no affordance → no Retrieve"
+    );
 
     // Perturbation: drop CADENCE_DELIVERY.
     let p2 = posture(&[PostureBit::ALERT]);
-    let r3 = edge::select_instinct(&ClosedFieldContext { human_burden: 0,
+    let r3 = edge::select_instinct(&ClosedFieldContext {
+        human_burden: 0,
         snapshot: std::sync::Arc::new(snap.clone()),
         posture: p2,
         context: c,
@@ -109,7 +132,8 @@ fn jtbd_edge_theft_risk_alert_selects_refuse() {
 
     // Perturbation: remove theft risk.
     let c2 = ctx_with(0, 0, 0);
-    let r2 = edge::select_instinct(&ClosedFieldContext { human_burden: 0,
+    let r2 = edge::select_instinct(&ClosedFieldContext {
+        human_burden: 0,
         snapshot: std::sync::Arc::new(snap.clone()),
         posture: p,
         context: c2,
@@ -124,7 +148,11 @@ fn jtbd_edge_pack_acts_emit_only_urn_blake3_no_pii() {
     let context = emptycontext(std::sync::Arc::new(snap.clone()));
     for slot in edge::BUILTINS {
         let delta = (slot.act)(&context).expect("edge act");
-        assert!(!delta.is_empty(), "edge slot {} must emit a delta", slot.name);
+        assert!(
+            !delta.is_empty(),
+            "edge slot {} must emit a delta",
+            slot.name
+        );
         let nt = delta.to_ntriples();
         // Every act must use hashed URNs.
         assert!(
@@ -151,7 +179,11 @@ fn jtbd_edge_pack_acts_emit_only_urn_blake3_no_pii() {
 fn jtbd_edge_must_escalate_dominates_theft_risk() {
     let snap = empty_snap();
     let p = posture(&[PostureBit::ALERT]);
-    let c = ctx_with(0, b(ContextBit::MUST_ESCALATE) | b(ContextBit::THEFT_RISK), 0);
+    let c = ctx_with(
+        0,
+        b(ContextBit::MUST_ESCALATE) | b(ContextBit::THEFT_RISK),
+        0,
+    );
     let r = edge::select_instinct(&ClosedFieldContext {
         snapshot: std::sync::Arc::new(snap.clone()),
         posture: p,
@@ -159,7 +191,11 @@ fn jtbd_edge_must_escalate_dominates_theft_risk() {
         tiers: TierMasks::ZERO,
         human_burden: 0,
     });
-    assert_eq!(r, AutonomicInstinct::Escalate, "MUST_ESCALATE dominates Refuse");
+    assert_eq!(
+        r,
+        AutonomicInstinct::Escalate,
+        "MUST_ESCALATE dominates Refuse"
+    );
 }
 
 // =============================================================================
@@ -171,7 +207,8 @@ fn jtbd_enterprise_evidence_gap_selects_ask() {
     let snap = snap_with_evidence_gap();
     let p = posture(&[PostureBit::ALERT]);
     let c = ctx_with(0, 0, 0);
-    let r = enterprise::select_instinct(&ClosedFieldContext { human_burden: 0,
+    let r = enterprise::select_instinct(&ClosedFieldContext {
+        human_burden: 0,
         snapshot: std::sync::Arc::new(snap.clone()),
         posture: p,
         context: c,
@@ -189,7 +226,11 @@ fn jtbd_enterprise_evidence_gap_selects_ask() {
         tiers: TierMasks::ZERO,
         human_burden: 0,
     });
-    assert_eq!(r2, AutonomicInstinct::Ignore, "no gap + calm + empty context → Ignore");
+    assert_eq!(
+        r2,
+        AutonomicInstinct::Ignore,
+        "no gap + calm + empty context → Ignore"
+    );
     assert_ne!(r, r2, "removing the gap must change the response");
 }
 
@@ -198,7 +239,8 @@ fn jtbd_enterprise_must_escalate_compliance_path() {
     let snap = empty_snap();
     let p = posture(&[PostureBit::ALERT]);
     let c = ctx_with(0, b(ContextBit::MUST_ESCALATE), 0);
-    let r = enterprise::select_instinct(&ClosedFieldContext { human_burden: 0,
+    let r = enterprise::select_instinct(&ClosedFieldContext {
+        human_burden: 0,
         snapshot: std::sync::Arc::new(snap.clone()),
         posture: p,
         context: c,
@@ -206,7 +248,8 @@ fn jtbd_enterprise_must_escalate_compliance_path() {
     });
     assert_eq!(r, AutonomicInstinct::Escalate);
 
-    let r2 = enterprise::select_instinct(&ClosedFieldContext { human_burden: 0,
+    let r2 = enterprise::select_instinct(&ClosedFieldContext {
+        human_burden: 0,
         snapshot: std::sync::Arc::new(snap.clone()),
         posture: p,
         context: ctx_with(0, 0, 0),
@@ -221,9 +264,16 @@ fn jtbd_enterprise_pack_acts_emit_prov_activity_with_urn_blake3() {
     let context = emptycontext(std::sync::Arc::new(snap.clone()));
     for slot in enterprise::BUILTINS {
         let delta = (slot.act)(&context).expect("enterprise act");
-        assert!(!delta.is_empty(), "enterprise {} must emit delta", slot.name);
+        assert!(
+            !delta.is_empty(),
+            "enterprise {} must emit delta",
+            slot.name
+        );
         let nt = delta.to_ntriples();
-        let h_act = format!("{:04x}", ccog::utils::dense::fnv1a_64("http://www.w3.org/ns/prov#Activity".as_bytes()) as u16);
+        let h_act = format!(
+            "{:04x}",
+            ccog::utils::dense::fnv1a_64("http://www.w3.org/ns/prov#Activity".as_bytes()) as u16
+        );
         assert!(
             nt.contains(&h_act),
             "enterprise {} must emit prov:Activity:\n{}",
@@ -256,7 +306,8 @@ fn jtbd_dev_pack_clamps_refuse_to_ask() {
     let p = posture(&[PostureBit::ALERT]);
     let c = ctx_with(0, b(ContextBit::THEFT_RISK), 0);
     // Base lattice: theft risk + alert → Refuse.
-    let base = ccog::instinct::select_instinct_v0(&ClosedFieldContext { human_burden: 0,
+    let base = ccog::instinct::select_instinct_v0(&ClosedFieldContext {
+        human_burden: 0,
         snapshot: std::sync::Arc::new(snap.clone()),
         posture: p,
         context: c,
@@ -265,13 +316,18 @@ fn jtbd_dev_pack_clamps_refuse_to_ask() {
     assert_eq!(base, AutonomicInstinct::Refuse);
 
     // Dev pack must never surface Refuse — always Ask.
-    let r = dev::select_instinct(&ClosedFieldContext { human_burden: 0,
+    let r = dev::select_instinct(&ClosedFieldContext {
+        human_burden: 0,
         snapshot: std::sync::Arc::new(snap.clone()),
         posture: p,
         context: c,
         tiers: TierMasks::ZERO,
     });
-    assert_eq!(r, AutonomicInstinct::Ask, "dev pack must clamp Refuse → Ask");
+    assert_eq!(
+        r,
+        AutonomicInstinct::Ask,
+        "dev pack must clamp Refuse → Ask"
+    );
 }
 
 #[test]
@@ -279,7 +335,8 @@ fn jtbd_dev_pack_clamps_escalate_to_ask() {
     let snap = empty_snap();
     let p = posture(&[PostureBit::ALERT]);
     let c = ctx_with(0, b(ContextBit::MUST_ESCALATE), 0);
-    let base = ccog::instinct::select_instinct_v0(&ClosedFieldContext { human_burden: 0,
+    let base = ccog::instinct::select_instinct_v0(&ClosedFieldContext {
+        human_burden: 0,
         snapshot: std::sync::Arc::new(snap.clone()),
         posture: p,
         context: c,
@@ -288,13 +345,18 @@ fn jtbd_dev_pack_clamps_escalate_to_ask() {
     assert_eq!(base, AutonomicInstinct::Escalate);
 
     // Dev pack must never auto-escalate — always Ask for human review.
-    let r = dev::select_instinct(&ClosedFieldContext { human_burden: 0,
+    let r = dev::select_instinct(&ClosedFieldContext {
+        human_burden: 0,
         snapshot: std::sync::Arc::new(snap.clone()),
         posture: p,
         context: c,
         tiers: TierMasks::ZERO,
     });
-    assert_eq!(r, AutonomicInstinct::Ask, "dev pack must clamp Escalate → Ask");
+    assert_eq!(
+        r,
+        AutonomicInstinct::Ask,
+        "dev pack must clamp Escalate → Ask"
+    );
 }
 
 #[test]
@@ -304,7 +366,8 @@ fn jtbd_dev_pack_never_emits_refuse_or_escalate_under_any_input() {
     for bit_idx in 0u32..64 {
         let p = posture(&[PostureBit::ALERT, bit_idx.min(63)]);
         let c_risk = ctx_with(0, 1u64 << bit_idx, 0);
-        let r = dev::select_instinct(&ClosedFieldContext { human_burden: 0,
+        let r = dev::select_instinct(&ClosedFieldContext {
+            human_burden: 0,
             snapshot: std::sync::Arc::new(snap.clone()),
             posture: p,
             context: c_risk,
@@ -442,11 +505,7 @@ fn jtbd_all_pack_acts_use_public_ontology_only() {
                             || iri.starts_with("http://purl.org/")
                             || iri.starts_with("urn:blake3:")
                             || iri.starts_with("urn:ccog:");
-                        assert!(
-                            ok,
-                            "pack slot {} emitted non-public IRI {}",
-                            slot.name, iri
-                        );
+                        assert!(ok, "pack slot {} emitted non-public IRI {}", slot.name, iri);
                     }
                 }
             }

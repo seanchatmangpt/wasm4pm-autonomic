@@ -1,0 +1,21 @@
+--- crates/ccog/src/packs/mod.rs
++++ delete ! in load_compiled
+@@ -285,17 +285,17 @@
+ 
+     // Validate ontology profile non-empty.
+     if ontology_profile.is_empty() {
+         return Err(PackLoadError::MissingOntologyProfile);
+     }
+ 
+     // Validate all ontology IRIs are public-only.
+     for iri in ontology_profile {
+-        if !iri_is_public(iri) {
++        if  /* ~ changed by cargo-mutants ~ */iri_is_public(iri) {
+             return Err(PackLoadError::PrivateOntologyTerm(iri.clone()));
+         }
+     }
+ 
+     // Enforce cryptographic admission (Phase 3).
+     // Recompute the BLAKE3 digest of the load-bearing content.
+     let recomputed_hash = compute_manifest_digest(name, ontology_profile, rules);
+     let expected_urn = format!("urn:blake3:{}", recomputed_hash.to_hex());

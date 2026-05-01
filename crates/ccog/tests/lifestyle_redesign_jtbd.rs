@@ -65,7 +65,8 @@ fn jtbd_lifestyle_trace_replays_response() {
     use ccog::trace::decide_with_trace_table;
 
     let snap = snap_with_evidence_gap();
-    let context = ClosedFieldContext { human_burden: 0,
+    let context = ClosedFieldContext {
+        human_burden: 0,
         snapshot: std::sync::Arc::new(snap.clone()),
         posture: PostureBundle::default(),
         context: ContextBundle::default(),
@@ -296,7 +297,8 @@ fn jtbd_lifestyle_pack_acts_emit_only_urn_blake3_iris() {
     let _ = BUILTINS; // sanity import
 
     let snap = empty_snap();
-    let context = ClosedFieldContext { human_burden: 0,
+    let context = ClosedFieldContext {
+        human_burden: 0,
         snapshot: std::sync::Arc::new(snap.clone()),
         posture: PostureBundle::default(),
         context: ContextBundle::default(),

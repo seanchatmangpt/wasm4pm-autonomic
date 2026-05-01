@@ -25,7 +25,8 @@ fn pack_dev_positive_clamps_refuse_to_ask() {
         risk_mask: 1u64 << ContextBit::THEFT_RISK,
         affordance_mask: 0,
     };
-    let context = ClosedFieldContext { human_burden: 0,
+    let context = ClosedFieldContext {
+        human_burden: 0,
         snapshot: std::sync::Arc::new(snap.clone()),
         posture,
         context: ctx,
@@ -41,16 +42,14 @@ fn pack_dev_negative_settle_passes_through() {
         posture_mask: 1u64 << PostureBit::SETTLED,
         confidence: 200,
     };
-    let context = ClosedFieldContext { human_burden: 0,
+    let context = ClosedFieldContext {
+        human_burden: 0,
         snapshot: std::sync::Arc::new(snap.clone()),
         posture,
         context: ContextBundle::default(),
         tiers: TierMasks::ZERO,
     };
-    assert_eq!(
-        select_instinct(&context),
-        AutonomicInstinct::Settle
-    );
+    assert_eq!(select_instinct(&context), AutonomicInstinct::Settle);
 }
 
 #[test]
@@ -83,9 +82,17 @@ fn pack_dev_boundary_does_not_auto_merge() {
         ),
     ];
     for (pm, em, rm, am) in high_pressure {
-        let p = PostureBundle { posture_mask: pm, confidence: 200 };
-        let c = ContextBundle { expectation_mask: em, risk_mask: rm, affordance_mask: am };
-        let context = ClosedFieldContext { human_burden: 0,
+        let p = PostureBundle {
+            posture_mask: pm,
+            confidence: 200,
+        };
+        let c = ContextBundle {
+            expectation_mask: em,
+            risk_mask: rm,
+            affordance_mask: am,
+        };
+        let context = ClosedFieldContext {
+            human_burden: 0,
             snapshot: std::sync::Arc::new(snap.clone()),
             posture: p,
             context: c,
@@ -106,13 +113,17 @@ fn pack_dev_boundary_does_not_auto_merge() {
 #[test]
 fn pack_dev_acts_emit_ask_action() {
     let snap = empty_snap();
-    let context = ClosedFieldContext { human_burden: 0,
+    let context = ClosedFieldContext {
+        human_burden: 0,
         snapshot: std::sync::Arc::new(snap.clone()),
         posture: PostureBundle::default(),
         context: ContextBundle::default(),
         tiers: TierMasks::ZERO,
     };
-    let h_ask = format!("{:04x}", ccog::utils::dense::fnv1a_64("https://schema.org/AskAction".as_bytes()) as u16);
+    let h_ask = format!(
+        "{:04x}",
+        ccog::utils::dense::fnv1a_64("https://schema.org/AskAction".as_bytes()) as u16
+    );
     for slot in BUILTINS {
         let delta = (slot.act)(&context).expect("act");
         let nt = delta.to_ntriples();

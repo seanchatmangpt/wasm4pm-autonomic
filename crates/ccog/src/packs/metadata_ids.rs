@@ -90,9 +90,18 @@ macro_rules! static_id {
     };
 }
 
-static_id!(PackId, "Pack-level identifier (e.g. `lifestyle.overlap.v30_1_1`).");
-static_id!(GroupId, "Precedence-group identifier (e.g. `lifestyle.safety`).");
-static_id!(RuleId, "Rule identifier (e.g. `lifestyle.capacity.fatigue_softens_routine`).");
+static_id!(
+    PackId,
+    "Pack-level identifier (e.g. `lifestyle.overlap.v30_1_1`)."
+);
+static_id!(
+    GroupId,
+    "Precedence-group identifier (e.g. `lifestyle.safety`)."
+);
+static_id!(
+    RuleId,
+    "Rule identifier (e.g. `lifestyle.capacity.fatigue_softens_routine`)."
+);
 static_id!(
     ObligationId,
     "Obligation identifier (Phase 8.2; reserved here so packs can author obligations against pack/rule/group ids without a circular dep)."
@@ -110,8 +119,14 @@ mod tests {
         let b = RULE;
         assert_eq!(a, b);
         // repr(transparent) means size_of equals &str.
-        assert_eq!(std::mem::size_of::<RuleId>(), std::mem::size_of::<&'static str>());
-        assert_eq!(std::mem::size_of::<Option<RuleId>>(), std::mem::size_of::<&'static str>());
+        assert_eq!(
+            std::mem::size_of::<RuleId>(),
+            std::mem::size_of::<&'static str>()
+        );
+        assert_eq!(
+            std::mem::size_of::<Option<RuleId>>(),
+            std::mem::size_of::<&'static str>()
+        );
     }
 
     #[test]

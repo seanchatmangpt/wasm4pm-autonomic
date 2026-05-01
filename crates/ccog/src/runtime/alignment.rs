@@ -5,12 +5,12 @@
 //! Cost(skip) = 10 (Move in model only)
 //! Cost(insert) = 15 (Move in log only)
 
-use crate::ids::{NodeId};
+use crate::ids::NodeId;
 use crate::powl64::Powl64;
-use crate::runtime::CompiledCcogConfig;
 use crate::runtime::cog8::EdgeKind;
-use std::collections::{BinaryHeap, HashMap};
+use crate::runtime::CompiledCcogConfig;
 use std::cmp::Ordering;
+use std::collections::{BinaryHeap, HashMap};
 
 /// Cost of skipping a model transition (move in model only).
 pub const COST_SKIP: u32 = 10;
@@ -36,7 +36,9 @@ struct SearchState {
 impl Ord for SearchState {
     fn cmp(&self, other: &Self) -> Ordering {
         // Min-heap for Dijkstra: smaller cost has higher priority.
-        other.cost.cmp(&self.cost)
+        other
+            .cost
+            .cmp(&self.cost)
             .then_with(|| self.trace_idx.cmp(&other.trace_idx))
     }
 }
@@ -80,7 +82,12 @@ impl AlignmentEngine {
 
         let mut min_total_cost = u32::MAX;
 
-        while let Some(SearchState { cost, trace_idx, model_node }) = pq.pop() {
+        while let Some(SearchState {
+            cost,
+            trace_idx,
+            model_node,
+        }) = pq.pop()
+        {
             if cost >= min_total_cost {
                 continue;
             }
@@ -97,7 +104,7 @@ impl AlignmentEngine {
                 if cost < min_total_cost {
                     min_total_cost = cost;
                 }
-                // We could continue to see if skipping some more model edges helps, 
+                // We could continue to see if skipping some more model edges helps,
                 // but usually finishing the trace is the goal.
                 continue;
             }
@@ -107,9 +114,13 @@ impl AlignmentEngine {
             // 1. Synchronous Move: trace cell matches a model edge.
             // Cost: 0.
             for edge in topology.edges.iter() {
-                if edge.kind != EdgeKind::None && edge.kind != EdgeKind::Blocking && edge.from == model_node {
+                if edge.kind != EdgeKind::None
+                    && edge.kind != EdgeKind::Blocking
+                    && edge.from == model_node
+                {
                     // Match based on edge_id and target node.
-                    if edge.instr.edge_id == current_cell.edge_id && edge.to == current_cell.to_node {
+                    if edge.instr.edge_id == current_cell.edge_id && edge.to == current_cell.to_node
+                    {
                         pq.push(SearchState {
                             cost,
                             trace_idx: trace_idx + 1,
@@ -122,7 +133,10 @@ impl AlignmentEngine {
             // 2. Move in Model (Skip): we take a model edge but stay at the same trace position.
             // Cost: 10.
             for edge in topology.edges.iter() {
-                if edge.kind != EdgeKind::None && edge.kind != EdgeKind::Blocking && edge.from == model_node {
+                if edge.kind != EdgeKind::None
+                    && edge.kind != EdgeKind::Blocking
+                    && edge.from == model_node
+                {
                     pq.push(SearchState {
                         cost: cost + COST_SKIP,
                         trace_idx,
@@ -140,7 +154,7 @@ impl AlignmentEngine {
             });
         }
 
-        // Calculate fitness. 
+        // Calculate fitness.
         // We use a denominator based on the cost of full insertion.
         let log_cost = trace.cells.len() as u32 * COST_INSERT;
         let fitness = if log_cost > 0 {
@@ -159,9 +173,9 @@ impl AlignmentEngine {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::runtime::cog8::{Cog8Row, Cog8Edge, Powl8Instr, Powl8Op, LoadedFieldPack};
-    use crate::powl64::Powl64RouteCell;
     use crate::ids::*;
+    use crate::powl64::Powl64RouteCell;
+    use crate::runtime::cog8::{Cog8Edge, Cog8Row, LoadedFieldPack, Powl8Instr, Powl8Op};
 
     fn mock_config() -> CompiledCcogConfig<3, 2> {
         let node0 = Cog8Row {
@@ -241,7 +255,7 @@ mod tests {
         let config = mock_config();
         let mut trace = Powl64::new();
         // Skip Edge 1 (0->1), only have Edge 2 (1->2).
-        // To align this, we must move in model from 0 to 1 (cost 10), 
+        // To align this, we must move in model from 0 to 1 (cost 10),
         // then move in both for Edge 2.
         trace.extend(Powl64RouteCell {
             edge_id: EdgeId(2),

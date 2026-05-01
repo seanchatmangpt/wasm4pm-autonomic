@@ -3,7 +3,7 @@
 //! Designed to fit within a 128MiB TruthBlock (L3-optimized), housing ~2M COG8 nodes.
 //! Benchmarks massive process-field cognition and memory bandwidth under pressure.
 
-use crate::runtime::cog8::{Cog8Row, Cog8Edge};
+use crate::runtime::cog8::{Cog8Edge, Cog8Row};
 use crate::runtime::ClosedFieldContext;
 use crate::runtime::MCPProjectionTable;
 use anyhow::Result;
@@ -27,7 +27,7 @@ impl Default for L3ProcessCityArena {
 impl L3ProcessCityArena {
     /// Create a new Process City Arena.
     pub fn new() -> Self {
-        // Safe heap allocation for the large L3 region. 
+        // Safe heap allocation for the large L3 region.
         // Zero-allocation execution only occurs on the hot path after this setup.
         Self {
             nodes: vec![Cog8Row::default(); 2_097_152].into_boxed_slice(),

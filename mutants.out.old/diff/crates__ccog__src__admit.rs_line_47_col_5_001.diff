@@ -1,0 +1,21 @@
+--- crates/ccog/src/admit.rs
++++ replace bool_mask -> u64 with 1
+@@ -39,17 +39,17 @@
+ ///
+ /// ```ignore
+ /// assert_eq!(admit::bool_mask(true), 0);
+ /// assert_eq!(admit::bool_mask(false), u64::MAX);
+ /// ```
+ #[must_use]
+ #[inline(always)]
+ pub const fn bool_mask(condition: bool) -> u64 {
+-    0u64.wrapping_sub((!condition) as u64)
++    1 /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// Composes two admission verdicts via bitwise OR.
+ ///
+ /// The result is admitted (`0`) iff *both* inputs are admitted; otherwise the
+ /// denial bits propagate.
+ #[must_use]
+ #[inline(always)]

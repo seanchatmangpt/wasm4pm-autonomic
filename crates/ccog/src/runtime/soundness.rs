@@ -3,8 +3,8 @@
 //! Provides reachability, proper completion, deadlock detection, and liveness
 //! analysis for nonlinear cognitive graphs.
 
-use crate::runtime::cog8::{Cog8Row, Cog8Edge, Instinct};
 use crate::ids::NodeId;
+use crate::runtime::cog8::{Cog8Edge, Cog8Row, Instinct};
 use std::collections::VecDeque;
 
 /// Soundness violation types.
@@ -140,7 +140,9 @@ pub fn check_soundness(nodes: &[Cog8Row], edges: &[Cog8Edge]) -> Vec<SoundnessEr
                         break;
                     }
                 }
-                if has_exit_to_terminal { break; }
+                if has_exit_to_terminal {
+                    break;
+                }
                 // Also, if the node itself is terminal, it's fine
                 if nodes[u].response != Instinct::Ignore {
                     has_exit_to_terminal = true;
@@ -149,7 +151,9 @@ pub fn check_soundness(nodes: &[Cog8Row], edges: &[Cog8Edge]) -> Vec<SoundnessEr
             }
 
             if !has_exit_to_terminal {
-                errors.push(SoundnessError::DeadlockCycle(scc.into_iter().map(|idx| NodeId(idx as u16)).collect()));
+                errors.push(SoundnessError::DeadlockCycle(
+                    scc.into_iter().map(|idx| NodeId(idx as u16)).collect(),
+                ));
             }
         }
     }
@@ -196,7 +200,9 @@ fn find_sccs(num_nodes: usize, adj: &[Vec<(usize, usize)>]) -> Vec<Vec<usize>> {
             while let Some(v) = stack.pop() {
                 on_stack[v] = false;
                 scc.push(v);
-                if u == v { break; }
+                if u == v {
+                    break;
+                }
             }
             sccs.push(scc);
         }
@@ -204,7 +210,16 @@ fn find_sccs(num_nodes: usize, adj: &[Vec<(usize, usize)>]) -> Vec<Vec<usize>> {
 
     for i in 0..num_nodes {
         if indices[i] == -1 {
-            strongconnect(i, &mut index, &mut stack, &mut on_stack, &mut indices, &mut lowlink, adj, &mut sccs);
+            strongconnect(
+                i,
+                &mut index,
+                &mut stack,
+                &mut on_stack,
+                &mut indices,
+                &mut lowlink,
+                adj,
+                &mut sccs,
+            );
         }
     }
 

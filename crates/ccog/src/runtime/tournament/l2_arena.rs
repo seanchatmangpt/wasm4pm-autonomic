@@ -4,10 +4,10 @@
 //! executing them with task-level throughput. Includes stress tests for
 //! ecology metrics like human burden and externalization rates.
 
-use crate::runtime::cog8::{Cog8Edge, Cog8Row, Cog8Decision, execute_cog8, Instinct};
-use crate::runtime::mcp::MCPProjectionTable;
-use crate::runtime::hitl::HumanRoleProfile;
 use crate::ids::HumanRoleId;
+use crate::runtime::cog8::{execute_cog8, Cog8Decision, Cog8Edge, Cog8Row, Instinct};
+use crate::runtime::hitl::HumanRoleProfile;
+use crate::runtime::mcp::MCPProjectionTable;
 
 /// L2 Working-Skill Arena (reduced size for demo).
 ///
@@ -37,7 +37,7 @@ impl L2WorkingSkillArena {
             mcp_projections: MCPProjectionTable::new(),
         }
     }
-// ... (load_packs unchanged)
+    // ... (load_packs unchanged)
     /// Load skill packs into the arena.
     pub fn load_packs(&mut self) {
         let mut node_offset = 0;
@@ -102,7 +102,11 @@ impl L2WorkingSkillArena {
 
     /// Execute the graph in the arena.
     #[inline(always)]
-    pub fn execute(&self, context: &crate::runtime::ClosedFieldContext, completed: u64) -> Cog8Decision {
+    pub fn execute(
+        &self,
+        context: &crate::runtime::ClosedFieldContext,
+        completed: u64,
+    ) -> Cog8Decision {
         execute_cog8(&self.nodes, &self.edges, context, completed).unwrap_or_default()
     }
 
@@ -111,7 +115,9 @@ impl L2WorkingSkillArena {
     pub fn run_benchmark(&self, iterations: usize) -> f64 {
         use std::time::Instant;
         let field = crate::field::FieldContext::new("bench");
-        let snap = std::sync::Arc::new(crate::compiled::CompiledFieldSnapshot::from_field(&field).unwrap());
+        let snap = std::sync::Arc::new(
+            crate::compiled::CompiledFieldSnapshot::from_field(&field).unwrap(),
+        );
         let context = crate::runtime::ClosedFieldContext {
             snapshot: snap,
             posture: crate::multimodal::PostureBundle::default(),
@@ -132,7 +138,9 @@ impl L2WorkingSkillArena {
         use std::time::Instant;
         // Mock context for projection
         let field = crate::field::FieldContext::new("bench");
-        let snap = std::sync::Arc::new(crate::compiled::CompiledFieldSnapshot::from_field(&field).unwrap());
+        let snap = std::sync::Arc::new(
+            crate::compiled::CompiledFieldSnapshot::from_field(&field).unwrap(),
+        );
         let context = crate::runtime::ClosedFieldContext {
             snapshot: snap,
             posture: crate::multimodal::PostureBundle::default(),
@@ -163,7 +171,11 @@ pub struct L2StressTester<'a> {
 impl<'a> L2StressTester<'a> {
     /// 'missing-evidence storm': Simulates a flood of inputs that fail matching
     /// or trigger Instinct::Ask, driving high human burden.
-    pub fn storm_missing_evidence(&self, context: &crate::runtime::ClosedFieldContext, iterations: usize) -> f64 {
+    pub fn storm_missing_evidence(
+        &self,
+        context: &crate::runtime::ClosedFieldContext,
+        iterations: usize,
+    ) -> f64 {
         let mut ask_count = 0;
         for i in 0..iterations {
             // Use bit patterns likely to trigger 'Ask' in the loaded packs
@@ -192,7 +204,10 @@ impl<'a> L2StressTester<'a> {
             profile.decay_burden(1, 1);
         }
 
-        (profile.current_burden, rejections as f64 / iterations as f64)
+        (
+            profile.current_burden,
+            rejections as f64 / iterations as f64,
+        )
     }
 }
 
@@ -205,7 +220,10 @@ mod tests {
         let size = std::mem::size_of::<L2WorkingSkillArena>();
         println!("L2WorkingSkillArena size: {} octets", size);
         // 2MiB = 2,097,152 octets
-        assert!(size <= 2097152 + 64, "Arena exceeds 2MiB limit significantly");
+        assert!(
+            size <= 2097152 + 64,
+            "Arena exceeds 2MiB limit significantly"
+        );
     }
 
     #[test]
@@ -213,7 +231,7 @@ mod tests {
         // Use a boxed arena to avoid stack overflow in tests
         let mut arena = L2WorkingSkillArena::new();
         arena.load_packs();
-        
+
         let throughput = arena.run_benchmark(100_000);
         println!("L2 throughput: {:.2} decisions/sec", throughput);
         assert!(throughput > 0.0);
@@ -225,7 +243,9 @@ mod tests {
         arena.load_packs();
 
         let field = crate::field::FieldContext::new("bench");
-        let snap = std::sync::Arc::new(crate::compiled::CompiledFieldSnapshot::from_field(&field).unwrap());
+        let snap = std::sync::Arc::new(
+            crate::compiled::CompiledFieldSnapshot::from_field(&field).unwrap(),
+        );
         let context = crate::runtime::ClosedFieldContext {
             snapshot: snap,
             posture: crate::multimodal::PostureBundle::default(),
@@ -237,11 +257,18 @@ mod tests {
         let tester = L2StressTester { arena: &arena };
 
         let ask_rate = tester.storm_missing_evidence(&context, 10_000);
-        println!("Missing-evidence storm 'Ask' rate: {:.2}%", ask_rate * 100.0);
+        println!(
+            "Missing-evidence storm 'Ask' rate: {:.2}%",
+            ask_rate * 100.0
+        );
 
         let (final_burden, rejection_rate) = tester.storm_human_overload(10_000);
-        println!("Human-overload storm: final burden {}, rejection rate {:.2}%", 
-            final_burden, rejection_rate * 100.0);
+        println!(
+            "Human-overload storm: final burden {}, rejection rate {:.2}%",
+            final_burden,
+            rejection_rate * 100.0
+        );
 
         assert!(final_burden > 0);
-    }}
+    }
+}

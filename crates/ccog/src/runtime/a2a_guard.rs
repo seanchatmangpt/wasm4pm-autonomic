@@ -1,8 +1,8 @@
 //! A2A Strips Guard: Precondition and effect validation for A2A tasks.
 
 use crate::compiled_hook::compute_present_mask;
-use crate::runtime::cog8::Instinct;
 use crate::runtime::a2a::A2ATask;
+use crate::runtime::cog8::Instinct;
 use crate::runtime::ClosedFieldContext;
 
 /// Rejection reasons for an A2A task guard.
@@ -32,10 +32,7 @@ pub struct StripsGuard;
 
 impl StripsGuard {
     /// Evaluates whether an A2A task is admitted by the current context.
-    pub fn evaluate(
-        task: &A2ATask,
-        context: &ClosedFieldContext,
-    ) -> Result<(), GuardRejection> {
+    pub fn evaluate(task: &A2ATask, context: &ClosedFieldContext) -> Result<(), GuardRejection> {
         let present_mask = compute_present_mask(&context.snapshot);
 
         if (present_mask & task.required_vars) != task.required_vars {

@@ -1,0 +1,56 @@
+crates/ccog/src/bin/dendral.rs:83:5: replace main -> ExitCode with Default::default()
+crates/ccog/src/bin/dendral.rs:94:5: replace run -> anyhow::Result<()> with Ok(())
+crates/ccog/src/bin/dendral.rs:123:33: replace || with && in run
+crates/ccog/src/bin/dendral.rs:123:53: replace != with == in run
+crates/ccog/src/bin/dendral.rs:123:48: replace % with / in run
+crates/ccog/src/bin/dendral.rs:123:48: replace % with + in run
+crates/ccog/src/bin/dendral.rs:126:43: replace - with + in run
+crates/ccog/src/bin/dendral.rs:126:43: replace - with / in run
+crates/ccog/src/bin/dendral.rs:152:33: delete ! in run
+crates/ccog/src/bin/dendral.rs:169:5: replace parse_tier -> anyhow::Result<BenchmarkTier> with Ok(Default::default())
+crates/ccog/src/bin/dendral.rs:181:5: replace blake3_hex -> String with String::new()
+crates/ccog/src/bin/dendral.rs:181:5: replace blake3_hex -> String with "xyzzy".into()
+crates/ccog/src/bin/dendral.rs:189:5: replace print_verdict with ()
+crates/ccog/src/lib.rs:93:5: replace version -> &'static str with ""
+crates/ccog/src/lib.rs:93:5: replace version -> &'static str with "xyzzy"
+crates/ccog/src/admit.rs:57:7: replace | with ^ in admit2
+crates/ccog/src/admit.rs:66:11: replace | with ^ in admit3
+crates/ccog/src/admit.rs:66:7: replace | with ^ in admit3
+crates/ccog/src/admit.rs:75:15: replace | with ^ in admit4
+crates/ccog/src/admit.rs:75:11: replace | with ^ in admit4
+crates/ccog/src/admit.rs:75:7: replace | with ^ in admit4
+crates/ccog/src/admit.rs:106:18: replace | with ^ in commit_masked_u64
+crates/ccog/src/packs/mod.rs:116:9: replace <impl std::fmt::Display for PackLoadError>::fmt -> std::fmt::Result with Ok(Default::default())
+crates/ccog/src/packs/mod.rs:199:5: replace cold_intern -> &'static str with ""
+crates/ccog/src/packs/mod.rs:199:5: replace cold_intern -> &'static str with "xyzzy"
+crates/ccog/src/packs/mod.rs:362:5: replace validate -> Result<(), PackLoadError> with Ok(())
+crates/ccog/src/packs/mod.rs:363:49: replace + with - in validate
+crates/ccog/src/packs/mod.rs:363:49: replace + with * in validate
+crates/ccog/src/packs/mod.rs:364:22: replace == with != in validate
+crates/ccog/src/packs/mod.rs:419:5: replace rules_overlap_with_conflicting_responses -> bool with false
+crates/ccog/src/packs/mod.rs:425:9: replace | with & in rules_overlap_with_conflicting_responses
+crates/ccog/src/packs/mod.rs:425:9: replace | with ^ in rules_overlap_with_conflicting_responses
+crates/ccog/src/packs/mod.rs:424:9: replace | with & in rules_overlap_with_conflicting_responses
+crates/ccog/src/packs/mod.rs:424:9: replace | with ^ in rules_overlap_with_conflicting_responses
+crates/ccog/src/packs/mod.rs:423:9: replace | with & in rules_overlap_with_conflicting_responses
+crates/ccog/src/packs/mod.rs:423:9: replace | with ^ in rules_overlap_with_conflicting_responses
+crates/ccog/src/packs/mod.rs:422:9: replace | with & in rules_overlap_with_conflicting_responses
+crates/ccog/src/packs/mod.rs:422:9: replace | with ^ in rules_overlap_with_conflicting_responses
+crates/ccog/src/packs/mod.rs:421:9: replace | with & in rules_overlap_with_conflicting_responses
+crates/ccog/src/packs/mod.rs:421:9: replace | with ^ in rules_overlap_with_conflicting_responses
+crates/ccog/src/packs/mod.rs:420:9: replace | with & in rules_overlap_with_conflicting_responses
+crates/ccog/src/packs/mod.rs:420:9: replace | with ^ in rules_overlap_with_conflicting_responses
+crates/ccog/src/packs/mod.rs:419:44: replace & with | in rules_overlap_with_conflicting_responses
+crates/ccog/src/packs/mod.rs:419:44: replace & with ^ in rules_overlap_with_conflicting_responses
+crates/ccog/src/packs/mod.rs:420:40: replace & with | in rules_overlap_with_conflicting_responses
+crates/ccog/src/packs/mod.rs:420:40: replace & with ^ in rules_overlap_with_conflicting_responses
+crates/ccog/src/packs/mod.rs:421:33: replace & with | in rules_overlap_with_conflicting_responses
+crates/ccog/src/packs/mod.rs:421:33: replace & with ^ in rules_overlap_with_conflicting_responses
+crates/ccog/src/packs/mod.rs:422:39: replace & with | in rules_overlap_with_conflicting_responses
+crates/ccog/src/packs/mod.rs:422:39: replace & with ^ in rules_overlap_with_conflicting_responses
+crates/ccog/src/packs/mod.rs:424:31: replace & with | in rules_overlap_with_conflicting_responses
+crates/ccog/src/packs/mod.rs:424:31: replace & with ^ in rules_overlap_with_conflicting_responses
+crates/ccog/src/packs/mod.rs:426:33: replace != with == in rules_overlap_with_conflicting_responses
+crates/ccog/src/packs/mod.rs:432:5: replace mask_satisfies -> bool with true
+crates/ccog/src/packs/mod.rs:432:5: replace mask_satisfies -> bool with false
+crates/ccog/src/packs/mod.rs:432:24: replace == with != in mask_satisfies

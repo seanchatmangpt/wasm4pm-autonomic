@@ -1,0 +1,21 @@
+--- crates/ccog/src/packs/mod.rs
++++ replace == with != in validate
+@@ -356,17 +356,17 @@
+ ///
+ /// # Errors
+ ///
+ /// Returns `PackLoadError::ValidationFailed` describing the first conflict.
+ pub fn validate(pack: &LoadedFieldPack) -> Result<(), PackLoadError> {
+     // 1. Validate ungrouped mask_rules amongst themselves.
+     for (i, r1) in pack.mask_rules.iter().enumerate() {
+         for r2 in pack.mask_rules.iter().skip(i + 1) {
+-            if r1.id == r2.id {
++            if r1.id != /* ~ changed by cargo-mutants ~ */ r2.id {
+                 return Err(PackLoadError::ValidationFailed(format!(
+                     "duplicate rule id: {}",
+                     r1.id
+                 )));
+             }
+             if rules_overlap_with_conflicting_responses(r1, r2) {
+                 return Err(PackLoadError::ValidationFailed(format!(
+                     "overlapping bit requirements between `{}` and `{}` with conflicting responses",

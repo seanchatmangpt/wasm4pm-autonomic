@@ -1,0 +1,21 @@
+--- crates/ccog/src/packs/mod.rs
++++ replace == with != in validate
+@@ -373,17 +373,17 @@
+                     r1.id, r2.id
+                 )));
+             }
+         }
+     }
+     // 2. Validate group ids unique and ranks distinct.
+     for (i, g1) in pack.groups.iter().enumerate() {
+         for g2 in pack.groups.iter().skip(i + 1) {
+-            if g1.id == g2.id {
++            if g1.id != /* ~ changed by cargo-mutants ~ */ g2.id {
+                 return Err(PackLoadError::ValidationFailed(format!(
+                     "duplicate group id: {}",
+                     g1.id
+                 )));
+             }
+             if g1.precedence_rank == g2.precedence_rank {
+                 return Err(PackLoadError::ValidationFailed(format!(
+                     "duplicate precedence_rank {} between groups `{}` and `{}`",

@@ -70,7 +70,11 @@ impl A2AProjectionTable {
     ///
     /// This evaluates the decision against the projection table to determine
     /// if an external agent should be tasked.
-    pub fn project(&self, decision: &Cog8Decision, _context: &ClosedFieldContext) -> Option<A2ATask> {
+    pub fn project(
+        &self,
+        decision: &Cog8Decision,
+        _context: &ClosedFieldContext,
+    ) -> Option<A2ATask> {
         for rule in self.rules {
             if rule.trigger_instinct == decision.response {
                 // If the rule specifies a collapse_fn, it must match.

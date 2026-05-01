@@ -1,7 +1,7 @@
 //! POWL64 BLAKE3 receipt-chain unit tests.
 
-use ccog::powl64::{Powl64, Powl64RouteCell, Polarity, ProjectionTarget, PartnerId};
-use ccog::runtime::cog8::{CollapseFn, NodeId, EdgeId, EdgeKind};
+use ccog::powl64::{PartnerId, Polarity, Powl64, Powl64RouteCell, ProjectionTarget};
+use ccog::runtime::cog8::{CollapseFn, EdgeId, EdgeKind, NodeId};
 
 #[test]
 fn genesis_extend_has_no_prior_and_polarity_folded_chain() {
@@ -54,12 +54,24 @@ fn chain_links_prior_receipt_into_subsequent_chain_hash() {
 #[test]
 fn determinism_same_cell_sequence_yields_same_chain_head() {
     let mut p_a = Powl64::new();
-    p_a.extend(Powl64RouteCell { chain_head: 1, ..Default::default() });
-    p_a.extend(Powl64RouteCell { chain_head: 2, ..Default::default() });
+    p_a.extend(Powl64RouteCell {
+        chain_head: 1,
+        ..Default::default()
+    });
+    p_a.extend(Powl64RouteCell {
+        chain_head: 2,
+        ..Default::default()
+    });
 
     let mut p_b = Powl64::new();
-    p_b.extend(Powl64RouteCell { chain_head: 1, ..Default::default() });
-    p_b.extend(Powl64RouteCell { chain_head: 2, ..Default::default() });
+    p_b.extend(Powl64RouteCell {
+        chain_head: 1,
+        ..Default::default()
+    });
+    p_b.extend(Powl64RouteCell {
+        chain_head: 2,
+        ..Default::default()
+    });
 
     assert_eq!(p_a.chain_head(), p_b.chain_head());
     assert_eq!(p_a.cell_count(), p_b.cell_count());

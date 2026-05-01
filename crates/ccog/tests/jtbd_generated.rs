@@ -14,7 +14,6 @@
 //! Data is generated with `fake` (realistic strings) plus `proptest`
 //! (shrinkable adversarial combinations).
 
-use std::sync::Arc;
 use ccog::bark_artifact::{decide, BUILTINS};
 use ccog::breeds::strips;
 use ccog::compiled::CompiledFieldSnapshot;
@@ -30,6 +29,7 @@ use ccog::receipt::Receipt;
 use ccog::runtime::ClosedFieldContext;
 use ccog::trace::decide_with_trace_table;
 use ccog::verdict::Breed;
+use std::sync::Arc;
 
 use fake::faker::lorem::en::Word;
 use fake::faker::name::en::Name;
@@ -57,7 +57,9 @@ fn load_doc_missing_prov_value(field: &mut FieldContext, doc_iri: &str, title: &
         doc = doc_iri,
         title = title,
     );
-    field.load_field_state(&nt).expect("load missing-prov-value doc");
+    field
+        .load_field_state(&nt)
+        .expect("load missing-prov-value doc");
 }
 
 fn load_concept_with_pref_label(field: &mut FieldContext, concept_iri: &str, label: &str) {
@@ -118,8 +120,14 @@ fn jtbd_missing_evidence_requests_gap_without_filling_it() {
         let delta = ntriples_of_outcome_delta(&outcome.delta);
 
         // Positive: gap-finding emitted as schema:AskAction or prov:Activity
-        let h_ask = format!("{:04x}", ccog::utils::dense::fnv1a_64("https://schema.org/AskAction".as_bytes()) as u16);
-        let h_act = format!("{:04x}", ccog::utils::dense::fnv1a_64("http://www.w3.org/ns/prov#Activity".as_bytes()) as u16);
+        let h_ask = format!(
+            "{:04x}",
+            ccog::utils::dense::fnv1a_64("https://schema.org/AskAction".as_bytes()) as u16
+        );
+        let h_act = format!(
+            "{:04x}",
+            ccog::utils::dense::fnv1a_64("http://www.w3.org/ns/prov#Activity".as_bytes()) as u16
+        );
         assert!(
             delta.contains(&h_ask) || delta.contains(&h_act),
             "delta must record gap as AskAction/Activity, got: {}",
@@ -166,9 +174,7 @@ fn jtbd_missing_evidence_perturbation_no_dd_no_fire() {
     let outcomes = reg.fire_matching(&field).expect("fire");
 
     assert!(
-        !outcomes
-            .iter()
-            .any(|o| o.hook_name == "missing_evidence"),
+        !outcomes.iter().any(|o| o.hook_name == "missing_evidence"),
         "remove DD type triple → missing-evidence hook MUST NOT fire"
     );
 }
@@ -197,7 +203,11 @@ fn jtbd_phrase_binding_links_label_provenance() {
         let delta = ntriples_of_outcome_delta(&outcome.delta);
 
         // Positive: emits prov:wasInformedBy
-        let h_informed = format!("{:04x}", ccog::utils::dense::fnv1a_64("http://www.w3.org/ns/prov#wasInformedBy".as_bytes()) as u16);
+        let h_informed = format!(
+            "{:04x}",
+            ccog::utils::dense::fnv1a_64("http://www.w3.org/ns/prov#wasInformedBy".as_bytes())
+                as u16
+        );
         assert!(
             delta.contains(&h_informed),
             "phrase-binding must emit prov:wasInformedBy.\n delta: {}",
@@ -221,16 +231,18 @@ fn jtbd_phrase_binding_perturbation_no_label_no_fire() {
     // Concept typed but no prefLabel → hook must not fire.
     let mut field = FieldContext::new("perturb-no-label");
     let concept = fake_iri("c");
-    load_typed_subject(&mut field, &concept, "http://www.w3.org/2004/02/skos/core#Concept");
+    load_typed_subject(
+        &mut field,
+        &concept,
+        "http://www.w3.org/2004/02/skos/core#Concept",
+    );
 
     let mut reg = HookRegistry::new();
     reg.register(phrase_binding_hook());
     let outcomes = reg.fire_matching(&field).expect("fire");
 
     assert!(
-        !outcomes
-            .iter()
-            .any(|o| o.hook_name == "phrase_binding"),
+        !outcomes.iter().any(|o| o.hook_name == "phrase_binding"),
         "remove prefLabel → phrase-binding hook MUST NOT fire"
     );
 }
@@ -258,8 +270,14 @@ fn jtbd_transition_admissibility_records_finding_not_shape() {
         let delta = ntriples_of_outcome_delta(&outcome.delta);
 
         // Positive: emits prov:Activity + prov:used
-        let h_act = format!("{:04x}", ccog::utils::dense::fnv1a_64("http://www.w3.org/ns/prov#Activity".as_bytes()) as u16);
-        let h_used = format!("{:04x}", ccog::utils::dense::fnv1a_64("http://www.w3.org/ns/prov#used".as_bytes()) as u16);
+        let h_act = format!(
+            "{:04x}",
+            ccog::utils::dense::fnv1a_64("http://www.w3.org/ns/prov#Activity".as_bytes()) as u16
+        );
+        let h_used = format!(
+            "{:04x}",
+            ccog::utils::dense::fnv1a_64("http://www.w3.org/ns/prov#used".as_bytes()) as u16
+        );
         assert!(
             delta.contains(&h_act),
             "must emit prov:Activity.\n delta: {}",
@@ -489,7 +507,11 @@ fn jtbd_cog8_graph_evaluation_is_deterministic() {
         let d1 = execute_cog8(&nodes, &edges, &context, 0).unwrap();
         let d2 = execute_cog8(&nodes, &edges, &context, 0).unwrap();
         assert_eq!(d1, d2, "COG8 evaluation must be deterministic");
-        assert_eq!(d1.response, Instinct::Ask, "COG8 must fire Ask when DD lacks prov:value");
+        assert_eq!(
+            d1.response,
+            Instinct::Ask,
+            "COG8 must fire Ask when DD lacks prov:value"
+        );
     }
 }
 
@@ -536,7 +558,11 @@ fn jtbd_cog8_graph_perturbation_changes_response() {
     let empty_snap = std::sync::Arc::new(CompiledFieldSnapshot::default());
     let empty_context = empty_context(empty_snap);
     let d_neg = execute_cog8(&nodes, &edges, &empty_context, 0).unwrap();
-    assert_eq!(d_neg.response, Instinct::Ignore, "perturbation must change response");
+    assert_eq!(
+        d_neg.response,
+        Instinct::Ignore,
+        "perturbation must change response"
+    );
 }
 
 // =============================================================================
@@ -586,7 +612,10 @@ fn jtbd_receipt_identity_changes_with_semantic_material() {
     let now_a = Receipt::canonical_material(hook_id, plan_node, delta_a, field_id, prior, polarity);
     std::thread::sleep(std::time::Duration::from_millis(5));
     let now_b = Receipt::canonical_material(hook_id, plan_node, delta_a, field_id, prior, polarity);
-    assert_eq!(now_a, now_b, "canonical_material MUST NOT capture wall-clock");
+    assert_eq!(
+        now_a, now_b,
+        "canonical_material MUST NOT capture wall-clock"
+    );
 }
 
 // =============================================================================
@@ -594,16 +623,20 @@ fn jtbd_receipt_identity_changes_with_semantic_material() {
 // =============================================================================
 
 fn build_genuine_powl64(n: usize) -> Powl64 {
-    use ccog::powl64::{Powl64RouteCell, Polarity};
+    use ccog::powl64::{Polarity, Powl64RouteCell};
     let mut p = Powl64::new();
     let mut current_chain: u64 = 0;
     for i in 0..n {
-        let pol = if i % 2 == 0 { Polarity::Positive } else { Polarity::Negative };
+        let pol = if i % 2 == 0 {
+            Polarity::Positive
+        } else {
+            Polarity::Negative
+        };
         // Simple deterministic hash folding for the test
         let mut h = current_chain ^ ((i + 1) as u64);
         h ^= pol as u64;
         h = h.wrapping_mul(0xbf58476d1ce4e5b9); // fold
-        
+
         p.extend(Powl64RouteCell {
             prior_chain: current_chain,
             chain_head: h,
@@ -643,7 +676,7 @@ fn jtbd_powl64_replay_detects_path_tampering() {
             if i == n - 1 {
                 pol = if pol == Polarity::Positive { Polarity::Negative } else { Polarity::Positive };
             }
-            
+
             let mut h = current_chain ^ ((i + 1) as u64);
             h ^= pol as u64;
             h = h.wrapping_mul(0xbf58476d1ce4e5b9);
@@ -666,7 +699,7 @@ fn jtbd_powl64_replay_detects_path_tampering() {
         for i in 0..n {
             let val = if i == n - 1 { 0xdead_beef_u64 } else { (i + 1) as u64 };
             let pol = if i % 2 == 0 { Polarity::Positive } else { Polarity::Negative };
-            
+
             let mut h = current_chain ^ val;
             h ^= pol as u64;
             h = h.wrapping_mul(0xbf58476d1ce4e5b9);
@@ -693,11 +726,11 @@ fn jtbd_powl64_replay_detects_path_tampering() {
 
 #[test]
 fn jtbd_field_packs_response_class_canonical_only() {
-    use ccog::instinct::AutonomicInstinct;
-    use ccog::multimodal::{ContextBundle, ContextBit, PostureBundle, PostureBit};
     use ccog::instinct::select_instinct_v0;
-    use ccog::runtime::ClosedFieldContext;
+    use ccog::instinct::AutonomicInstinct;
+    use ccog::multimodal::{ContextBit, ContextBundle, PostureBit, PostureBundle};
     use ccog::packs::TierMasks;
+    use ccog::runtime::ClosedFieldContext;
 
     // Edge: package expected + can retrieve + cadence delivery → Retrieve.
     let mut field = FieldContext::new("edge-jtbd");
@@ -714,13 +747,13 @@ fn jtbd_field_packs_response_class_canonical_only() {
         affordance_mask: 1u64 << ContextBit::CAN_RETRIEVE_NOW,
     };
     assert_eq!(
-        select_instinct_v0(&    ClosedFieldContext {
-        snapshot: std::sync::Arc::new(snap.clone()),
-        posture,
-        context: ctx,
-        tiers: TierMasks::ZERO,
-        human_burden: 0,
-    }),
+        select_instinct_v0(&ClosedFieldContext {
+            snapshot: std::sync::Arc::new(snap.clone()),
+            posture,
+            context: ctx,
+            tiers: TierMasks::ZERO,
+            human_burden: 0,
+        }),
         AutonomicInstinct::Retrieve,
         "edge JTBD: package expected + can retrieve + cadence delivery → Retrieve"
     );
@@ -731,7 +764,8 @@ fn jtbd_field_packs_response_class_canonical_only() {
         ..ctx
     };
     assert_ne!(
-        select_instinct_v0(&ClosedFieldContext { human_burden: 0,
+        select_instinct_v0(&ClosedFieldContext {
+            human_burden: 0,
             snapshot: std::sync::Arc::new(snap.clone()),
             posture,
             context: ctx_no_afford,
@@ -747,13 +781,13 @@ fn jtbd_field_packs_response_class_canonical_only() {
         confidence: 200,
     };
     assert_eq!(
-        select_instinct_v0(&    ClosedFieldContext {
-        snapshot: std::sync::Arc::new(snap.clone()),
-        posture: posture_settled,
-        context: ctx,
-        tiers: TierMasks::ZERO,
-        human_burden: 0,
-    }),
+        select_instinct_v0(&ClosedFieldContext {
+            snapshot: std::sync::Arc::new(snap.clone()),
+            posture: posture_settled,
+            context: ctx,
+            tiers: TierMasks::ZERO,
+            human_burden: 0,
+        }),
         AutonomicInstinct::Settle,
         "settled posture must dominate"
     );
@@ -769,7 +803,8 @@ fn jtbd_field_packs_response_class_canonical_only() {
         affordance_mask: 0,
     };
     assert_eq!(
-        select_instinct_v0(&ClosedFieldContext { human_burden: 0,
+        select_instinct_v0(&ClosedFieldContext {
+            human_burden: 0,
             snapshot: std::sync::Arc::new(snap.clone()),
             posture: posture_alert,
             context: ctx_evidence,
@@ -782,27 +817,29 @@ fn jtbd_field_packs_response_class_canonical_only() {
     // Negative boundary: instinct enum is canonical — every variant we
     // observe across this scenario sweep must belong to the canonical set.
     let observed = [
-        select_instinct_v0(&    ClosedFieldContext {
-        snapshot: std::sync::Arc::new(snap.clone()),
-        posture,
-        context: ctx,
-        tiers: TierMasks::ZERO,
-        human_burden: 0,
-    }),
-        select_instinct_v0(&ClosedFieldContext { human_burden: 0,
+        select_instinct_v0(&ClosedFieldContext {
+            snapshot: std::sync::Arc::new(snap.clone()),
+            posture,
+            context: ctx,
+            tiers: TierMasks::ZERO,
+            human_burden: 0,
+        }),
+        select_instinct_v0(&ClosedFieldContext {
+            human_burden: 0,
             snapshot: std::sync::Arc::new(snap.clone()),
             posture,
             context: ctx_no_afford,
             tiers: TierMasks::ZERO,
         }),
-        select_instinct_v0(&    ClosedFieldContext {
-        snapshot: std::sync::Arc::new(snap.clone()),
-        posture: posture_settled,
-        context: ctx,
-        tiers: TierMasks::ZERO,
-        human_burden: 0,
-    }),
-        select_instinct_v0(&ClosedFieldContext { human_burden: 0,
+        select_instinct_v0(&ClosedFieldContext {
+            snapshot: std::sync::Arc::new(snap.clone()),
+            posture: posture_settled,
+            context: ctx,
+            tiers: TierMasks::ZERO,
+            human_burden: 0,
+        }),
+        select_instinct_v0(&ClosedFieldContext {
+            human_burden: 0,
             snapshot: std::sync::Arc::new(snap.clone()),
             posture: posture_alert,
             context: ctx_evidence,
@@ -882,7 +919,7 @@ fn jtbd_missing_invoice_financials_triggers_ask() {
     use ccog::runtime::cog8::*;
 
     let invoice_type_bit = 10; // Simulated predicate bit for Invoice present
-    let total_due_bit = 11;    // Simulated predicate bit for totalPaymentDue present
+    let total_due_bit = 11; // Simulated predicate bit for totalPaymentDue present
 
     let nodes = [Cog8Row {
         pack_id: PackId(1),
@@ -915,12 +952,20 @@ fn jtbd_missing_invoice_financials_triggers_ask() {
     // Positive: Invoice present, totalPaymentDue missing -> Ask.
     let present_pos = 1 << invoice_type_bit;
     let d_pos = execute_cog8_graph(&nodes, &edges, present_pos, 0).expect("execute");
-    assert_eq!(d_pos.response, Instinct::Ask, "Missing financials on invoice must trigger Ask");
+    assert_eq!(
+        d_pos.response,
+        Instinct::Ask,
+        "Missing financials on invoice must trigger Ask"
+    );
 
     // Perturbation: totalPaymentDue present -> Ignore.
     let present_neg = (1 << invoice_type_bit) | (1 << total_due_bit);
     let d_neg = execute_cog8_graph(&nodes, &edges, present_neg, 0).expect("execute");
-    assert_eq!(d_neg.response, Instinct::Ignore, "Invoice with financials should not trigger Ask");
+    assert_eq!(
+        d_neg.response,
+        Instinct::Ignore,
+        "Invoice with financials should not trigger Ask"
+    );
 }
 
 // =============================================================================

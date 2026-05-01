@@ -12,12 +12,14 @@ use crate::construct8::Construct8;
 use crate::instinct::AutonomicInstinct;
 use crate::packs::bits::EDGE_RANGE;
 use crate::packs::FieldPack;
+use crate::runtime::a2a::A2AProjectionTable;
 use crate::runtime::cog8::{
-    Cog8Edge, Cog8Row, CollapseFn, EdgeId, EdgeKind, FieldId, GroupId, Instinct, NodeId, PackId,
-    Powl8Instr, Powl8Op, RuleId, BreedId,
+    BreedId, Cog8Edge, Cog8Row, CollapseFn, EdgeId, EdgeKind, FieldId, GroupId, Instinct, NodeId,
+    PackId, Powl8Instr, Powl8Op, RuleId,
 };
-use crate::runtime::mcp::{MCPProjectionTable, ProjectionRule, ToolCallTemplate, ToolId, ExpectedResultType, EffectPolicy};
-use crate::runtime::a2a::{A2AProjectionTable};
+use crate::runtime::mcp::{
+    EffectPolicy, ExpectedResultType, MCPProjectionTable, ProjectionRule, ToolCallTemplate, ToolId,
+};
 use crate::runtime::ClosedFieldContext;
 use crate::verdict::Breed;
 use anyhow::Result;
@@ -222,9 +224,7 @@ pub static MCP_PROJECTION_TABLE: MCPProjectionTable = MCPProjectionTable {
 };
 
 /// A2A Projection Table for Edge pack.
-pub static A2A_PROJECTION_TABLE: A2AProjectionTable = A2AProjectionTable {
-    rules: &[],
-};
+pub static A2A_PROJECTION_TABLE: A2AProjectionTable = A2AProjectionTable { rules: &[] };
 
 /// Edge / Home pack handle (zero-sized).
 pub struct EdgePack;
@@ -330,11 +330,9 @@ fn act_settle_after_ack(_context: &ClosedFieldContext) -> Result<Construct8> {
 #[must_use]
 pub fn select_instinct(context: &ClosedFieldContext) -> AutonomicInstinct {
     let decision = crate::runtime::cog8::execute_cog8(
-        COG8_NODES,
-        COG8_EDGES,
-        context,
-        1, // Start with root node (Node 0) completed
-    ).unwrap_or_default();
+        COG8_NODES, COG8_EDGES, context, 1, // Start with root node (Node 0) completed
+    )
+    .unwrap_or_default();
 
     if decision.response != Instinct::Ignore {
         return match decision.response {
@@ -378,7 +376,11 @@ mod tests {
         };
         for slot in BUILTINS {
             let delta = (slot.act)(&context).expect("act");
-            assert!(!delta.is_empty(), "edge slot {} must emit a delta", slot.name);
+            assert!(
+                !delta.is_empty(),
+                "edge slot {} must emit a delta",
+                slot.name
+            );
             for triple in delta.iter() {
                 // Ensure IDs are non-zero (hashed)
                 assert_ne!(triple.subject.0, 0);

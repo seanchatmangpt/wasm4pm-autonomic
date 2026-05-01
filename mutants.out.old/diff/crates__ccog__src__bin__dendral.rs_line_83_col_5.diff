@@ -1,0 +1,28 @@
+--- crates/ccog/src/bin/dendral.rs
++++ replace main -> ExitCode with Default::default()
+@@ -75,24 +75,17 @@
+         tier: String,
+         /// Reserved for transparency packet emission.
+         #[arg(long)]
+         sign: bool,
+     },
+ }
+ 
+ fn main() -> ExitCode {
+-    let cli = Cli::parse();
+-    match run(cli) {
+-        Ok(()) => ExitCode::from(0),
+-        Err(e) => {
+-            eprintln!("dendral: {}", e);
+-            ExitCode::from(1)
+-        }
+-    }
++    Default::default() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn run(cli: Cli) -> anyhow::Result<()> {
+     match cli.cmd {
+         Cmd::Reconstruct { urn, field: _ } => {
+             // Phase 7 dependency: reconstructing a snapshot for an arbitrary
+             // URN requires the trace history Writer-7 will provide. Until
+             // then, echo the URN and exit cleanly. (Boundary detector test

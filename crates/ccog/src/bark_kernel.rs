@@ -31,8 +31,8 @@ use crate::hooks::HookOutcome;
 use crate::powl::{Powl8, Powl8Node, MAX_NODES};
 use crate::receipt::Receipt;
 use crate::runtime::cog8::{
-    execute_cog8, Cog8Edge, Cog8Row, CollapseFn, EdgeId, Instinct, NodeId, Powl8Instr,
-    Powl8Op, BreedId, GroupId, PackId, RuleId,
+    execute_cog8, BreedId, Cog8Edge, Cog8Row, CollapseFn, EdgeId, GroupId, Instinct, NodeId,
+    PackId, Powl8Instr, Powl8Op, RuleId,
 };
 use crate::runtime::ClosedFieldContext;
 use anyhow::Result;
@@ -247,12 +247,8 @@ impl BarkKernel {
         let present = compute_present_mask(&context.snapshot);
 
         // Execute the nonlinear COG8 graph.
-        let cog8_dec = execute_cog8(
-            &self.nodes,
-            &self.edges,
-            context,
-            1u64 << self.plan.root
-        ).unwrap_or_default();
+        let cog8_dec = execute_cog8(&self.nodes, &self.edges, context, 1u64 << self.plan.root)
+            .unwrap_or_default();
 
         BarkDecision {
             fired_mask: cog8_dec.fired_mask,
@@ -374,7 +370,6 @@ impl BarkKernel {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::Arc;
     use crate::compiled::CompiledFieldSnapshot;
     use crate::compiled_hook::compile_builtin;
     use crate::field::FieldContext;
@@ -383,6 +378,7 @@ mod tests {
     };
     use crate::multimodal::{ContextBundle, PostureBundle};
     use crate::packs::TierMasks;
+    use std::sync::Arc;
 
     fn empty_context(snap: Arc<CompiledFieldSnapshot>) -> ClosedFieldContext {
         ClosedFieldContext {
@@ -412,7 +408,10 @@ mod tests {
         let kernel = BarkKernel::linear(hooks)?;
         let outcomes = kernel.fire(&context)?;
         let names: Vec<_> = outcomes.iter().map(|o| o.hook_name).collect();
-        assert_eq!(names, vec!["phrase_binding", "transition_admissibility", "receipt"]);
+        assert_eq!(
+            names,
+            vec!["phrase_binding", "transition_admissibility", "receipt"]
+        );
         Ok(())
     }
 

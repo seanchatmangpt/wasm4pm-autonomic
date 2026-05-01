@@ -3,9 +3,9 @@
 //! Implements a multi-role simulation framework for stress-testing the entire
 //! task ecology. Roles include Actor, Environment, Critic, Counterfactual, and Teacher.
 
-use crate::runtime::{ClosedFieldContext, cog8::Cog8Decision};
-use crate::powl64::Powl64;
 use crate::construct8::Construct8;
+use crate::powl64::Powl64;
+use crate::runtime::{cog8::Cog8Decision, ClosedFieldContext};
 use anyhow::Result;
 
 /// Result of a single self-play step.
@@ -51,7 +51,12 @@ pub trait CcogEnvironment {
 /// Core trait for self-play criticism and lawfulness checking.
 pub trait CcogCritic {
     /// Evaluate whether the decision and route were lawful under the context.
-    fn critique(&self, context: &ClosedFieldContext, decision: &Cog8Decision, proof: &Powl64) -> Result<()>;
+    fn critique(
+        &self,
+        context: &ClosedFieldContext,
+        decision: &Cog8Decision,
+        proof: &Powl64,
+    ) -> Result<()>;
 }
 
 /// Core trait for counterfactual mutation (adversarial simulation).
@@ -89,7 +94,7 @@ impl<E: CcogEnvironment, C: CcogCritic, CF: CcogCounterfactual> SelfPlayLoop<E, 
 
         for _ in 0..max_steps {
             let mut ctx = self.env.context();
-            
+
             // Apply counterfactual stress
             self.counterfactual.mutate(&mut ctx)?;
 
@@ -116,8 +121,8 @@ impl<E: CcogEnvironment, C: CcogCritic, CF: CcogCounterfactual> SelfPlayLoop<E, 
             });
 
             // Termination conditions
-            if cog8_decision.response == crate::runtime::cog8::Instinct::Settle 
-                || cog8_decision.response == crate::runtime::cog8::Instinct::Refuse 
+            if cog8_decision.response == crate::runtime::cog8::Instinct::Settle
+                || cog8_decision.response == crate::runtime::cog8::Instinct::Refuse
             {
                 break;
             }

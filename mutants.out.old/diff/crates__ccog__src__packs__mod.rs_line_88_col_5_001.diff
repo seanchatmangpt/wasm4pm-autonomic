@@ -1,0 +1,23 @@
+--- crates/ccog/src/packs/mod.rs
++++ replace iri_is_public -> bool with false
+@@ -80,19 +80,17 @@
+     "https://schema.org/",
+     "urn:blake3:",
+     "urn:ccog:vocab:",
+ ];
+ 
+ /// True iff `iri` starts with any prefix in [`PUBLIC_ONTOLOGY_PREFIXES`].
+ #[must_use]
+ pub fn iri_is_public(iri: &str) -> bool {
+-    PUBLIC_ONTOLOGY_PREFIXES
+-        .iter()
+-        .any(|p| iri.starts_with(p))
++    false /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ // =============================================================================
+ // KZ7B: Runtime Pack Loading Infrastructure
+ // =============================================================================
+ 
+ /// Error type for pack loading failures.
+ #[derive(Clone, Debug, PartialEq, Eq)]

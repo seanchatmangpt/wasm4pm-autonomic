@@ -123,9 +123,18 @@ pub const BUILTINS: &[BarkSlot] = &[
 type HookFn = fn(&ClosedFieldContext) -> bool;
 /// Built-in hook functions for diagnostic traces.
 pub const BUILTIN_HOOKS: &[(&str, HookFn)] = &[
-    ("missing_evidence", crate::hooks::check_any_doc_missing_value_snap),
-    ("phrase_binding", crate::hooks::check_concept_with_label_snap),
-    ("transition_admissibility", crate::hooks::check_any_typed_subject_snap),
+    (
+        "missing_evidence",
+        crate::hooks::check_any_doc_missing_value_snap,
+    ),
+    (
+        "phrase_binding",
+        crate::hooks::check_concept_with_label_snap,
+    ),
+    (
+        "transition_admissibility",
+        crate::hooks::check_any_typed_subject_snap,
+    ),
     ("receipt", |_context| true),
 ];
 
@@ -167,8 +176,7 @@ fn act_missing_evidence(context: &ClosedFieldContext) -> Result<Construct8> {
     let snap = &context.snapshot;
     let dd = NamedNode::new("https://schema.org/DigitalDocument")
         .expect("Invalid schema:DigitalDocument IRI");
-    let pv = NamedNode::new("http://www.w3.org/ns/prov#value")
-        .expect("Invalid prov:value IRI");
+    let pv = NamedNode::new("http://www.w3.org/ns/prov#value").expect("Invalid prov:value IRI");
     let rt = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
     let ask_action = "https://schema.org/AskAction";
     let schema_object = "https://schema.org/object";
@@ -180,9 +188,11 @@ fn act_missing_evidence(context: &ClosedFieldContext) -> Result<Construct8> {
             break;
         }
         if !snap.has_value_for(d, &pv) {
-            let activity =
-                format!("urn:blake3:{}", blake3::hash(d.as_str().as_bytes()).to_hex());
-            
+            let activity = format!(
+                "urn:blake3:{}",
+                blake3::hash(d.as_str().as_bytes()).to_hex()
+            );
+
             let _ = delta.push(Triple::from_strings(&activity, rt, ask_action));
             let _ = delta.push(Triple::from_strings(&activity, schema_object, d.as_str()));
             gaps_emitted += 1;
@@ -223,7 +233,11 @@ fn act_phrase_binding(context: &ClosedFieldContext) -> Result<Construct8> {
             "urn:blake3:{}",
             blake3::hash(label_text.as_bytes()).to_hex()
         );
-        let _ = delta.push(Triple::from_strings(concept.as_str(), was_informed_by, &label_urn));
+        let _ = delta.push(Triple::from_strings(
+            concept.as_str(),
+            was_informed_by,
+            &label_urn,
+        ));
     }
     Ok(delta)
 }
@@ -479,11 +493,11 @@ pub fn bark_table(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::Arc;
     use crate::compiled::CompiledFieldSnapshot;
     use crate::field::FieldContext;
     use crate::multimodal::{ContextBundle, PostureBundle};
     use crate::packs::TierMasks;
+    use std::sync::Arc;
 
     fn empty_context(snap: Arc<CompiledFieldSnapshot>) -> ClosedFieldContext {
         ClosedFieldContext {
@@ -588,8 +602,14 @@ mod tests {
 
         let bark_names: Vec<_> = outcomes.iter().map(|o| o.hook_name).collect();
         let bark_lens: Vec<_> = outcomes.iter().map(|o| o.delta.len()).collect();
-        assert_eq!(staged_names, bark_names, "names must match between staged and convenience APIs");
-        assert_eq!(staged_lens, bark_lens, "delta sizes must match between staged and convenience APIs");
+        assert_eq!(
+            staged_names, bark_names,
+            "names must match between staged and convenience APIs"
+        );
+        assert_eq!(
+            staged_lens, bark_lens,
+            "delta sizes must match between staged and convenience APIs"
+        );
         Ok(())
     }
 
@@ -661,8 +681,14 @@ mod tests {
         );
 
         // Must contain a schema:AskAction activity and a schema:object link.
-        let h_ask = format!("{:08x}", crate::utils::dense::fnv1a_64("https://schema.org/AskAction".as_bytes()) as u32);
-        let h_object = format!("{:04x}", crate::utils::dense::fnv1a_64("https://schema.org/object".as_bytes()) as u16);
+        let h_ask = format!(
+            "{:08x}",
+            crate::utils::dense::fnv1a_64("https://schema.org/AskAction".as_bytes()) as u32
+        );
+        let h_object = format!(
+            "{:04x}",
+            crate::utils::dense::fnv1a_64("https://schema.org/object".as_bytes()) as u16
+        );
         assert!(
             nt.contains(&h_ask),
             "delta must reference schema:AskAction:\n{}",
@@ -699,7 +725,11 @@ mod tests {
             "delta must not contain the old skos:definition placeholder:\n{}",
             nt
         );
-        let h_informed = format!("{:04x}", crate::utils::dense::fnv1a_64("http://www.w3.org/ns/prov#wasInformedBy".as_bytes()) as u16);
+        let h_informed = format!(
+            "{:04x}",
+            crate::utils::dense::fnv1a_64("http://www.w3.org/ns/prov#wasInformedBy".as_bytes())
+                as u16
+        );
         assert!(
             nt.contains(&h_informed),
             "delta must use prov:wasInformedBy:\n{}",
@@ -726,8 +756,14 @@ mod tests {
             .expect("transition_admissibility should fire");
 
         let nt = ta.delta.to_ntriples();
-        let h_activity = format!("{:08x}", crate::utils::dense::fnv1a_64("http://www.w3.org/ns/prov#Activity".as_bytes()) as u32);
-        let h_used = format!("{:04x}", crate::utils::dense::fnv1a_64("http://www.w3.org/ns/prov#used".as_bytes()) as u16);
+        let h_activity = format!(
+            "{:08x}",
+            crate::utils::dense::fnv1a_64("http://www.w3.org/ns/prov#Activity".as_bytes()) as u32
+        );
+        let h_used = format!(
+            "{:04x}",
+            crate::utils::dense::fnv1a_64("http://www.w3.org/ns/prov#used".as_bytes()) as u16
+        );
 
         assert!(
             nt.contains(&h_activity),

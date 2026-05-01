@@ -1,0 +1,21 @@
+--- crates/ccog/src/admit.rs
++++ replace admitted -> bool with false
+@@ -78,17 +78,17 @@
+ /// Returns `true` iff `verdict == 0` (i.e. the verdict is admitted).
+ ///
+ /// This is the only place that converts a denial-polarity bitmask back into
+ /// the `bool` world. Callers should compose admissions with `admit2`/`admit3`
+ /// /`admit4` and keep the bitmask form as long as possible.
+ #[must_use]
+ #[inline(always)]
+ pub const fn admitted(verdict: u64) -> bool {
+-    verdict == 0
++    false /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// Branchless select between two `u64` values driven by `verdict`.
+ ///
+ /// Returns `value` when `verdict` is admitted (`0`), and `fallback` otherwise.
+ /// The selection is performed via mask arithmetic with no conditional jumps:
+ ///
+ /// ```text

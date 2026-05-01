@@ -1,0 +1,952 @@
+
+*** crates/ccog/src/admit.rs:86:5: replace admitted -> bool with true
+
+*** mutation diff:
+--- crates/ccog/src/admit.rs
++++ replace admitted -> bool with true
+@@ -78,17 +78,17 @@
+ /// Returns `true` iff `verdict == 0` (i.e. the verdict is admitted).
+ ///
+ /// This is the only place that converts a denial-polarity bitmask back into
+ /// the `bool` world. Callers should compose admissions with `admit2`/`admit3`
+ /// /`admit4` and keep the bitmask form as long as possible.
+ #[must_use]
+ #[inline(always)]
+ pub const fn admitted(verdict: u64) -> bool {
+-    verdict == 0
++    true /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// Branchless select between two `u64` values driven by `verdict`.
+ ///
+ /// Returns `value` when `verdict` is admitted (`0`), and `fallback` otherwise.
+ /// The selection is performed via mask arithmetic with no conditional jumps:
+ ///
+ /// ```text
+
+
+*** /Users/sac/.rustup/toolchains/nightly-2026-04-15-aarch64-apple-darwin/bin/cargo test --no-run --verbose --package=ccog@0.1.0
+       Fresh unicode-ident v1.0.24
+       Fresh cfg-if v1.0.4
+       Fresh version_check v0.9.5
+       Fresh typenum v1.20.0
+       Fresh memchr v2.8.0
+       Fresh shlex v1.3.0
+       Fresh find-msvc-tools v0.1.9
+       Fresh once_cell v1.21.4
+       Fresh hex v0.4.3
+       Fresh libc v0.2.185
+       Fresh oxiri v0.2.11
+       Fresh oxilangtag v0.1.5
+       Fresh regex-syntax v0.8.10
+       Fresh aho-corasick v1.1.4
+       Fresh autocfg v1.5.0
+       Fresh bitflags v2.11.1
+       Fresh proc-macro2 v1.0.106
+       Fresh serde_core v1.0.228
+       Fresh getrandom v0.3.4
+       Fresh jobserver v0.1.34
+       Fresh cpufeatures v0.2.17
+       Fresh errno v0.3.14
+       Fresh regex-automata v0.4.14
+       Fresh pkg-config v0.3.33
+       Fresh fnv v1.0.7
+       Fresh quick-xml v0.37.5
+       Fresh json-event-parser v0.2.3
+       Fresh quote v1.0.45
+       Fresh generic-array v0.14.7
+       Fresh rand_core v0.9.5
+       Fresh cc v1.2.60
+       Fresh crossbeam-utils v0.8.21
+       Fresh rustix v1.1.4
+       Fresh peg-runtime v0.8.5
+       Fresh semver v1.0.28
+       Fresh itoa v1.0.18
+       Fresh ident_case v1.0.1
+       Fresh regex v1.12.3
+       Fresh syn v2.0.117
+       Fresh block-buffer v0.10.4
+       Fresh crypto-common v0.1.7
+       Fresh num-traits v0.2.19
+       Fresh peg-macros v0.8.5
+       Fresh zmij v1.0.21
+       Fresh crossbeam-epoch v0.9.18
+       Fresh rustc_version v0.4.1
+       Fresh getrandom v0.2.17
+       Fresh tracing-core v0.1.36
+       Fresh ryu-js v1.0.2
+       Fresh zerocopy-derive v0.8.48
+       Fresh digest v0.10.7
+       Fresh thiserror-impl v2.0.18
+       Fresh serde_derive v1.0.228
+       Fresh peg v0.8.5
+       Fresh darling_core v0.20.11
+       Fresh rustversion v1.0.22
+       Fresh getrandom v0.4.2
+       Fresh serde_json v1.0.149
+       Fresh scopeguard v1.2.0
+       Fresh core-foundation-sys v0.8.7
+       Fresh either v1.15.0
+       Fresh log v0.4.29
+       Fresh fastrand v2.4.1
+       Fresh zerocopy v0.8.48
+       Fresh serde v1.0.228
+       Fresh thiserror v2.0.18
+       Fresh sha2 v0.10.9
+       Fresh md-5 v0.10.6
+       Fresh iana-time-zone v0.1.65
+       Fresh zstd-sys v2.0.16+zstd.1.5.7
+       Fresh sha1 v0.10.6
+       Fresh tempfile v3.27.0
+       Fresh lock_api v0.4.14
+       Fresh darling_macro v0.20.11
+       Fresh rand_core v0.6.4
+       Fresh crossbeam-deque v0.8.6
+       Fresh ppv-lite86 v0.2.21
+       Fresh oxsdatatypes v0.2.2
+       Fresh smallvec v1.15.1
+       Fresh half v2.7.1
+       Fresh clap_lex v1.1.0
+       Fresh pin-project-lite v0.2.17
+       Fresh anstyle v1.0.14
+       Fresh rustc-hash v2.1.2
+       Fresh winnow v1.0.2
+       Fresh hashbrown v0.14.5
+       Fresh plotters-backend v0.3.7
+       Fresh ciborium-io v0.2.2
+       Fresh lazy_static v1.5.0
+       Fresh chrono v0.4.44
+       Fresh rand_chacha v0.9.0
+       Fresh parking_lot_core v0.9.12
+       Fresh clap_builder v4.6.0
+       Fresh toml_parser v1.1.2+spec-1.1.0
+       Fresh rand_chacha v0.3.1
+       Fresh tracing v0.1.44
+       Fresh plotters-svg v0.3.7
+       Fresh ciborium-ll v0.2.2
+       Fresh sharded-slab v0.1.7
+       Fresh cobs v0.3.0
+       Fresh rayon-core v1.13.0
+       Fresh darling v0.20.11
+       Fresh rand v0.9.4
+       Fresh dashmap v6.1.0
+       Fresh zstd-safe v7.2.4
+       Fresh itertools v0.10.5
+       Fresh tracing-log v0.2.0
+       Fresh thiserror-impl v1.0.69
+       Fresh xattr v1.6.1
+       Fresh toml_datetime v1.1.1+spec-1.1.0
+       Fresh serde_spanned v1.1.1
+       Fresh matchers v0.2.0
+       Fresh wait-timeout v0.2.1
+       Fresh filetime v0.2.27
+       Fresh thread_local v1.1.9
+       Fresh bit-vec v0.8.0
+       Fresh toml_writer v1.1.1+spec-1.1.0
+       Fresh cast v0.3.0
+       Fresh oxrdf v0.3.3
+       Fresh arrayvec v0.7.6
+       Fresh zeroize v1.8.2
+       Fresh arrayref v0.3.9
+       Fresh signature v2.2.0
+       Fresh hashbrown v0.17.0
+       Fresh constant_time_eq v0.4.2
+       Fresh siphasher v1.0.2
+       Fresh subtle v2.6.1
+       Fresh quick-error v1.2.3
+       Fresh same-file v1.0.6
+       Fresh equivalent v1.0.2
+       Fresh nu-ansi-term v0.50.3
+       Fresh criterion-plot v0.5.0
+       Fresh zstd v0.13.3
+       Fresh bit-set v0.8.0
+       Fresh toml v1.1.2+spec-1.1.0
+       Fresh spargebra v0.4.6
+       Fresh oxttl v0.2.3
+       Fresh oxrdfxml v0.2.3
+       Fresh oxjsonld v0.2.5
+       Fresh sparesults v0.3.3
+       Fresh curve25519-dalek v4.1.3
+       Fresh ed25519 v2.2.3
+       Fresh blake3 v1.8.4
+       Fresh tracing-subscriber v0.3.23
+       Fresh rusty-fork v0.3.1
+       Fresh indexmap v2.14.0
+       Fresh walkdir v2.5.0
+       Fresh thiserror v1.0.69
+       Fresh tar v0.4.45
+       Fresh anyhow v1.0.102
+       Fresh plotters v0.3.7
+       Fresh target-triple v1.0.0
+       Fresh sparopt v0.3.6
+       Fresh oxrdfio v0.2.5
+       Fresh rand v0.8.6
+       Fresh clap v4.6.1
+       Fresh postcard v1.1.3
+       Fresh ciborium v0.2.2
+       Fresh dummy v0.8.0
+       Fresh rayon v1.12.0
+       Fresh generator v0.8.8
+       Fresh tinytemplate v1.2.1
+       Fresh rand_xorshift v0.4.0
+       Fresh is-terminal v0.4.17
+       Fresh console v0.16.3
+       Fresh similar v2.7.0
+       Fresh deunicode v1.6.2
+       Fresh oorandom v11.1.5
+       Fresh anes v0.1.6
+       Fresh spareval v0.2.6
+       Fresh unarray v0.1.4
+       Fresh glob v0.3.3
+       Fresh scoped-tls v1.0.1
+       Fresh termcolor v1.4.1
+       Fresh fake v2.10.0
+       Fresh insta v1.47.2
+       Fresh criterion v0.5.1
+       Fresh ed25519-dalek v2.2.0
+       Fresh oxigraph v0.5.8
+       Fresh proptest v1.11.0
+       Fresh loom v0.7.2
+       Fresh trybuild v1.0.116
+       Dirty ccog v0.1.0 (/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/crates/ccog): the file `crates/ccog/src/admit.rs` has changed (1777658419.108486208s, 52s after last build at 1777658367.200937978s)
+   Compiling ccog v0.1.0 (/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/crates/ccog)
+     Running `/Users/sac/.rustup/toolchains/nightly-2026-04-15-aarch64-apple-darwin/bin/rustc --crate-name ccog --edition=2021 crates/ccog/src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --warn=unexpected_cfgs --check-cfg 'cfg(kani)' --test --cfg 'feature="default"' --cfg 'feature="nightly"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("default", "dendral-cli", "nightly", "phase7", "transparency"))' -C metadata=5bd7781d33137c40 -C extra-filename=-2c3686441a445efb --out-dir /Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps -C incremental=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/incremental -L dependency=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps --extern anyhow=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libanyhow-aff6f3e0116cccfd.rlib --extern blake3=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libblake3-4f0149d32871b2bb.rlib --extern chrono=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libchrono-d56374dc65014386.rlib --extern criterion=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libcriterion-1844379568b6fb99.rlib --extern ed25519_dalek=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libed25519_dalek-6edaec6f8f733580.rlib --extern fake=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libfake-220a3a31afce4a93.rlib --extern indexmap=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libindexmap-8f6d6688a7ff8118.rlib --extern insta=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libinsta-5e144c527fd86885.rlib --extern loom=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libloom-d31fc1d6cdf3a57f.rlib --extern oxigraph=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/liboxigraph-53b66421d59d8cb1.rlib --extern postcard=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libpostcard-680151f9b81c2831.rlib --extern proptest=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libproptest-9165d43d45711efe.rlib --extern rand=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/librand-4b0ddd3fc83f19e9.rlib --extern serde=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde-140d582b280e1dae.rlib --extern serde_json=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde_json-f2799c6c5333a109.rlib --extern smallvec=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libsmallvec-779b396a54a70ff8.rlib --extern tar=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtar-038da34c6b7041bb.rlib --extern thiserror=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libthiserror-0e007d25e7592466.rlib --extern trybuild=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtrybuild-aa30eb16f8ddc8b9.rlib --extern zstd=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libzstd-46a6e1a3f1a5502a.rlib -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/blake3-84e40adff58301cc/out -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/zstd-sys-6fb87390c04c8ffc/out`
+     Running `/Users/sac/.rustup/toolchains/nightly-2026-04-15-aarch64-apple-darwin/bin/rustc --crate-name ccog --edition=2021 crates/ccog/src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type lib --emit=dep-info,metadata,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --warn=unexpected_cfgs --check-cfg 'cfg(kani)' --cfg 'feature="default"' --cfg 'feature="nightly"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("default", "dendral-cli", "nightly", "phase7", "transparency"))' -C metadata=e6122a5d3fb7a13a -C extra-filename=-0889369a51ab47fe --out-dir /Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps -C incremental=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/incremental -L dependency=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps --extern anyhow=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libanyhow-aff6f3e0116cccfd.rmeta --extern blake3=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libblake3-4f0149d32871b2bb.rmeta --extern chrono=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libchrono-d56374dc65014386.rmeta --extern indexmap=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libindexmap-8f6d6688a7ff8118.rmeta --extern oxigraph=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/liboxigraph-53b66421d59d8cb1.rmeta --extern postcard=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libpostcard-680151f9b81c2831.rmeta --extern serde=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde-140d582b280e1dae.rmeta --extern serde_json=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde_json-f2799c6c5333a109.rmeta --extern smallvec=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libsmallvec-779b396a54a70ff8.rmeta --extern tar=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtar-038da34c6b7041bb.rmeta --extern thiserror=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libthiserror-0e007d25e7592466.rmeta --extern zstd=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libzstd-46a6e1a3f1a5502a.rmeta -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/blake3-84e40adff58301cc/out -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/zstd-sys-6fb87390c04c8ffc/out`
+warning: unused variable: `verdict`
+  --> crates/ccog/src/admit.rs:85:23
+   |
+85 | pub const fn admitted(verdict: u64) -> bool {
+   |                       ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_verdict`
+   |
+   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: `ccog` (lib) generated 1 warning (run `cargo fix --lib -p ccog` to apply 1 suggestion)
+     Running `/Users/sac/.rustup/toolchains/nightly-2026-04-15-aarch64-apple-darwin/bin/rustc --crate-name hitl_role_tests --edition=2021 crates/ccog/tests/hitl_role_tests.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --warn=unexpected_cfgs --check-cfg 'cfg(kani)' --test --cfg 'feature="default"' --cfg 'feature="nightly"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("default", "dendral-cli", "nightly", "phase7", "transparency"))' -C metadata=2b336bb506698f7f -C extra-filename=-2306f50916a86e20 --out-dir /Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps -C incremental=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/incremental -L dependency=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps --extern anyhow=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libanyhow-aff6f3e0116cccfd.rlib --extern blake3=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libblake3-4f0149d32871b2bb.rlib --extern ccog=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libccog-0889369a51ab47fe.rlib --extern chrono=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libchrono-d56374dc65014386.rlib --extern criterion=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libcriterion-1844379568b6fb99.rlib --extern ed25519_dalek=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libed25519_dalek-6edaec6f8f733580.rlib --extern fake=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libfake-220a3a31afce4a93.rlib --extern indexmap=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libindexmap-8f6d6688a7ff8118.rlib --extern insta=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libinsta-5e144c527fd86885.rlib --extern loom=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libloom-d31fc1d6cdf3a57f.rlib --extern oxigraph=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/liboxigraph-53b66421d59d8cb1.rlib --extern postcard=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libpostcard-680151f9b81c2831.rlib --extern proptest=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libproptest-9165d43d45711efe.rlib --extern rand=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/librand-4b0ddd3fc83f19e9.rlib --extern serde=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde-140d582b280e1dae.rlib --extern serde_json=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde_json-f2799c6c5333a109.rlib --extern smallvec=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libsmallvec-779b396a54a70ff8.rlib --extern tar=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtar-038da34c6b7041bb.rlib --extern thiserror=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libthiserror-0e007d25e7592466.rlib --extern trybuild=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtrybuild-aa30eb16f8ddc8b9.rlib --extern zstd=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libzstd-46a6e1a3f1a5502a.rlib -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/blake3-84e40adff58301cc/out -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/zstd-sys-6fb87390c04c8ffc/out`
+     Running `/Users/sac/.rustup/toolchains/nightly-2026-04-15-aarch64-apple-darwin/bin/rustc --crate-name kani_harnesses --edition=2021 crates/ccog/tests/kani_harnesses.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --warn=unexpected_cfgs --check-cfg 'cfg(kani)' --test --cfg 'feature="default"' --cfg 'feature="nightly"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("default", "dendral-cli", "nightly", "phase7", "transparency"))' -C metadata=e52909cffc48ea04 -C extra-filename=-78bda4843826ce88 --out-dir /Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps -C incremental=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/incremental -L dependency=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps --extern anyhow=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libanyhow-aff6f3e0116cccfd.rlib --extern blake3=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libblake3-4f0149d32871b2bb.rlib --extern ccog=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libccog-0889369a51ab47fe.rlib --extern chrono=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libchrono-d56374dc65014386.rlib --extern criterion=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libcriterion-1844379568b6fb99.rlib --extern ed25519_dalek=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libed25519_dalek-6edaec6f8f733580.rlib --extern fake=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libfake-220a3a31afce4a93.rlib --extern indexmap=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libindexmap-8f6d6688a7ff8118.rlib --extern insta=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libinsta-5e144c527fd86885.rlib --extern loom=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libloom-d31fc1d6cdf3a57f.rlib --extern oxigraph=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/liboxigraph-53b66421d59d8cb1.rlib --extern postcard=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libpostcard-680151f9b81c2831.rlib --extern proptest=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libproptest-9165d43d45711efe.rlib --extern rand=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/librand-4b0ddd3fc83f19e9.rlib --extern serde=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde-140d582b280e1dae.rlib --extern serde_json=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde_json-f2799c6c5333a109.rlib --extern smallvec=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libsmallvec-779b396a54a70ff8.rlib --extern tar=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtar-038da34c6b7041bb.rlib --extern thiserror=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libthiserror-0e007d25e7592466.rlib --extern trybuild=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtrybuild-aa30eb16f8ddc8b9.rlib --extern zstd=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libzstd-46a6e1a3f1a5502a.rlib -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/blake3-84e40adff58301cc/out -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/zstd-sys-6fb87390c04c8ffc/out`
+     Running `/Users/sac/.rustup/toolchains/nightly-2026-04-15-aarch64-apple-darwin/bin/rustc --crate-name pack_enterprise_conformance --edition=2021 crates/ccog/tests/pack_enterprise_conformance.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --warn=unexpected_cfgs --check-cfg 'cfg(kani)' --test --cfg 'feature="default"' --cfg 'feature="nightly"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("default", "dendral-cli", "nightly", "phase7", "transparency"))' -C metadata=37563a800b696021 -C extra-filename=-ffa11f0555d4e324 --out-dir /Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps -C incremental=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/incremental -L dependency=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps --extern anyhow=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libanyhow-aff6f3e0116cccfd.rlib --extern blake3=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libblake3-4f0149d32871b2bb.rlib --extern ccog=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libccog-0889369a51ab47fe.rlib --extern chrono=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libchrono-d56374dc65014386.rlib --extern criterion=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libcriterion-1844379568b6fb99.rlib --extern ed25519_dalek=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libed25519_dalek-6edaec6f8f733580.rlib --extern fake=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libfake-220a3a31afce4a93.rlib --extern indexmap=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libindexmap-8f6d6688a7ff8118.rlib --extern insta=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libinsta-5e144c527fd86885.rlib --extern loom=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libloom-d31fc1d6cdf3a57f.rlib --extern oxigraph=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/liboxigraph-53b66421d59d8cb1.rlib --extern postcard=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libpostcard-680151f9b81c2831.rlib --extern proptest=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libproptest-9165d43d45711efe.rlib --extern rand=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/librand-4b0ddd3fc83f19e9.rlib --extern serde=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde-140d582b280e1dae.rlib --extern serde_json=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde_json-f2799c6c5333a109.rlib --extern smallvec=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libsmallvec-779b396a54a70ff8.rlib --extern tar=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtar-038da34c6b7041bb.rlib --extern thiserror=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libthiserror-0e007d25e7592466.rlib --extern trybuild=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtrybuild-aa30eb16f8ddc8b9.rlib --extern zstd=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libzstd-46a6e1a3f1a5502a.rlib -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/blake3-84e40adff58301cc/out -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/zstd-sys-6fb87390c04c8ffc/out`
+     Running `/Users/sac/.rustup/toolchains/nightly-2026-04-15-aarch64-apple-darwin/bin/rustc --crate-name loom_concurrency --edition=2021 crates/ccog/tests/loom_concurrency.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --warn=unexpected_cfgs --check-cfg 'cfg(kani)' --test --cfg 'feature="default"' --cfg 'feature="nightly"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("default", "dendral-cli", "nightly", "phase7", "transparency"))' -C metadata=6eea7709da05e13d -C extra-filename=-7ad16060bcf5d4e7 --out-dir /Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps -C incremental=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/incremental -L dependency=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps --extern anyhow=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libanyhow-aff6f3e0116cccfd.rlib --extern blake3=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libblake3-4f0149d32871b2bb.rlib --extern ccog=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libccog-0889369a51ab47fe.rlib --extern chrono=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libchrono-d56374dc65014386.rlib --extern criterion=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libcriterion-1844379568b6fb99.rlib --extern ed25519_dalek=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libed25519_dalek-6edaec6f8f733580.rlib --extern fake=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libfake-220a3a31afce4a93.rlib --extern indexmap=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libindexmap-8f6d6688a7ff8118.rlib --extern insta=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libinsta-5e144c527fd86885.rlib --extern loom=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libloom-d31fc1d6cdf3a57f.rlib --extern oxigraph=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/liboxigraph-53b66421d59d8cb1.rlib --extern postcard=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libpostcard-680151f9b81c2831.rlib --extern proptest=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libproptest-9165d43d45711efe.rlib --extern rand=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/librand-4b0ddd3fc83f19e9.rlib --extern serde=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde-140d582b280e1dae.rlib --extern serde_json=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde_json-f2799c6c5333a109.rlib --extern smallvec=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libsmallvec-779b396a54a70ff8.rlib --extern tar=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtar-038da34c6b7041bb.rlib --extern thiserror=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libthiserror-0e007d25e7592466.rlib --extern trybuild=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtrybuild-aa30eb16f8ddc8b9.rlib --extern zstd=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libzstd-46a6e1a3f1a5502a.rlib -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/blake3-84e40adff58301cc/out -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/zstd-sys-6fb87390c04c8ffc/out`
+     Running `/Users/sac/.rustup/toolchains/nightly-2026-04-15-aarch64-apple-darwin/bin/rustc --crate-name jtbd_generated --edition=2021 crates/ccog/tests/jtbd_generated.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --warn=unexpected_cfgs --check-cfg 'cfg(kani)' --test --cfg 'feature="default"' --cfg 'feature="nightly"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("default", "dendral-cli", "nightly", "phase7", "transparency"))' -C metadata=26318ef33f7e758e -C extra-filename=-45d560c2b9e9fd77 --out-dir /Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps -C incremental=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/incremental -L dependency=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps --extern anyhow=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libanyhow-aff6f3e0116cccfd.rlib --extern blake3=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libblake3-4f0149d32871b2bb.rlib --extern ccog=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libccog-0889369a51ab47fe.rlib --extern chrono=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libchrono-d56374dc65014386.rlib --extern criterion=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libcriterion-1844379568b6fb99.rlib --extern ed25519_dalek=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libed25519_dalek-6edaec6f8f733580.rlib --extern fake=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libfake-220a3a31afce4a93.rlib --extern indexmap=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libindexmap-8f6d6688a7ff8118.rlib --extern insta=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libinsta-5e144c527fd86885.rlib --extern loom=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libloom-d31fc1d6cdf3a57f.rlib --extern oxigraph=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/liboxigraph-53b66421d59d8cb1.rlib --extern postcard=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libpostcard-680151f9b81c2831.rlib --extern proptest=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libproptest-9165d43d45711efe.rlib --extern rand=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/librand-4b0ddd3fc83f19e9.rlib --extern serde=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde-140d582b280e1dae.rlib --extern serde_json=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde_json-f2799c6c5333a109.rlib --extern smallvec=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libsmallvec-779b396a54a70ff8.rlib --extern tar=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtar-038da34c6b7041bb.rlib --extern thiserror=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libthiserror-0e007d25e7592466.rlib --extern trybuild=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtrybuild-aa30eb16f8ddc8b9.rlib --extern zstd=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libzstd-46a6e1a3f1a5502a.rlib -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/blake3-84e40adff58301cc/out -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/zstd-sys-6fb87390c04c8ffc/out`
+     Running `/Users/sac/.rustup/toolchains/nightly-2026-04-15-aarch64-apple-darwin/bin/rustc --crate-name hook_integration_test --edition=2021 crates/ccog/tests/hook_integration_test.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --warn=unexpected_cfgs --check-cfg 'cfg(kani)' --test --cfg 'feature="default"' --cfg 'feature="nightly"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("default", "dendral-cli", "nightly", "phase7", "transparency"))' -C metadata=a9c5aa26c991db38 -C extra-filename=-9f7063460797121c --out-dir /Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps -C incremental=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/incremental -L dependency=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps --extern anyhow=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libanyhow-aff6f3e0116cccfd.rlib --extern blake3=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libblake3-4f0149d32871b2bb.rlib --extern ccog=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libccog-0889369a51ab47fe.rlib --extern chrono=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libchrono-d56374dc65014386.rlib --extern criterion=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libcriterion-1844379568b6fb99.rlib --extern ed25519_dalek=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libed25519_dalek-6edaec6f8f733580.rlib --extern fake=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libfake-220a3a31afce4a93.rlib --extern indexmap=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libindexmap-8f6d6688a7ff8118.rlib --extern insta=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libinsta-5e144c527fd86885.rlib --extern loom=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libloom-d31fc1d6cdf3a57f.rlib --extern oxigraph=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/liboxigraph-53b66421d59d8cb1.rlib --extern postcard=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libpostcard-680151f9b81c2831.rlib --extern proptest=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libproptest-9165d43d45711efe.rlib --extern rand=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/librand-4b0ddd3fc83f19e9.rlib --extern serde=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde-140d582b280e1dae.rlib --extern serde_json=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde_json-f2799c6c5333a109.rlib --extern smallvec=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libsmallvec-779b396a54a70ff8.rlib --extern tar=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtar-038da34c6b7041bb.rlib --extern thiserror=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libthiserror-0e007d25e7592466.rlib --extern trybuild=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtrybuild-aa30eb16f8ddc8b9.rlib --extern zstd=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libzstd-46a6e1a3f1a5502a.rlib -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/blake3-84e40adff58301cc/out -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/zstd-sys-6fb87390c04c8ffc/out`
+     Running `/Users/sac/.rustup/toolchains/nightly-2026-04-15-aarch64-apple-darwin/bin/rustc --crate-name pack_namespace_isolation --edition=2021 crates/ccog/tests/pack_namespace_isolation.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --warn=unexpected_cfgs --check-cfg 'cfg(kani)' --test --cfg 'feature="default"' --cfg 'feature="nightly"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("default", "dendral-cli", "nightly", "phase7", "transparency"))' -C metadata=e68faa390483fb4c -C extra-filename=-4cb4ad8495c918cf --out-dir /Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps -C incremental=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/incremental -L dependency=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps --extern anyhow=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libanyhow-aff6f3e0116cccfd.rlib --extern blake3=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libblake3-4f0149d32871b2bb.rlib --extern ccog=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libccog-0889369a51ab47fe.rlib --extern chrono=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libchrono-d56374dc65014386.rlib --extern criterion=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libcriterion-1844379568b6fb99.rlib --extern ed25519_dalek=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libed25519_dalek-6edaec6f8f733580.rlib --extern fake=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libfake-220a3a31afce4a93.rlib --extern indexmap=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libindexmap-8f6d6688a7ff8118.rlib --extern insta=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libinsta-5e144c527fd86885.rlib --extern loom=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libloom-d31fc1d6cdf3a57f.rlib --extern oxigraph=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/liboxigraph-53b66421d59d8cb1.rlib --extern postcard=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libpostcard-680151f9b81c2831.rlib --extern proptest=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libproptest-9165d43d45711efe.rlib --extern rand=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/librand-4b0ddd3fc83f19e9.rlib --extern serde=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde-140d582b280e1dae.rlib --extern serde_json=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde_json-f2799c6c5333a109.rlib --extern smallvec=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libsmallvec-779b396a54a70ff8.rlib --extern tar=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtar-038da34c6b7041bb.rlib --extern thiserror=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libthiserror-0e007d25e7592466.rlib --extern trybuild=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtrybuild-aa30eb16f8ddc8b9.rlib --extern zstd=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libzstd-46a6e1a3f1a5502a.rlib -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/blake3-84e40adff58301cc/out -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/zstd-sys-6fb87390c04c8ffc/out`
+     Running `/Users/sac/.rustup/toolchains/nightly-2026-04-15-aarch64-apple-darwin/bin/rustc --crate-name dense_drift --edition=2021 crates/ccog/tests/dense_drift.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --warn=unexpected_cfgs --check-cfg 'cfg(kani)' --test --cfg 'feature="default"' --cfg 'feature="nightly"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("default", "dendral-cli", "nightly", "phase7", "transparency"))' -C metadata=acf72387acf7666c -C extra-filename=-e8ebbc64a9ba1b06 --out-dir /Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps -C incremental=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/incremental -L dependency=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps --extern anyhow=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libanyhow-aff6f3e0116cccfd.rlib --extern blake3=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libblake3-4f0149d32871b2bb.rlib --extern ccog=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libccog-0889369a51ab47fe.rlib --extern chrono=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libchrono-d56374dc65014386.rlib --extern criterion=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libcriterion-1844379568b6fb99.rlib --extern ed25519_dalek=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libed25519_dalek-6edaec6f8f733580.rlib --extern fake=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libfake-220a3a31afce4a93.rlib --extern indexmap=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libindexmap-8f6d6688a7ff8118.rlib --extern insta=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libinsta-5e144c527fd86885.rlib --extern loom=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libloom-d31fc1d6cdf3a57f.rlib --extern oxigraph=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/liboxigraph-53b66421d59d8cb1.rlib --extern postcard=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libpostcard-680151f9b81c2831.rlib --extern proptest=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libproptest-9165d43d45711efe.rlib --extern rand=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/librand-4b0ddd3fc83f19e9.rlib --extern serde=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde-140d582b280e1dae.rlib --extern serde_json=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde_json-f2799c6c5333a109.rlib --extern smallvec=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libsmallvec-779b396a54a70ff8.rlib --extern tar=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtar-038da34c6b7041bb.rlib --extern thiserror=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libthiserror-0e007d25e7592466.rlib --extern trybuild=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtrybuild-aa30eb16f8ddc8b9.rlib --extern zstd=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libzstd-46a6e1a3f1a5502a.rlib -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/blake3-84e40adff58301cc/out -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/zstd-sys-6fb87390c04c8ffc/out`
+     Running `/Users/sac/.rustup/toolchains/nightly-2026-04-15-aarch64-apple-darwin/bin/rustc --crate-name runtime_step_test --edition=2021 crates/ccog/tests/runtime_step_test.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --warn=unexpected_cfgs --check-cfg 'cfg(kani)' --test --cfg 'feature="default"' --cfg 'feature="nightly"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("default", "dendral-cli", "nightly", "phase7", "transparency"))' -C metadata=86b0b0149ca7cac5 -C extra-filename=-1e7c12bcd2fb27b6 --out-dir /Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps -C incremental=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/incremental -L dependency=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps --extern anyhow=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libanyhow-aff6f3e0116cccfd.rlib --extern blake3=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libblake3-4f0149d32871b2bb.rlib --extern ccog=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libccog-0889369a51ab47fe.rlib --extern chrono=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libchrono-d56374dc65014386.rlib --extern criterion=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libcriterion-1844379568b6fb99.rlib --extern ed25519_dalek=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libed25519_dalek-6edaec6f8f733580.rlib --extern fake=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libfake-220a3a31afce4a93.rlib --extern indexmap=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libindexmap-8f6d6688a7ff8118.rlib --extern insta=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libinsta-5e144c527fd86885.rlib --extern loom=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libloom-d31fc1d6cdf3a57f.rlib --extern oxigraph=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/liboxigraph-53b66421d59d8cb1.rlib --extern postcard=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libpostcard-680151f9b81c2831.rlib --extern proptest=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libproptest-9165d43d45711efe.rlib --extern rand=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/librand-4b0ddd3fc83f19e9.rlib --extern serde=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde-140d582b280e1dae.rlib --extern serde_json=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde_json-f2799c6c5333a109.rlib --extern smallvec=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libsmallvec-779b396a54a70ff8.rlib --extern tar=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtar-038da34c6b7041bb.rlib --extern thiserror=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libthiserror-0e007d25e7592466.rlib --extern trybuild=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtrybuild-aa30eb16f8ddc8b9.rlib --extern zstd=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libzstd-46a6e1a3f1a5502a.rlib -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/blake3-84e40adff58301cc/out -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/zstd-sys-6fb87390c04c8ffc/out`
+     Running `/Users/sac/.rustup/toolchains/nightly-2026-04-15-aarch64-apple-darwin/bin/rustc --crate-name powl64_abi_conformance --edition=2021 crates/ccog/tests/powl64_abi_conformance.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --warn=unexpected_cfgs --check-cfg 'cfg(kani)' --test --cfg 'feature="default"' --cfg 'feature="nightly"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("default", "dendral-cli", "nightly", "phase7", "transparency"))' -C metadata=b21224ad22bcbc69 -C extra-filename=-673b75561ea0657d --out-dir /Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps -C incremental=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/incremental -L dependency=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps --extern anyhow=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libanyhow-aff6f3e0116cccfd.rlib --extern blake3=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libblake3-4f0149d32871b2bb.rlib --extern ccog=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libccog-0889369a51ab47fe.rlib --extern chrono=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libchrono-d56374dc65014386.rlib --extern criterion=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libcriterion-1844379568b6fb99.rlib --extern ed25519_dalek=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libed25519_dalek-6edaec6f8f733580.rlib --extern fake=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libfake-220a3a31afce4a93.rlib --extern indexmap=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libindexmap-8f6d6688a7ff8118.rlib --extern insta=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libinsta-5e144c527fd86885.rlib --extern loom=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libloom-d31fc1d6cdf3a57f.rlib --extern oxigraph=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/liboxigraph-53b66421d59d8cb1.rlib --extern postcard=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libpostcard-680151f9b81c2831.rlib --extern proptest=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libproptest-9165d43d45711efe.rlib --extern rand=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/librand-4b0ddd3fc83f19e9.rlib --extern serde=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde-140d582b280e1dae.rlib --extern serde_json=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde_json-f2799c6c5333a109.rlib --extern smallvec=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libsmallvec-779b396a54a70ff8.rlib --extern tar=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtar-038da34c6b7041bb.rlib --extern thiserror=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libthiserror-0e007d25e7592466.rlib --extern trybuild=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtrybuild-aa30eb16f8ddc8b9.rlib --extern zstd=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libzstd-46a6e1a3f1a5502a.rlib -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/blake3-84e40adff58301cc/out -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/zstd-sys-6fb87390c04c8ffc/out`
+     Running `/Users/sac/.rustup/toolchains/nightly-2026-04-15-aarch64-apple-darwin/bin/rustc --crate-name gauntlet --edition=2021 crates/ccog/tests/gauntlet.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --warn=unexpected_cfgs --check-cfg 'cfg(kani)' --test --cfg 'feature="default"' --cfg 'feature="nightly"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("default", "dendral-cli", "nightly", "phase7", "transparency"))' -C metadata=b04ec2f76bf0d48c -C extra-filename=-e4a0628ad98527db --out-dir /Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps -C incremental=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/incremental -L dependency=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps --extern anyhow=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libanyhow-aff6f3e0116cccfd.rlib --extern blake3=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libblake3-4f0149d32871b2bb.rlib --extern ccog=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libccog-0889369a51ab47fe.rlib --extern chrono=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libchrono-d56374dc65014386.rlib --extern criterion=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libcriterion-1844379568b6fb99.rlib --extern ed25519_dalek=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libed25519_dalek-6edaec6f8f733580.rlib --extern fake=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libfake-220a3a31afce4a93.rlib --extern indexmap=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libindexmap-8f6d6688a7ff8118.rlib --extern insta=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libinsta-5e144c527fd86885.rlib --extern loom=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libloom-d31fc1d6cdf3a57f.rlib --extern oxigraph=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/liboxigraph-53b66421d59d8cb1.rlib --extern postcard=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libpostcard-680151f9b81c2831.rlib --extern proptest=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libproptest-9165d43d45711efe.rlib --extern rand=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/librand-4b0ddd3fc83f19e9.rlib --extern serde=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde-140d582b280e1dae.rlib --extern serde_json=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde_json-f2799c6c5333a109.rlib --extern smallvec=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libsmallvec-779b396a54a70ff8.rlib --extern tar=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtar-038da34c6b7041bb.rlib --extern thiserror=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libthiserror-0e007d25e7592466.rlib --extern trybuild=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtrybuild-aa30eb16f8ddc8b9.rlib --extern zstd=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libzstd-46a6e1a3f1a5502a.rlib -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/blake3-84e40adff58301cc/out -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/zstd-sys-6fb87390c04c8ffc/out`
+     Running `/Users/sac/.rustup/toolchains/nightly-2026-04-15-aarch64-apple-darwin/bin/rustc --crate-name powl8_admission_test --edition=2021 crates/ccog/tests/powl8_admission_test.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --warn=unexpected_cfgs --check-cfg 'cfg(kani)' --test --cfg 'feature="default"' --cfg 'feature="nightly"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("default", "dendral-cli", "nightly", "phase7", "transparency"))' -C metadata=92846b131ef5e7f5 -C extra-filename=-daccb0c025313e4b --out-dir /Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps -C incremental=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/incremental -L dependency=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps --extern anyhow=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libanyhow-aff6f3e0116cccfd.rlib --extern blake3=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libblake3-4f0149d32871b2bb.rlib --extern ccog=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libccog-0889369a51ab47fe.rlib --extern chrono=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libchrono-d56374dc65014386.rlib --extern criterion=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libcriterion-1844379568b6fb99.rlib --extern ed25519_dalek=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libed25519_dalek-6edaec6f8f733580.rlib --extern fake=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libfake-220a3a31afce4a93.rlib --extern indexmap=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libindexmap-8f6d6688a7ff8118.rlib --extern insta=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libinsta-5e144c527fd86885.rlib --extern loom=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libloom-d31fc1d6cdf3a57f.rlib --extern oxigraph=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/liboxigraph-53b66421d59d8cb1.rlib --extern postcard=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libpostcard-680151f9b81c2831.rlib --extern proptest=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libproptest-9165d43d45711efe.rlib --extern rand=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/librand-4b0ddd3fc83f19e9.rlib --extern serde=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde-140d582b280e1dae.rlib --extern serde_json=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde_json-f2799c6c5333a109.rlib --extern smallvec=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libsmallvec-779b396a54a70ff8.rlib --extern tar=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtar-038da34c6b7041bb.rlib --extern thiserror=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libthiserror-0e007d25e7592466.rlib --extern trybuild=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtrybuild-aa30eb16f8ddc8b9.rlib --extern zstd=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libzstd-46a6e1a3f1a5502a.rlib -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/blake3-84e40adff58301cc/out -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/zstd-sys-6fb87390c04c8ffc/out`
+     Running `/Users/sac/.rustup/toolchains/nightly-2026-04-15-aarch64-apple-darwin/bin/rustc --crate-name a2a_delegation_tests --edition=2021 crates/ccog/tests/a2a_delegation_tests.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --warn=unexpected_cfgs --check-cfg 'cfg(kani)' --test --cfg 'feature="default"' --cfg 'feature="nightly"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("default", "dendral-cli", "nightly", "phase7", "transparency"))' -C metadata=81306c366b146af9 -C extra-filename=-a2aa29f150856f2d --out-dir /Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps -C incremental=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/incremental -L dependency=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps --extern anyhow=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libanyhow-aff6f3e0116cccfd.rlib --extern blake3=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libblake3-4f0149d32871b2bb.rlib --extern ccog=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libccog-0889369a51ab47fe.rlib --extern chrono=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libchrono-d56374dc65014386.rlib --extern criterion=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libcriterion-1844379568b6fb99.rlib --extern ed25519_dalek=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libed25519_dalek-6edaec6f8f733580.rlib --extern fake=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libfake-220a3a31afce4a93.rlib --extern indexmap=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libindexmap-8f6d6688a7ff8118.rlib --extern insta=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libinsta-5e144c527fd86885.rlib --extern loom=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libloom-d31fc1d6cdf3a57f.rlib --extern oxigraph=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/liboxigraph-53b66421d59d8cb1.rlib --extern postcard=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libpostcard-680151f9b81c2831.rlib --extern proptest=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libproptest-9165d43d45711efe.rlib --extern rand=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/librand-4b0ddd3fc83f19e9.rlib --extern serde=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde-140d582b280e1dae.rlib --extern serde_json=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde_json-f2799c6c5333a109.rlib --extern smallvec=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libsmallvec-779b396a54a70ff8.rlib --extern tar=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtar-038da34c6b7041bb.rlib --extern thiserror=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libthiserror-0e007d25e7592466.rlib --extern trybuild=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtrybuild-aa30eb16f8ddc8b9.rlib --extern zstd=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libzstd-46a6e1a3f1a5502a.rlib -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/blake3-84e40adff58301cc/out -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/zstd-sys-6fb87390c04c8ffc/out`
+     Running `/Users/sac/.rustup/toolchains/nightly-2026-04-15-aarch64-apple-darwin/bin/rustc --crate-name pack_dev_conformance --edition=2021 crates/ccog/tests/pack_dev_conformance.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --warn=unexpected_cfgs --check-cfg 'cfg(kani)' --test --cfg 'feature="default"' --cfg 'feature="nightly"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("default", "dendral-cli", "nightly", "phase7", "transparency"))' -C metadata=3d2032fbbf043908 -C extra-filename=-1a8b1fc9093a9d0c --out-dir /Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps -C incremental=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/incremental -L dependency=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps --extern anyhow=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libanyhow-aff6f3e0116cccfd.rlib --extern blake3=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libblake3-4f0149d32871b2bb.rlib --extern ccog=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libccog-0889369a51ab47fe.rlib --extern chrono=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libchrono-d56374dc65014386.rlib --extern criterion=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libcriterion-1844379568b6fb99.rlib --extern ed25519_dalek=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libed25519_dalek-6edaec6f8f733580.rlib --extern fake=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libfake-220a3a31afce4a93.rlib --extern indexmap=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libindexmap-8f6d6688a7ff8118.rlib --extern insta=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libinsta-5e144c527fd86885.rlib --extern loom=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libloom-d31fc1d6cdf3a57f.rlib --extern oxigraph=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/liboxigraph-53b66421d59d8cb1.rlib --extern postcard=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libpostcard-680151f9b81c2831.rlib --extern proptest=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libproptest-9165d43d45711efe.rlib --extern rand=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/librand-4b0ddd3fc83f19e9.rlib --extern serde=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde-140d582b280e1dae.rlib --extern serde_json=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde_json-f2799c6c5333a109.rlib --extern smallvec=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libsmallvec-779b396a54a70ff8.rlib --extern tar=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtar-038da34c6b7041bb.rlib --extern thiserror=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libthiserror-0e007d25e7592466.rlib --extern trybuild=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtrybuild-aa30eb16f8ddc8b9.rlib --extern zstd=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libzstd-46a6e1a3f1a5502a.rlib -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/blake3-84e40adff58301cc/out -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/zstd-sys-6fb87390c04c8ffc/out`
+     Running `/Users/sac/.rustup/toolchains/nightly-2026-04-15-aarch64-apple-darwin/bin/rustc --crate-name decide_eq_with_trace --edition=2021 crates/ccog/tests/decide_eq_with_trace.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --warn=unexpected_cfgs --check-cfg 'cfg(kani)' --test --cfg 'feature="default"' --cfg 'feature="nightly"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("default", "dendral-cli", "nightly", "phase7", "transparency"))' -C metadata=6c1fcb085186d634 -C extra-filename=-b02bbcf0d323a233 --out-dir /Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps -C incremental=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/incremental -L dependency=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps --extern anyhow=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libanyhow-aff6f3e0116cccfd.rlib --extern blake3=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libblake3-4f0149d32871b2bb.rlib --extern ccog=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libccog-0889369a51ab47fe.rlib --extern chrono=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libchrono-d56374dc65014386.rlib --extern criterion=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libcriterion-1844379568b6fb99.rlib --extern ed25519_dalek=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libed25519_dalek-6edaec6f8f733580.rlib --extern fake=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libfake-220a3a31afce4a93.rlib --extern indexmap=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libindexmap-8f6d6688a7ff8118.rlib --extern insta=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libinsta-5e144c527fd86885.rlib --extern loom=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libloom-d31fc1d6cdf3a57f.rlib --extern oxigraph=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/liboxigraph-53b66421d59d8cb1.rlib --extern postcard=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libpostcard-680151f9b81c2831.rlib --extern proptest=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libproptest-9165d43d45711efe.rlib --extern rand=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/librand-4b0ddd3fc83f19e9.rlib --extern serde=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde-140d582b280e1dae.rlib --extern serde_json=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde_json-f2799c6c5333a109.rlib --extern smallvec=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libsmallvec-779b396a54a70ff8.rlib --extern tar=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtar-038da34c6b7041bb.rlib --extern thiserror=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libthiserror-0e007d25e7592466.rlib --extern trybuild=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtrybuild-aa30eb16f8ddc8b9.rlib --extern zstd=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libzstd-46a6e1a3f1a5502a.rlib -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/blake3-84e40adff58301cc/out -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/zstd-sys-6fb87390c04c8ffc/out`
+     Running `/Users/sac/.rustup/toolchains/nightly-2026-04-15-aarch64-apple-darwin/bin/rustc --crate-name powl64_chain_test --edition=2021 crates/ccog/tests/powl64_chain_test.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --warn=unexpected_cfgs --check-cfg 'cfg(kani)' --test --cfg 'feature="default"' --cfg 'feature="nightly"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("default", "dendral-cli", "nightly", "phase7", "transparency"))' -C metadata=077d77945c0f5b98 -C extra-filename=-5a39a1819d18df50 --out-dir /Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps -C incremental=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/incremental -L dependency=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps --extern anyhow=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libanyhow-aff6f3e0116cccfd.rlib --extern blake3=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libblake3-4f0149d32871b2bb.rlib --extern ccog=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libccog-0889369a51ab47fe.rlib --extern chrono=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libchrono-d56374dc65014386.rlib --extern criterion=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libcriterion-1844379568b6fb99.rlib --extern ed25519_dalek=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libed25519_dalek-6edaec6f8f733580.rlib --extern fake=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libfake-220a3a31afce4a93.rlib --extern indexmap=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libindexmap-8f6d6688a7ff8118.rlib --extern insta=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libinsta-5e144c527fd86885.rlib --extern loom=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libloom-d31fc1d6cdf3a57f.rlib --extern oxigraph=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/liboxigraph-53b66421d59d8cb1.rlib --extern postcard=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libpostcard-680151f9b81c2831.rlib --extern proptest=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libproptest-9165d43d45711efe.rlib --extern rand=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/librand-4b0ddd3fc83f19e9.rlib --extern serde=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde-140d582b280e1dae.rlib --extern serde_json=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde_json-f2799c6c5333a109.rlib --extern smallvec=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libsmallvec-779b396a54a70ff8.rlib --extern tar=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtar-038da34c6b7041bb.rlib --extern thiserror=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libthiserror-0e007d25e7592466.rlib --extern trybuild=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtrybuild-aa30eb16f8ddc8b9.rlib --extern zstd=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libzstd-46a6e1a3f1a5502a.rlib -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/blake3-84e40adff58301cc/out -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/zstd-sys-6fb87390c04c8ffc/out`
+warning: `ccog` (lib test) generated 1 warning (1 duplicate)
+     Running `/Users/sac/.rustup/toolchains/nightly-2026-04-15-aarch64-apple-darwin/bin/rustc --crate-name mcp_projection_tests --edition=2021 crates/ccog/tests/mcp_projection_tests.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --warn=unexpected_cfgs --check-cfg 'cfg(kani)' --test --cfg 'feature="default"' --cfg 'feature="nightly"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("default", "dendral-cli", "nightly", "phase7", "transparency"))' -C metadata=f998d095b0f78526 -C extra-filename=-307df852a989da42 --out-dir /Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps -C incremental=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/incremental -L dependency=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps --extern anyhow=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libanyhow-aff6f3e0116cccfd.rlib --extern blake3=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libblake3-4f0149d32871b2bb.rlib --extern ccog=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libccog-0889369a51ab47fe.rlib --extern chrono=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libchrono-d56374dc65014386.rlib --extern criterion=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libcriterion-1844379568b6fb99.rlib --extern ed25519_dalek=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libed25519_dalek-6edaec6f8f733580.rlib --extern fake=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libfake-220a3a31afce4a93.rlib --extern indexmap=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libindexmap-8f6d6688a7ff8118.rlib --extern insta=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libinsta-5e144c527fd86885.rlib --extern loom=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libloom-d31fc1d6cdf3a57f.rlib --extern oxigraph=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/liboxigraph-53b66421d59d8cb1.rlib --extern postcard=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libpostcard-680151f9b81c2831.rlib --extern proptest=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libproptest-9165d43d45711efe.rlib --extern rand=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/librand-4b0ddd3fc83f19e9.rlib --extern serde=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde-140d582b280e1dae.rlib --extern serde_json=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde_json-f2799c6c5333a109.rlib --extern smallvec=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libsmallvec-779b396a54a70ff8.rlib --extern tar=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtar-038da34c6b7041bb.rlib --extern thiserror=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libthiserror-0e007d25e7592466.rlib --extern trybuild=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtrybuild-aa30eb16f8ddc8b9.rlib --extern zstd=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libzstd-46a6e1a3f1a5502a.rlib -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/blake3-84e40adff58301cc/out -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/zstd-sys-6fb87390c04c8ffc/out`
+warning: unexpected `cfg` condition name: `loom`
+ --> crates/ccog/tests/loom_concurrency.rs:2:8
+  |
+2 | #![cfg(loom)]
+  |        ^^^^
+  |
+  = help: expected names are: `docsrs`, `feature`, `kani`, and `test` and 32 more
+  = help: consider using a Cargo feature instead
+  = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+           [lints.rust]
+           unexpected_cfgs = { level = "warn", check-cfg = ['cfg(loom)'] }
+  = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(loom)");` to the top of the `build.rs`
+  = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+  = note: requested on the command line with `-W unexpected-cfgs`
+
+warning: unused import: `ccog::runtime::cog8::*`
+ --> crates/ccog/tests/kani_harnesses.rs:1:5
+  |
+1 | use ccog::runtime::cog8::*;
+  |     ^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `ccog::ids::*`
+ --> crates/ccog/tests/kani_harnesses.rs:2:5
+  |
+2 | use ccog::ids::*;
+  |     ^^^^^^^^^^^^
+
+warning: `ccog` (test "loom_concurrency") generated 1 warning
+     Running `/Users/sac/.rustup/toolchains/nightly-2026-04-15-aarch64-apple-darwin/bin/rustc --crate-name fuzz_hooks --edition=2021 crates/ccog/tests/fuzz_hooks.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --warn=unexpected_cfgs --check-cfg 'cfg(kani)' --test --cfg 'feature="default"' --cfg 'feature="nightly"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("default", "dendral-cli", "nightly", "phase7", "transparency"))' -C metadata=98dea4a7cd0b6aea -C extra-filename=-99febc65907bb0cc --out-dir /Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps -C incremental=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/incremental -L dependency=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps --extern anyhow=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libanyhow-aff6f3e0116cccfd.rlib --extern blake3=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libblake3-4f0149d32871b2bb.rlib --extern ccog=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libccog-0889369a51ab47fe.rlib --extern chrono=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libchrono-d56374dc65014386.rlib --extern criterion=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libcriterion-1844379568b6fb99.rlib --extern ed25519_dalek=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libed25519_dalek-6edaec6f8f733580.rlib --extern fake=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libfake-220a3a31afce4a93.rlib --extern indexmap=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libindexmap-8f6d6688a7ff8118.rlib --extern insta=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libinsta-5e144c527fd86885.rlib --extern loom=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libloom-d31fc1d6cdf3a57f.rlib --extern oxigraph=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/liboxigraph-53b66421d59d8cb1.rlib --extern postcard=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libpostcard-680151f9b81c2831.rlib --extern proptest=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libproptest-9165d43d45711efe.rlib --extern rand=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/librand-4b0ddd3fc83f19e9.rlib --extern serde=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde-140d582b280e1dae.rlib --extern serde_json=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde_json-f2799c6c5333a109.rlib --extern smallvec=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libsmallvec-779b396a54a70ff8.rlib --extern tar=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtar-038da34c6b7041bb.rlib --extern thiserror=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libthiserror-0e007d25e7592466.rlib --extern trybuild=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtrybuild-aa30eb16f8ddc8b9.rlib --extern zstd=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libzstd-46a6e1a3f1a5502a.rlib -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/blake3-84e40adff58301cc/out -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/zstd-sys-6fb87390c04c8ffc/out`
+warning: `ccog` (test "kani_harnesses") generated 2 warnings (run `cargo fix --test "kani_harnesses" -p ccog` to apply 2 suggestions)
+     Running `/Users/sac/.rustup/toolchains/nightly-2026-04-15-aarch64-apple-darwin/bin/rustc --crate-name hearsay_fusion_test --edition=2021 crates/ccog/tests/hearsay_fusion_test.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --warn=unexpected_cfgs --check-cfg 'cfg(kani)' --test --cfg 'feature="default"' --cfg 'feature="nightly"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("default", "dendral-cli", "nightly", "phase7", "transparency"))' -C metadata=19641cdf75c09201 -C extra-filename=-f655ff60d2306998 --out-dir /Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps -C incremental=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/incremental -L dependency=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps --extern anyhow=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libanyhow-aff6f3e0116cccfd.rlib --extern blake3=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libblake3-4f0149d32871b2bb.rlib --extern ccog=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libccog-0889369a51ab47fe.rlib --extern chrono=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libchrono-d56374dc65014386.rlib --extern criterion=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libcriterion-1844379568b6fb99.rlib --extern ed25519_dalek=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libed25519_dalek-6edaec6f8f733580.rlib --extern fake=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libfake-220a3a31afce4a93.rlib --extern indexmap=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libindexmap-8f6d6688a7ff8118.rlib --extern insta=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libinsta-5e144c527fd86885.rlib --extern loom=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libloom-d31fc1d6cdf3a57f.rlib --extern oxigraph=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/liboxigraph-53b66421d59d8cb1.rlib --extern postcard=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libpostcard-680151f9b81c2831.rlib --extern proptest=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libproptest-9165d43d45711efe.rlib --extern rand=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/librand-4b0ddd3fc83f19e9.rlib --extern serde=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde-140d582b280e1dae.rlib --extern serde_json=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde_json-f2799c6c5333a109.rlib --extern smallvec=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libsmallvec-779b396a54a70ff8.rlib --extern tar=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtar-038da34c6b7041bb.rlib --extern thiserror=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libthiserror-0e007d25e7592466.rlib --extern trybuild=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtrybuild-aa30eb16f8ddc8b9.rlib --extern zstd=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libzstd-46a6e1a3f1a5502a.rlib -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/blake3-84e40adff58301cc/out -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/zstd-sys-6fb87390c04c8ffc/out`
+     Running `/Users/sac/.rustup/toolchains/nightly-2026-04-15-aarch64-apple-darwin/bin/rustc --crate-name fuzz_kernel --edition=2021 crates/ccog/tests/fuzz_kernel.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --warn=unexpected_cfgs --check-cfg 'cfg(kani)' --test --cfg 'feature="default"' --cfg 'feature="nightly"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("default", "dendral-cli", "nightly", "phase7", "transparency"))' -C metadata=060eaedd58422e08 -C extra-filename=-671cc86ac91a3535 --out-dir /Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps -C incremental=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/incremental -L dependency=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps --extern anyhow=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libanyhow-aff6f3e0116cccfd.rlib --extern blake3=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libblake3-4f0149d32871b2bb.rlib --extern ccog=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libccog-0889369a51ab47fe.rlib --extern chrono=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libchrono-d56374dc65014386.rlib --extern criterion=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libcriterion-1844379568b6fb99.rlib --extern ed25519_dalek=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libed25519_dalek-6edaec6f8f733580.rlib --extern fake=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libfake-220a3a31afce4a93.rlib --extern indexmap=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libindexmap-8f6d6688a7ff8118.rlib --extern insta=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libinsta-5e144c527fd86885.rlib --extern loom=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libloom-d31fc1d6cdf3a57f.rlib --extern oxigraph=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/liboxigraph-53b66421d59d8cb1.rlib --extern postcard=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libpostcard-680151f9b81c2831.rlib --extern proptest=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libproptest-9165d43d45711efe.rlib --extern rand=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/librand-4b0ddd3fc83f19e9.rlib --extern serde=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde-140d582b280e1dae.rlib --extern serde_json=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde_json-f2799c6c5333a109.rlib --extern smallvec=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libsmallvec-779b396a54a70ff8.rlib --extern tar=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtar-038da34c6b7041bb.rlib --extern thiserror=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libthiserror-0e007d25e7592466.rlib --extern trybuild=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtrybuild-aa30eb16f8ddc8b9.rlib --extern zstd=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libzstd-46a6e1a3f1a5502a.rlib -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/blake3-84e40adff58301cc/out -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/zstd-sys-6fb87390c04c8ffc/out`
+     Running `/Users/sac/.rustup/toolchains/nightly-2026-04-15-aarch64-apple-darwin/bin/rustc --crate-name scheduler_tick_test --edition=2021 crates/ccog/tests/scheduler_tick_test.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --warn=unexpected_cfgs --check-cfg 'cfg(kani)' --test --cfg 'feature="default"' --cfg 'feature="nightly"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("default", "dendral-cli", "nightly", "phase7", "transparency"))' -C metadata=d56d66d58bc8b9a2 -C extra-filename=-429c9f354889aecb --out-dir /Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps -C incremental=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/incremental -L dependency=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps --extern anyhow=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libanyhow-aff6f3e0116cccfd.rlib --extern blake3=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libblake3-4f0149d32871b2bb.rlib --extern ccog=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libccog-0889369a51ab47fe.rlib --extern chrono=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libchrono-d56374dc65014386.rlib --extern criterion=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libcriterion-1844379568b6fb99.rlib --extern ed25519_dalek=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libed25519_dalek-6edaec6f8f733580.rlib --extern fake=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libfake-220a3a31afce4a93.rlib --extern indexmap=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libindexmap-8f6d6688a7ff8118.rlib --extern insta=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libinsta-5e144c527fd86885.rlib --extern loom=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libloom-d31fc1d6cdf3a57f.rlib --extern oxigraph=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/liboxigraph-53b66421d59d8cb1.rlib --extern postcard=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libpostcard-680151f9b81c2831.rlib --extern proptest=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libproptest-9165d43d45711efe.rlib --extern rand=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/librand-4b0ddd3fc83f19e9.rlib --extern serde=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde-140d582b280e1dae.rlib --extern serde_json=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde_json-f2799c6c5333a109.rlib --extern smallvec=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libsmallvec-779b396a54a70ff8.rlib --extern tar=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtar-038da34c6b7041bb.rlib --extern thiserror=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libthiserror-0e007d25e7592466.rlib --extern trybuild=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtrybuild-aa30eb16f8ddc8b9.rlib --extern zstd=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libzstd-46a6e1a3f1a5502a.rlib -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/blake3-84e40adff58301cc/out -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/zstd-sys-6fb87390c04c8ffc/out`
+warning: unused variable: `context`
+   --> crates/ccog/tests/gauntlet.rs:584:9
+    |
+584 |     let context = empty_context(snap);
+    |         ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_context`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+     Running `/Users/sac/.rustup/toolchains/nightly-2026-04-15-aarch64-apple-darwin/bin/rustc --crate-name shrdlu_affordance_test --edition=2021 crates/ccog/tests/shrdlu_affordance_test.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --warn=unexpected_cfgs --check-cfg 'cfg(kani)' --test --cfg 'feature="default"' --cfg 'feature="nightly"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("default", "dendral-cli", "nightly", "phase7", "transparency"))' -C metadata=266d59f5e4c04e55 -C extra-filename=-4c96f4a8ea133a65 --out-dir /Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps -C incremental=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/incremental -L dependency=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps --extern anyhow=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libanyhow-aff6f3e0116cccfd.rlib --extern blake3=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libblake3-4f0149d32871b2bb.rlib --extern ccog=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libccog-0889369a51ab47fe.rlib --extern chrono=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libchrono-d56374dc65014386.rlib --extern criterion=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libcriterion-1844379568b6fb99.rlib --extern ed25519_dalek=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libed25519_dalek-6edaec6f8f733580.rlib --extern fake=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libfake-220a3a31afce4a93.rlib --extern indexmap=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libindexmap-8f6d6688a7ff8118.rlib --extern insta=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libinsta-5e144c527fd86885.rlib --extern loom=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libloom-d31fc1d6cdf3a57f.rlib --extern oxigraph=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/liboxigraph-53b66421d59d8cb1.rlib --extern postcard=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libpostcard-680151f9b81c2831.rlib --extern proptest=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libproptest-9165d43d45711efe.rlib --extern rand=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/librand-4b0ddd3fc83f19e9.rlib --extern serde=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde-140d582b280e1dae.rlib --extern serde_json=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde_json-f2799c6c5333a109.rlib --extern smallvec=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libsmallvec-779b396a54a70ff8.rlib --extern tar=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtar-038da34c6b7041bb.rlib --extern thiserror=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libthiserror-0e007d25e7592466.rlib --extern trybuild=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtrybuild-aa30eb16f8ddc8b9.rlib --extern zstd=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libzstd-46a6e1a3f1a5502a.rlib -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/blake3-84e40adff58301cc/out -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/zstd-sys-6fb87390c04c8ffc/out`
+     Running `/Users/sac/.rustup/toolchains/nightly-2026-04-15-aarch64-apple-darwin/bin/rustc --crate-name pack_lifestyle_conformance --edition=2021 crates/ccog/tests/pack_lifestyle_conformance.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --warn=unexpected_cfgs --check-cfg 'cfg(kani)' --test --cfg 'feature="default"' --cfg 'feature="nightly"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("default", "dendral-cli", "nightly", "phase7", "transparency"))' -C metadata=7280097c7f60da5c -C extra-filename=-bea92e6af8205408 --out-dir /Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps -C incremental=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/incremental -L dependency=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps --extern anyhow=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libanyhow-aff6f3e0116cccfd.rlib --extern blake3=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libblake3-4f0149d32871b2bb.rlib --extern ccog=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libccog-0889369a51ab47fe.rlib --extern chrono=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libchrono-d56374dc65014386.rlib --extern criterion=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libcriterion-1844379568b6fb99.rlib --extern ed25519_dalek=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libed25519_dalek-6edaec6f8f733580.rlib --extern fake=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libfake-220a3a31afce4a93.rlib --extern indexmap=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libindexmap-8f6d6688a7ff8118.rlib --extern insta=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libinsta-5e144c527fd86885.rlib --extern loom=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libloom-d31fc1d6cdf3a57f.rlib --extern oxigraph=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/liboxigraph-53b66421d59d8cb1.rlib --extern postcard=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libpostcard-680151f9b81c2831.rlib --extern proptest=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libproptest-9165d43d45711efe.rlib --extern rand=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/librand-4b0ddd3fc83f19e9.rlib --extern serde=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde-140d582b280e1dae.rlib --extern serde_json=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde_json-f2799c6c5333a109.rlib --extern smallvec=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libsmallvec-779b396a54a70ff8.rlib --extern tar=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtar-038da34c6b7041bb.rlib --extern thiserror=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libthiserror-0e007d25e7592466.rlib --extern trybuild=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtrybuild-aa30eb16f8ddc8b9.rlib --extern zstd=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libzstd-46a6e1a3f1a5502a.rlib -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/blake3-84e40adff58301cc/out -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/zstd-sys-6fb87390c04c8ffc/out`
+     Running `/Users/sac/.rustup/toolchains/nightly-2026-04-15-aarch64-apple-darwin/bin/rustc --crate-name dendral_chain_test --edition=2021 crates/ccog/tests/dendral_chain_test.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --warn=unexpected_cfgs --check-cfg 'cfg(kani)' --test --cfg 'feature="default"' --cfg 'feature="nightly"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("default", "dendral-cli", "nightly", "phase7", "transparency"))' -C metadata=330a6037dc0e9d80 -C extra-filename=-3cae6c279bf66757 --out-dir /Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps -C incremental=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/incremental -L dependency=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps --extern anyhow=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libanyhow-aff6f3e0116cccfd.rlib --extern blake3=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libblake3-4f0149d32871b2bb.rlib --extern ccog=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libccog-0889369a51ab47fe.rlib --extern chrono=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libchrono-d56374dc65014386.rlib --extern criterion=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libcriterion-1844379568b6fb99.rlib --extern ed25519_dalek=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libed25519_dalek-6edaec6f8f733580.rlib --extern fake=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libfake-220a3a31afce4a93.rlib --extern indexmap=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libindexmap-8f6d6688a7ff8118.rlib --extern insta=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libinsta-5e144c527fd86885.rlib --extern loom=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libloom-d31fc1d6cdf3a57f.rlib --extern oxigraph=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/liboxigraph-53b66421d59d8cb1.rlib --extern postcard=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libpostcard-680151f9b81c2831.rlib --extern proptest=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libproptest-9165d43d45711efe.rlib --extern rand=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/librand-4b0ddd3fc83f19e9.rlib --extern serde=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde-140d582b280e1dae.rlib --extern serde_json=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde_json-f2799c6c5333a109.rlib --extern smallvec=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libsmallvec-779b396a54a70ff8.rlib --extern tar=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtar-038da34c6b7041bb.rlib --extern thiserror=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libthiserror-0e007d25e7592466.rlib --extern trybuild=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtrybuild-aa30eb16f8ddc8b9.rlib --extern zstd=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libzstd-46a6e1a3f1a5502a.rlib -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/blake3-84e40adff58301cc/out -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/zstd-sys-6fb87390c04c8ffc/out`
+     Running `/Users/sac/.rustup/toolchains/nightly-2026-04-15-aarch64-apple-darwin/bin/rustc --crate-name dendral_bundle_roundtrip --edition=2021 crates/ccog/tests/dendral_bundle_roundtrip.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --warn=unexpected_cfgs --check-cfg 'cfg(kani)' --test --cfg 'feature="default"' --cfg 'feature="nightly"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("default", "dendral-cli", "nightly", "phase7", "transparency"))' -C metadata=0411834c6080e9dd -C extra-filename=-58a3efe06e8fc5a6 --out-dir /Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps -C incremental=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/incremental -L dependency=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps --extern anyhow=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libanyhow-aff6f3e0116cccfd.rlib --extern blake3=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libblake3-4f0149d32871b2bb.rlib --extern ccog=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libccog-0889369a51ab47fe.rlib --extern chrono=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libchrono-d56374dc65014386.rlib --extern criterion=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libcriterion-1844379568b6fb99.rlib --extern ed25519_dalek=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libed25519_dalek-6edaec6f8f733580.rlib --extern fake=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libfake-220a3a31afce4a93.rlib --extern indexmap=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libindexmap-8f6d6688a7ff8118.rlib --extern insta=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libinsta-5e144c527fd86885.rlib --extern loom=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libloom-d31fc1d6cdf3a57f.rlib --extern oxigraph=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/liboxigraph-53b66421d59d8cb1.rlib --extern postcard=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libpostcard-680151f9b81c2831.rlib --extern proptest=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libproptest-9165d43d45711efe.rlib --extern rand=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/librand-4b0ddd3fc83f19e9.rlib --extern serde=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde-140d582b280e1dae.rlib --extern serde_json=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde_json-f2799c6c5333a109.rlib --extern smallvec=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libsmallvec-779b396a54a70ff8.rlib --extern tar=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtar-038da34c6b7041bb.rlib --extern thiserror=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libthiserror-0e007d25e7592466.rlib --extern trybuild=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtrybuild-aa30eb16f8ddc8b9.rlib --extern zstd=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libzstd-46a6e1a3f1a5502a.rlib -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/blake3-84e40adff58301cc/out -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/zstd-sys-6fb87390c04c8ffc/out`
+     Running `/Users/sac/.rustup/toolchains/nightly-2026-04-15-aarch64-apple-darwin/bin/rustc --crate-name proptest_construct8 --edition=2021 crates/ccog/tests/proptest_construct8.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --warn=unexpected_cfgs --check-cfg 'cfg(kani)' --test --cfg 'feature="default"' --cfg 'feature="nightly"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("default", "dendral-cli", "nightly", "phase7", "transparency"))' -C metadata=035fd3e53e971e6b -C extra-filename=-ada6d88cce4cb9f3 --out-dir /Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps -C incremental=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/incremental -L dependency=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps --extern anyhow=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libanyhow-aff6f3e0116cccfd.rlib --extern blake3=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libblake3-4f0149d32871b2bb.rlib --extern ccog=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libccog-0889369a51ab47fe.rlib --extern chrono=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libchrono-d56374dc65014386.rlib --extern criterion=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libcriterion-1844379568b6fb99.rlib --extern ed25519_dalek=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libed25519_dalek-6edaec6f8f733580.rlib --extern fake=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libfake-220a3a31afce4a93.rlib --extern indexmap=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libindexmap-8f6d6688a7ff8118.rlib --extern insta=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libinsta-5e144c527fd86885.rlib --extern loom=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libloom-d31fc1d6cdf3a57f.rlib --extern oxigraph=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/liboxigraph-53b66421d59d8cb1.rlib --extern postcard=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libpostcard-680151f9b81c2831.rlib --extern proptest=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libproptest-9165d43d45711efe.rlib --extern rand=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/librand-4b0ddd3fc83f19e9.rlib --extern serde=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde-140d582b280e1dae.rlib --extern serde_json=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde_json-f2799c6c5333a109.rlib --extern smallvec=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libsmallvec-779b396a54a70ff8.rlib --extern tar=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtar-038da34c6b7041bb.rlib --extern thiserror=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libthiserror-0e007d25e7592466.rlib --extern trybuild=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtrybuild-aa30eb16f8ddc8b9.rlib --extern zstd=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libzstd-46a6e1a3f1a5502a.rlib -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/blake3-84e40adff58301cc/out -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/zstd-sys-6fb87390c04c8ffc/out`
+     Running `/Users/sac/.rustup/toolchains/nightly-2026-04-15-aarch64-apple-darwin/bin/rustc --crate-name prov_delta_test --edition=2021 crates/ccog/tests/prov_delta_test.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --warn=unexpected_cfgs --check-cfg 'cfg(kani)' --test --cfg 'feature="default"' --cfg 'feature="nightly"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("default", "dendral-cli", "nightly", "phase7", "transparency"))' -C metadata=5c5281ad8175b7b4 -C extra-filename=-f9bb751c3b25214f --out-dir /Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps -C incremental=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/incremental -L dependency=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps --extern anyhow=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libanyhow-aff6f3e0116cccfd.rlib --extern blake3=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libblake3-4f0149d32871b2bb.rlib --extern ccog=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libccog-0889369a51ab47fe.rlib --extern chrono=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libchrono-d56374dc65014386.rlib --extern criterion=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libcriterion-1844379568b6fb99.rlib --extern ed25519_dalek=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libed25519_dalek-6edaec6f8f733580.rlib --extern fake=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libfake-220a3a31afce4a93.rlib --extern indexmap=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libindexmap-8f6d6688a7ff8118.rlib --extern insta=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libinsta-5e144c527fd86885.rlib --extern loom=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libloom-d31fc1d6cdf3a57f.rlib --extern oxigraph=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/liboxigraph-53b66421d59d8cb1.rlib --extern postcard=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libpostcard-680151f9b81c2831.rlib --extern proptest=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libproptest-9165d43d45711efe.rlib --extern rand=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/librand-4b0ddd3fc83f19e9.rlib --extern serde=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde-140d582b280e1dae.rlib --extern serde_json=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde_json-f2799c6c5333a109.rlib --extern smallvec=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libsmallvec-779b396a54a70ff8.rlib --extern tar=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtar-038da34c6b7041bb.rlib --extern thiserror=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libthiserror-0e007d25e7592466.rlib --extern trybuild=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtrybuild-aa30eb16f8ddc8b9.rlib --extern zstd=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libzstd-46a6e1a3f1a5502a.rlib -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/blake3-84e40adff58301cc/out -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/zstd-sys-6fb87390c04c8ffc/out`
+     Running `/Users/sac/.rustup/toolchains/nightly-2026-04-15-aarch64-apple-darwin/bin/rustc --crate-name pack_edge_conformance --edition=2021 crates/ccog/tests/pack_edge_conformance.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --warn=unexpected_cfgs --check-cfg 'cfg(kani)' --test --cfg 'feature="default"' --cfg 'feature="nightly"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("default", "dendral-cli", "nightly", "phase7", "transparency"))' -C metadata=839cc9453036d32f -C extra-filename=-baf4a27cf40873e4 --out-dir /Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps -C incremental=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/incremental -L dependency=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps --extern anyhow=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libanyhow-aff6f3e0116cccfd.rlib --extern blake3=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libblake3-4f0149d32871b2bb.rlib --extern ccog=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libccog-0889369a51ab47fe.rlib --extern chrono=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libchrono-d56374dc65014386.rlib --extern criterion=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libcriterion-1844379568b6fb99.rlib --extern ed25519_dalek=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libed25519_dalek-6edaec6f8f733580.rlib --extern fake=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libfake-220a3a31afce4a93.rlib --extern indexmap=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libindexmap-8f6d6688a7ff8118.rlib --extern insta=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libinsta-5e144c527fd86885.rlib --extern loom=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libloom-d31fc1d6cdf3a57f.rlib --extern oxigraph=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/liboxigraph-53b66421d59d8cb1.rlib --extern postcard=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libpostcard-680151f9b81c2831.rlib --extern proptest=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libproptest-9165d43d45711efe.rlib --extern rand=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/librand-4b0ddd3fc83f19e9.rlib --extern serde=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde-140d582b280e1dae.rlib --extern serde_json=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde_json-f2799c6c5333a109.rlib --extern smallvec=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libsmallvec-779b396a54a70ff8.rlib --extern tar=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtar-038da34c6b7041bb.rlib --extern thiserror=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libthiserror-0e007d25e7592466.rlib --extern trybuild=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtrybuild-aa30eb16f8ddc8b9.rlib --extern zstd=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libzstd-46a6e1a3f1a5502a.rlib -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/blake3-84e40adff58301cc/out -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/zstd-sys-6fb87390c04c8ffc/out`
+     Running `/Users/sac/.rustup/toolchains/nightly-2026-04-15-aarch64-apple-darwin/bin/rustc --crate-name self_play_tournament --edition=2021 crates/ccog/tests/self_play_tournament.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --warn=unexpected_cfgs --check-cfg 'cfg(kani)' --test --cfg 'feature="default"' --cfg 'feature="nightly"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("default", "dendral-cli", "nightly", "phase7", "transparency"))' -C metadata=67502bc97bb11fab -C extra-filename=-a3f7e2d84037a41f --out-dir /Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps -C incremental=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/incremental -L dependency=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps --extern anyhow=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libanyhow-aff6f3e0116cccfd.rlib --extern blake3=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libblake3-4f0149d32871b2bb.rlib --extern ccog=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libccog-0889369a51ab47fe.rlib --extern chrono=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libchrono-d56374dc65014386.rlib --extern criterion=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libcriterion-1844379568b6fb99.rlib --extern ed25519_dalek=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libed25519_dalek-6edaec6f8f733580.rlib --extern fake=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libfake-220a3a31afce4a93.rlib --extern indexmap=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libindexmap-8f6d6688a7ff8118.rlib --extern insta=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libinsta-5e144c527fd86885.rlib --extern loom=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libloom-d31fc1d6cdf3a57f.rlib --extern oxigraph=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/liboxigraph-53b66421d59d8cb1.rlib --extern postcard=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libpostcard-680151f9b81c2831.rlib --extern proptest=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libproptest-9165d43d45711efe.rlib --extern rand=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/librand-4b0ddd3fc83f19e9.rlib --extern serde=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde-140d582b280e1dae.rlib --extern serde_json=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde_json-f2799c6c5333a109.rlib --extern smallvec=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libsmallvec-779b396a54a70ff8.rlib --extern tar=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtar-038da34c6b7041bb.rlib --extern thiserror=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libthiserror-0e007d25e7592466.rlib --extern trybuild=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtrybuild-aa30eb16f8ddc8b9.rlib --extern zstd=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libzstd-46a6e1a3f1a5502a.rlib -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/blake3-84e40adff58301cc/out -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/zstd-sys-6fb87390c04c8ffc/out`
+     Running `/Users/sac/.rustup/toolchains/nightly-2026-04-15-aarch64-apple-darwin/bin/rustc --crate-name prolog_relation_test --edition=2021 crates/ccog/tests/prolog_relation_test.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --warn=unexpected_cfgs --check-cfg 'cfg(kani)' --test --cfg 'feature="default"' --cfg 'feature="nightly"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("default", "dendral-cli", "nightly", "phase7", "transparency"))' -C metadata=c01e91fd649499a8 -C extra-filename=-4a57bdc8c158b24e --out-dir /Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps -C incremental=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/incremental -L dependency=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps --extern anyhow=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libanyhow-aff6f3e0116cccfd.rlib --extern blake3=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libblake3-4f0149d32871b2bb.rlib --extern ccog=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libccog-0889369a51ab47fe.rlib --extern chrono=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libchrono-d56374dc65014386.rlib --extern criterion=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libcriterion-1844379568b6fb99.rlib --extern ed25519_dalek=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libed25519_dalek-6edaec6f8f733580.rlib --extern fake=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libfake-220a3a31afce4a93.rlib --extern indexmap=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libindexmap-8f6d6688a7ff8118.rlib --extern insta=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libinsta-5e144c527fd86885.rlib --extern loom=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libloom-d31fc1d6cdf3a57f.rlib --extern oxigraph=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/liboxigraph-53b66421d59d8cb1.rlib --extern postcard=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libpostcard-680151f9b81c2831.rlib --extern proptest=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libproptest-9165d43d45711efe.rlib --extern rand=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/librand-4b0ddd3fc83f19e9.rlib --extern serde=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde-140d582b280e1dae.rlib --extern serde_json=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde_json-f2799c6c5333a109.rlib --extern smallvec=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libsmallvec-779b396a54a70ff8.rlib --extern tar=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtar-038da34c6b7041bb.rlib --extern thiserror=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libthiserror-0e007d25e7592466.rlib --extern trybuild=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtrybuild-aa30eb16f8ddc8b9.rlib --extern zstd=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libzstd-46a6e1a3f1a5502a.rlib -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/blake3-84e40adff58301cc/out -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/zstd-sys-6fb87390c04c8ffc/out`
+     Running `/Users/sac/.rustup/toolchains/nightly-2026-04-15-aarch64-apple-darwin/bin/rustc --crate-name snapshot_tests --edition=2021 crates/ccog/tests/snapshot_tests.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --warn=unexpected_cfgs --check-cfg 'cfg(kani)' --test --cfg 'feature="default"' --cfg 'feature="nightly"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("default", "dendral-cli", "nightly", "phase7", "transparency"))' -C metadata=b9a7a585b10867b6 -C extra-filename=-8059ff3b3cbd2668 --out-dir /Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps -C incremental=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/incremental -L dependency=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps --extern anyhow=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libanyhow-aff6f3e0116cccfd.rlib --extern blake3=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libblake3-4f0149d32871b2bb.rlib --extern ccog=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libccog-0889369a51ab47fe.rlib --extern chrono=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libchrono-d56374dc65014386.rlib --extern criterion=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libcriterion-1844379568b6fb99.rlib --extern ed25519_dalek=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libed25519_dalek-6edaec6f8f733580.rlib --extern fake=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libfake-220a3a31afce4a93.rlib --extern indexmap=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libindexmap-8f6d6688a7ff8118.rlib --extern insta=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libinsta-5e144c527fd86885.rlib --extern loom=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libloom-d31fc1d6cdf3a57f.rlib --extern oxigraph=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/liboxigraph-53b66421d59d8cb1.rlib --extern postcard=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libpostcard-680151f9b81c2831.rlib --extern proptest=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libproptest-9165d43d45711efe.rlib --extern rand=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/librand-4b0ddd3fc83f19e9.rlib --extern serde=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde-140d582b280e1dae.rlib --extern serde_json=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde_json-f2799c6c5333a109.rlib --extern smallvec=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libsmallvec-779b396a54a70ff8.rlib --extern tar=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtar-038da34c6b7041bb.rlib --extern thiserror=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libthiserror-0e007d25e7592466.rlib --extern trybuild=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtrybuild-aa30eb16f8ddc8b9.rlib --extern zstd=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libzstd-46a6e1a3f1a5502a.rlib -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/blake3-84e40adff58301cc/out -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/zstd-sys-6fb87390c04c8ffc/out`
+warning: unused import: `ccog::runtime::ClosedFieldContext`
+  --> crates/ccog/tests/fuzz_kernel.rs:13:5
+   |
+13 | use ccog::runtime::ClosedFieldContext;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `ccog::compiled::CompiledFieldSnapshot`
+  --> crates/ccog/tests/fuzz_kernel.rs:14:5
+   |
+14 | use ccog::compiled::CompiledFieldSnapshot;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `ContextBundle` and `PostureBundle`
+  --> crates/ccog/tests/fuzz_kernel.rs:15:24
+   |
+15 | use ccog::multimodal::{PostureBundle, ContextBundle};
+   |                        ^^^^^^^^^^^^^  ^^^^^^^^^^^^^
+
+warning: unused import: `ccog::packs::TierMasks`
+  --> crates/ccog/tests/fuzz_kernel.rs:16:5
+   |
+16 | use ccog::packs::TierMasks;
+   |     ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::sync::Arc`
+  --> crates/ccog/tests/fuzz_kernel.rs:19:5
+   |
+19 | use std::sync::Arc;
+   |     ^^^^^^^^^^^^^^
+
+     Running `/Users/sac/.rustup/toolchains/nightly-2026-04-15-aarch64-apple-darwin/bin/rustc --crate-name police_report_flow --edition=2021 crates/ccog/tests/police_report_flow.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --warn=unexpected_cfgs --check-cfg 'cfg(kani)' --test --cfg 'feature="default"' --cfg 'feature="nightly"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("default", "dendral-cli", "nightly", "phase7", "transparency"))' -C metadata=1c133b467088d7fa -C extra-filename=-1d810a946eed46a0 --out-dir /Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps -C incremental=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/incremental -L dependency=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps --extern anyhow=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libanyhow-aff6f3e0116cccfd.rlib --extern blake3=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libblake3-4f0149d32871b2bb.rlib --extern ccog=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libccog-0889369a51ab47fe.rlib --extern chrono=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libchrono-d56374dc65014386.rlib --extern criterion=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libcriterion-1844379568b6fb99.rlib --extern ed25519_dalek=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libed25519_dalek-6edaec6f8f733580.rlib --extern fake=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libfake-220a3a31afce4a93.rlib --extern indexmap=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libindexmap-8f6d6688a7ff8118.rlib --extern insta=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libinsta-5e144c527fd86885.rlib --extern loom=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libloom-d31fc1d6cdf3a57f.rlib --extern oxigraph=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/liboxigraph-53b66421d59d8cb1.rlib --extern postcard=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libpostcard-680151f9b81c2831.rlib --extern proptest=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libproptest-9165d43d45711efe.rlib --extern rand=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/librand-4b0ddd3fc83f19e9.rlib --extern serde=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde-140d582b280e1dae.rlib --extern serde_json=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde_json-f2799c6c5333a109.rlib --extern smallvec=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libsmallvec-779b396a54a70ff8.rlib --extern tar=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtar-038da34c6b7041bb.rlib --extern thiserror=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libthiserror-0e007d25e7592466.rlib --extern trybuild=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtrybuild-aa30eb16f8ddc8b9.rlib --extern zstd=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libzstd-46a6e1a3f1a5502a.rlib -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/blake3-84e40adff58301cc/out -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/zstd-sys-6fb87390c04c8ffc/out`
+     Running `/Users/sac/.rustup/toolchains/nightly-2026-04-15-aarch64-apple-darwin/bin/rustc --crate-name earned_zero --edition=2021 crates/ccog/tests/earned_zero.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --warn=unexpected_cfgs --check-cfg 'cfg(kani)' --test --cfg 'feature="default"' --cfg 'feature="nightly"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("default", "dendral-cli", "nightly", "phase7", "transparency"))' -C metadata=ed2bd58ed1927f5e -C extra-filename=-27b37445c13ad190 --out-dir /Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps -C incremental=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/incremental -L dependency=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps --extern anyhow=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libanyhow-aff6f3e0116cccfd.rlib --extern blake3=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libblake3-4f0149d32871b2bb.rlib --extern ccog=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libccog-0889369a51ab47fe.rlib --extern chrono=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libchrono-d56374dc65014386.rlib --extern criterion=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libcriterion-1844379568b6fb99.rlib --extern ed25519_dalek=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libed25519_dalek-6edaec6f8f733580.rlib --extern fake=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libfake-220a3a31afce4a93.rlib --extern indexmap=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libindexmap-8f6d6688a7ff8118.rlib --extern insta=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libinsta-5e144c527fd86885.rlib --extern loom=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libloom-d31fc1d6cdf3a57f.rlib --extern oxigraph=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/liboxigraph-53b66421d59d8cb1.rlib --extern postcard=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libpostcard-680151f9b81c2831.rlib --extern proptest=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libproptest-9165d43d45711efe.rlib --extern rand=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/librand-4b0ddd3fc83f19e9.rlib --extern serde=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde-140d582b280e1dae.rlib --extern serde_json=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde_json-f2799c6c5333a109.rlib --extern smallvec=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libsmallvec-779b396a54a70ff8.rlib --extern tar=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtar-038da34c6b7041bb.rlib --extern thiserror=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libthiserror-0e007d25e7592466.rlib --extern trybuild=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtrybuild-aa30eb16f8ddc8b9.rlib --extern zstd=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libzstd-46a6e1a3f1a5502a.rlib -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/blake3-84e40adff58301cc/out -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/zstd-sys-6fb87390c04c8ffc/out`
+warning: `ccog` (test "gauntlet") generated 1 warning (run `cargo fix --test "gauntlet" -p ccog` to apply 1 suggestion)
+     Running `/Users/sac/.rustup/toolchains/nightly-2026-04-15-aarch64-apple-darwin/bin/rustc --crate-name packs_jtbd --edition=2021 crates/ccog/tests/packs_jtbd.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --warn=unexpected_cfgs --check-cfg 'cfg(kani)' --test --cfg 'feature="default"' --cfg 'feature="nightly"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("default", "dendral-cli", "nightly", "phase7", "transparency"))' -C metadata=c2ccb238d1d09a53 -C extra-filename=-9c378c756d1827e8 --out-dir /Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps -C incremental=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/incremental -L dependency=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps --extern anyhow=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libanyhow-aff6f3e0116cccfd.rlib --extern blake3=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libblake3-4f0149d32871b2bb.rlib --extern ccog=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libccog-0889369a51ab47fe.rlib --extern chrono=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libchrono-d56374dc65014386.rlib --extern criterion=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libcriterion-1844379568b6fb99.rlib --extern ed25519_dalek=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libed25519_dalek-6edaec6f8f733580.rlib --extern fake=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libfake-220a3a31afce4a93.rlib --extern indexmap=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libindexmap-8f6d6688a7ff8118.rlib --extern insta=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libinsta-5e144c527fd86885.rlib --extern loom=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libloom-d31fc1d6cdf3a57f.rlib --extern oxigraph=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/liboxigraph-53b66421d59d8cb1.rlib --extern postcard=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libpostcard-680151f9b81c2831.rlib --extern proptest=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libproptest-9165d43d45711efe.rlib --extern rand=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/librand-4b0ddd3fc83f19e9.rlib --extern serde=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde-140d582b280e1dae.rlib --extern serde_json=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde_json-f2799c6c5333a109.rlib --extern smallvec=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libsmallvec-779b396a54a70ff8.rlib --extern tar=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtar-038da34c6b7041bb.rlib --extern thiserror=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libthiserror-0e007d25e7592466.rlib --extern trybuild=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtrybuild-aa30eb16f8ddc8b9.rlib --extern zstd=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libzstd-46a6e1a3f1a5502a.rlib -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/blake3-84e40adff58301cc/out -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/zstd-sys-6fb87390c04c8ffc/out`
+     Running `/Users/sac/.rustup/toolchains/nightly-2026-04-15-aarch64-apple-darwin/bin/rustc --crate-name adversarial_tournament --edition=2021 crates/ccog/tests/adversarial_tournament.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --warn=unexpected_cfgs --check-cfg 'cfg(kani)' --test --cfg 'feature="default"' --cfg 'feature="nightly"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("default", "dendral-cli", "nightly", "phase7", "transparency"))' -C metadata=35e9863b9b633ac3 -C extra-filename=-8960c5f9a3ecb1ca --out-dir /Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps -C incremental=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/incremental -L dependency=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps --extern anyhow=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libanyhow-aff6f3e0116cccfd.rlib --extern blake3=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libblake3-4f0149d32871b2bb.rlib --extern ccog=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libccog-0889369a51ab47fe.rlib --extern chrono=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libchrono-d56374dc65014386.rlib --extern criterion=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libcriterion-1844379568b6fb99.rlib --extern ed25519_dalek=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libed25519_dalek-6edaec6f8f733580.rlib --extern fake=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libfake-220a3a31afce4a93.rlib --extern indexmap=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libindexmap-8f6d6688a7ff8118.rlib --extern insta=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libinsta-5e144c527fd86885.rlib --extern loom=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libloom-d31fc1d6cdf3a57f.rlib --extern oxigraph=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/liboxigraph-53b66421d59d8cb1.rlib --extern postcard=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libpostcard-680151f9b81c2831.rlib --extern proptest=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libproptest-9165d43d45711efe.rlib --extern rand=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/librand-4b0ddd3fc83f19e9.rlib --extern serde=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde-140d582b280e1dae.rlib --extern serde_json=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde_json-f2799c6c5333a109.rlib --extern smallvec=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libsmallvec-779b396a54a70ff8.rlib --extern tar=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtar-038da34c6b7041bb.rlib --extern thiserror=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libthiserror-0e007d25e7592466.rlib --extern trybuild=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtrybuild-aa30eb16f8ddc8b9.rlib --extern zstd=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libzstd-46a6e1a3f1a5502a.rlib -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/blake3-84e40adff58301cc/out -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/zstd-sys-6fb87390c04c8ffc/out`
+     Running `/Users/sac/.rustup/toolchains/nightly-2026-04-15-aarch64-apple-darwin/bin/rustc --crate-name lifestyle_redesign_jtbd --edition=2021 crates/ccog/tests/lifestyle_redesign_jtbd.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --warn=unexpected_cfgs --check-cfg 'cfg(kani)' --test --cfg 'feature="default"' --cfg 'feature="nightly"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("default", "dendral-cli", "nightly", "phase7", "transparency"))' -C metadata=4b58f7ab231bf430 -C extra-filename=-6347670bcbba7a7d --out-dir /Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps -C incremental=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/incremental -L dependency=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps --extern anyhow=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libanyhow-aff6f3e0116cccfd.rlib --extern blake3=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libblake3-4f0149d32871b2bb.rlib --extern ccog=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libccog-0889369a51ab47fe.rlib --extern chrono=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libchrono-d56374dc65014386.rlib --extern criterion=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libcriterion-1844379568b6fb99.rlib --extern ed25519_dalek=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libed25519_dalek-6edaec6f8f733580.rlib --extern fake=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libfake-220a3a31afce4a93.rlib --extern indexmap=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libindexmap-8f6d6688a7ff8118.rlib --extern insta=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libinsta-5e144c527fd86885.rlib --extern loom=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libloom-d31fc1d6cdf3a57f.rlib --extern oxigraph=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/liboxigraph-53b66421d59d8cb1.rlib --extern postcard=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libpostcard-680151f9b81c2831.rlib --extern proptest=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libproptest-9165d43d45711efe.rlib --extern rand=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/librand-4b0ddd3fc83f19e9.rlib --extern serde=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde-140d582b280e1dae.rlib --extern serde_json=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libserde_json-f2799c6c5333a109.rlib --extern smallvec=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libsmallvec-779b396a54a70ff8.rlib --extern tar=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtar-038da34c6b7041bb.rlib --extern thiserror=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libthiserror-0e007d25e7592466.rlib --extern trybuild=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libtrybuild-aa30eb16f8ddc8b9.rlib --extern zstd=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/libzstd-46a6e1a3f1a5502a.rlib -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/blake3-84e40adff58301cc/out -L native=/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/build/zstd-sys-6fb87390c04c8ffc/out`
+warning: unused variable: `f`
+   --> crates/ccog/tests/earned_zero.rs:247:9
+    |
+247 |     let f = FieldContext::new("test");
+    |         ^ help: if this is intentional, prefix it with an underscore: `_f`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: `ccog` (test "fuzz_kernel") generated 5 warnings (run `cargo fix --test "fuzz_kernel" -p ccog` to apply 5 suggestions)
+warning: unused variable: `context`
+   --> crates/ccog/tests/packs_jtbd.rs:496:9
+    |
+496 |     let context = ClosedFieldContext {
+    |         ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_context`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: `ccog` (test "earned_zero") generated 1 warning (run `cargo fix --test "earned_zero" -p ccog` to apply 1 suggestion)
+warning: `ccog` (test "packs_jtbd") generated 1 warning (run `cargo fix --test "packs_jtbd" -p ccog` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.00s
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/ccog-2c3686441a445efb`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/a2a_delegation_tests-a2aa29f150856f2d`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/adversarial_tournament-8960c5f9a3ecb1ca`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/decide_eq_with_trace-b02bbcf0d323a233`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/dendral_bundle_roundtrip-58a3efe06e8fc5a6`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/dendral_chain_test-3cae6c279bf66757`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/dense_drift-e8ebbc64a9ba1b06`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/earned_zero-27b37445c13ad190`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/fuzz_hooks-99febc65907bb0cc`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/fuzz_kernel-671cc86ac91a3535`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/gauntlet-e4a0628ad98527db`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/hearsay_fusion_test-f655ff60d2306998`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/hitl_role_tests-2306f50916a86e20`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/hook_integration_test-9f7063460797121c`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/jtbd_generated-45d560c2b9e9fd77`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/kani_harnesses-78bda4843826ce88`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/lifestyle_redesign_jtbd-6347670bcbba7a7d`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/loom_concurrency-7ad16060bcf5d4e7`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/mcp_projection_tests-307df852a989da42`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/pack_dev_conformance-1a8b1fc9093a9d0c`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/pack_edge_conformance-baf4a27cf40873e4`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/pack_enterprise_conformance-ffa11f0555d4e324`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/pack_lifestyle_conformance-bea92e6af8205408`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/pack_namespace_isolation-4cb4ad8495c918cf`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/packs_jtbd-9c378c756d1827e8`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/police_report_flow-1d810a946eed46a0`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/powl64_abi_conformance-673b75561ea0657d`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/powl64_chain_test-5a39a1819d18df50`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/powl8_admission_test-daccb0c025313e4b`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/prolog_relation_test-4a57bdc8c158b24e`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/proptest_construct8-ada6d88cce4cb9f3`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/prov_delta_test-f9bb751c3b25214f`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/runtime_step_test-1e7c12bcd2fb27b6`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/scheduler_tick_test-429c9f354889aecb`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/self_play_tournament-a3f7e2d84037a41f`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/shrdlu_affordance_test-4c96f4a8ea133a65`
+  Executable `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/snapshot_tests-8059ff3b3cbd2668`
+
+*** result: Success
+
+*** /Users/sac/.rustup/toolchains/nightly-2026-04-15-aarch64-apple-darwin/bin/cargo test --verbose --package=ccog@0.1.0
+       Fresh unicode-ident v1.0.24
+       Fresh cfg-if v1.0.4
+       Fresh version_check v0.9.5
+       Fresh typenum v1.20.0
+       Fresh memchr v2.8.0
+       Fresh find-msvc-tools v0.1.9
+       Fresh shlex v1.3.0
+       Fresh once_cell v1.21.4
+       Fresh oxiri v0.2.11
+       Fresh libc v0.2.185
+       Fresh hex v0.4.3
+       Fresh oxilangtag v0.1.5
+       Fresh regex-syntax v0.8.10
+       Fresh aho-corasick v1.1.4
+       Fresh autocfg v1.5.0
+       Fresh bitflags v2.11.1
+       Fresh proc-macro2 v1.0.106
+       Fresh serde_core v1.0.228
+       Fresh getrandom v0.3.4
+       Fresh jobserver v0.1.34
+       Fresh cpufeatures v0.2.17
+       Fresh errno v0.3.14
+       Fresh regex-automata v0.4.14
+       Fresh fnv v1.0.7
+       Fresh pkg-config v0.3.33
+       Fresh quick-xml v0.37.5
+       Fresh json-event-parser v0.2.3
+       Fresh quote v1.0.45
+       Fresh generic-array v0.14.7
+       Fresh rand_core v0.9.5
+       Fresh cc v1.2.60
+       Fresh crossbeam-utils v0.8.21
+       Fresh rustix v1.1.4
+       Fresh peg-runtime v0.8.5
+       Fresh ident_case v1.0.1
+       Fresh semver v1.0.28
+       Fresh itoa v1.0.18
+       Fresh regex v1.12.3
+       Fresh syn v2.0.117
+       Fresh block-buffer v0.10.4
+       Fresh crypto-common v0.1.7
+       Fresh num-traits v0.2.19
+       Fresh peg-macros v0.8.5
+       Fresh zmij v1.0.21
+       Fresh rustc_version v0.4.1
+       Fresh crossbeam-epoch v0.9.18
+       Fresh getrandom v0.2.17
+       Fresh tracing-core v0.1.36
+       Fresh log v0.4.29
+       Fresh core-foundation-sys v0.8.7
+       Fresh zerocopy-derive v0.8.48
+       Fresh digest v0.10.7
+       Fresh thiserror-impl v2.0.18
+       Fresh serde_derive v1.0.228
+       Fresh peg v0.8.5
+       Fresh darling_core v0.20.11
+       Fresh rustversion v1.0.22
+       Fresh getrandom v0.4.2
+       Fresh serde_json v1.0.149
+       Fresh either v1.15.0
+       Fresh scopeguard v1.2.0
+       Fresh ryu-js v1.0.2
+       Fresh fastrand v2.4.1
+       Fresh rand_core v0.6.4
+       Fresh zerocopy v0.8.48
+       Fresh thiserror v2.0.18
+       Fresh serde v1.0.228
+       Fresh sha2 v0.10.9
+       Fresh zstd-sys v2.0.16+zstd.1.5.7
+       Fresh md-5 v0.10.6
+       Fresh sha1 v0.10.6
+       Fresh tempfile v3.27.0
+       Fresh lock_api v0.4.14
+       Fresh darling_macro v0.20.11
+       Fresh iana-time-zone v0.1.65
+       Fresh crossbeam-deque v0.8.6
+       Fresh ppv-lite86 v0.2.21
+       Fresh oxsdatatypes v0.2.2
+       Fresh smallvec v1.15.1
+       Fresh half v2.7.1
+       Fresh pin-project-lite v0.2.17
+       Fresh lazy_static v1.5.0
+       Fresh anstyle v1.0.14
+       Fresh rustc-hash v2.1.2
+       Fresh ciborium-io v0.2.2
+       Fresh hashbrown v0.14.5
+       Fresh clap_lex v1.1.0
+       Fresh winnow v1.0.2
+       Fresh plotters-backend v0.3.7
+       Fresh rand_chacha v0.9.0
+       Fresh parking_lot_core v0.9.12
+       Fresh toml_parser v1.1.2+spec-1.1.0
+       Fresh clap_builder v4.6.0
+       Fresh rand_chacha v0.3.1
+       Fresh sharded-slab v0.1.7
+       Fresh tracing v0.1.44
+       Fresh ciborium-ll v0.2.2
+       Fresh plotters-svg v0.3.7
+       Fresh zstd-safe v7.2.4
+       Fresh darling v0.20.11
+       Fresh rayon-core v1.13.0
+       Fresh chrono v0.4.44
+       Fresh rand v0.9.4
+       Fresh dashmap v6.1.0
+       Fresh cobs v0.3.0
+       Fresh itertools v0.10.5
+       Fresh thiserror-impl v1.0.69
+       Fresh tracing-log v0.2.0
+       Fresh xattr v1.6.1
+       Fresh serde_spanned v1.1.1
+       Fresh toml_datetime v1.1.1+spec-1.1.0
+       Fresh matchers v0.2.0
+       Fresh filetime v0.2.27
+       Fresh wait-timeout v0.2.1
+       Fresh thread_local v1.1.9
+       Fresh cast v0.3.0
+       Fresh same-file v1.0.6
+       Fresh subtle v2.6.1
+       Fresh oxrdf v0.3.3
+       Fresh bit-vec v0.8.0
+       Fresh nu-ansi-term v0.50.3
+       Fresh zeroize v1.8.2
+       Fresh constant_time_eq v0.4.2
+       Fresh arrayvec v0.7.6
+       Fresh signature v2.2.0
+       Fresh quick-error v1.2.3
+       Fresh siphasher v1.0.2
+       Fresh equivalent v1.0.2
+       Fresh hashbrown v0.17.0
+       Fresh toml_writer v1.1.1+spec-1.1.0
+       Fresh arrayref v0.3.9
+       Fresh postcard v1.1.3
+       Fresh tar v0.4.45
+       Fresh criterion-plot v0.5.0
+       Fresh walkdir v2.5.0
+       Fresh spargebra v0.4.6
+       Fresh oxrdfxml v0.2.3
+       Fresh sparesults v0.3.3
+       Fresh oxttl v0.2.3
+       Fresh oxjsonld v0.2.5
+       Fresh bit-set v0.8.0
+       Fresh ed25519 v2.2.3
+       Fresh toml v1.1.2+spec-1.1.0
+       Fresh rusty-fork v0.3.1
+       Fresh tracing-subscriber v0.3.23
+       Fresh curve25519-dalek v4.1.3
+       Fresh blake3 v1.8.4
+       Fresh indexmap v2.14.0
+       Fresh thiserror v1.0.69
+       Fresh clap v4.6.1
+       Fresh dummy v0.8.0
+       Fresh target-triple v1.0.0
+       Fresh sparopt v0.3.6
+       Fresh oxrdfio v0.2.5
+       Fresh anyhow v1.0.102
+       Fresh plotters v0.3.7
+       Fresh rayon v1.12.0
+       Fresh rand v0.8.6
+       Fresh zstd v0.13.3
+       Fresh ciborium v0.2.2
+       Fresh generator v0.8.8
+       Fresh tinytemplate v1.2.1
+       Fresh rand_xorshift v0.4.0
+       Fresh console v0.16.3
+       Fresh is-terminal v0.4.17
+       Fresh oorandom v11.1.5
+       Fresh similar v2.7.0
+       Fresh deunicode v1.6.2
+       Fresh termcolor v1.4.1
+       Fresh spareval v0.2.6
+       Fresh anes v0.1.6
+       Fresh unarray v0.1.4
+       Fresh glob v0.3.3
+       Fresh scoped-tls v1.0.1
+       Fresh fake v2.10.0
+       Fresh insta v1.47.2
+       Fresh ed25519-dalek v2.2.0
+       Fresh oxigraph v0.5.8
+       Fresh criterion v0.5.1
+       Fresh trybuild v1.0.116
+       Fresh proptest v1.11.0
+       Fresh loom v0.7.2
+warning: unused variable: `verdict`
+  --> crates/ccog/src/admit.rs:85:23
+   |
+85 | pub const fn admitted(verdict: u64) -> bool {
+   |                       ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_verdict`
+   |
+   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: `ccog` (lib) generated 1 warning (run `cargo fix --lib -p ccog` to apply 1 suggestion)
+warning: `ccog` (lib test) generated 1 warning (1 duplicate)
+warning: unused variable: `context`
+   --> crates/ccog/tests/packs_jtbd.rs:496:9
+    |
+496 |     let context = ClosedFieldContext {
+    |         ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_context`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `ccog::runtime::ClosedFieldContext`
+  --> crates/ccog/tests/fuzz_kernel.rs:13:5
+   |
+13 | use ccog::runtime::ClosedFieldContext;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `ccog::compiled::CompiledFieldSnapshot`
+  --> crates/ccog/tests/fuzz_kernel.rs:14:5
+   |
+14 | use ccog::compiled::CompiledFieldSnapshot;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `ContextBundle` and `PostureBundle`
+  --> crates/ccog/tests/fuzz_kernel.rs:15:24
+   |
+15 | use ccog::multimodal::{PostureBundle, ContextBundle};
+   |                        ^^^^^^^^^^^^^  ^^^^^^^^^^^^^
+
+warning: unused import: `ccog::packs::TierMasks`
+  --> crates/ccog/tests/fuzz_kernel.rs:16:5
+   |
+16 | use ccog::packs::TierMasks;
+   |     ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::sync::Arc`
+  --> crates/ccog/tests/fuzz_kernel.rs:19:5
+   |
+19 | use std::sync::Arc;
+   |     ^^^^^^^^^^^^^^
+
+warning: unused variable: `f`
+   --> crates/ccog/tests/earned_zero.rs:247:9
+    |
+247 |     let f = FieldContext::new("test");
+    |         ^ help: if this is intentional, prefix it with an underscore: `_f`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: `ccog` (test "packs_jtbd") generated 1 warning (run `cargo fix --test "packs_jtbd" -p ccog` to apply 1 suggestion)
+warning: `ccog` (test "fuzz_kernel") generated 5 warnings (run `cargo fix --test "fuzz_kernel" -p ccog` to apply 5 suggestions)
+warning: `ccog` (test "earned_zero") generated 1 warning (run `cargo fix --test "earned_zero" -p ccog` to apply 1 suggestion)
+warning: unused import: `ccog::runtime::cog8::*`
+ --> crates/ccog/tests/kani_harnesses.rs:1:5
+  |
+1 | use ccog::runtime::cog8::*;
+  |     ^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `ccog::ids::*`
+ --> crates/ccog/tests/kani_harnesses.rs:2:5
+  |
+2 | use ccog::ids::*;
+  |     ^^^^^^^^^^^^
+
+warning: unexpected `cfg` condition name: `loom`
+ --> crates/ccog/tests/loom_concurrency.rs:2:8
+  |
+2 | #![cfg(loom)]
+  |        ^^^^
+  |
+  = help: expected names are: `docsrs`, `feature`, `kani`, and `test` and 32 more
+  = help: consider using a Cargo feature instead
+  = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+           [lints.rust]
+           unexpected_cfgs = { level = "warn", check-cfg = ['cfg(loom)'] }
+  = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(loom)");` to the top of the `build.rs`
+  = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+  = note: requested on the command line with `-W unexpected-cfgs`
+
+warning: unused variable: `context`
+   --> crates/ccog/tests/gauntlet.rs:584:9
+    |
+584 |     let context = empty_context(snap);
+    |         ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_context`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: `ccog` (test "kani_harnesses") generated 2 warnings (run `cargo fix --test "kani_harnesses" -p ccog` to apply 2 suggestions)
+warning: `ccog` (test "loom_concurrency") generated 1 warning
+warning: `ccog` (test "gauntlet") generated 1 warning (run `cargo fix --test "gauntlet" -p ccog` to apply 1 suggestion)
+       Fresh ccog v0.1.0 (/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/crates/ccog)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.16s
+     Running `/Users/sac/.cache/tmp/cargo-mutants-dteam-ikEhCO.tmp/target/debug/deps/ccog-2c3686441a445efb`
+
+running 217 tests
+test admit::tests::admit2_admits_when_both_zero ... ok
+test admit::tests::admit3_composes_via_or ... ok
+test admit::tests::admit4_composes_via_or ... ok
+test admit::tests::bool_mask_admitted_is_zero ... ok
+test admit::tests::bool_mask_denied_is_all_ones ... ok
+test admit::tests::commit_masked_u64_selects_value_when_admitted ... ok
+test admit::tests::commit_masked_bool_selects_correctly ... FAILED
+test admit::tests::commit_masked_generic_selects_correctly ... FAILED
+test admit::tests::commit_masked_u64_selects_fallback_when_denied ... FAILED
+test admit::tests::admitted_returns_true_only_for_zero ... FAILED
+test abi::binary::tests::powl8_roundtrip_through_postcard_preserves_choice_loop ... ok
+test abi::jsonld::tests::powl8_jsonld_emits_choice_and_loop_types ... ok
+test abi::jsonld::tests::powl8_jsonld_keys_are_deterministic ... ok
+test abi::debug::tests::powl8_debug_string_includes_choice_loop ... ok
+test bark_artifact::tests::const_table_has_four_builtins ... ok
+test bark_artifact::tests::bark_table_dispatches_custom_const ... ok
+test bark_artifact::tests::bark_fires_receipt_on_empty_field ... ok
+test bark_kernel::tests::decide_skips_unsatisfied_mask ... ok
+test bark_artifact::tests::seal_uses_blake3_urn ... ok
+test bark_kernel::tests::empty_kernel_yields_no_outcomes ... ok
+test bark_kernel::tests::decide_does_not_allocate_construct8 ... ok
+test bark_artifact::tests::phrase_binding_emits_was_informed_by ... ok
+test bark_kernel::tests::seal_uses_blake3_urn ... ok
+test bark_artifact::tests::missing_evidence_emits_ask_action_not_placeholder ... ok
+test bark_kernel::tests::linear_kernel_fires_in_plan_order ... ok
+test bark_kernel::tests::kernel_skips_unsatisfied_masks ... ok
+test bark_artifact::tests::bark_fires_full_set_on_loaded_field ... ok
+test bark_artifact::tests::transition_emits_prov_activity_not_shacl_shape ... ok
+test bark_kernel::tests::decide_then_materialize_matches_fire ... ok
+test breeds::cbr::tests::cbr_denied_on_empty_library ... ok
+test breeds::cbr::tests::cbr_denied_when_case_lacks_blake3_fingerprint ... ok
+test bark_artifact::tests::decide_then_materialize_matches_bark ... ok
+test breeds::gps::tests::gps_admitted_when_goal_and_current_present ... ok
+test breeds::cbr::tests::cbr_admitted_when_case_library_present ... ok
+test breeds::hearsay::tests::four_confirmed_is_settled ... ok
+test breeds::hearsay::tests::missing_evidence_escalates ... ok
+test breeds::hearsay::tests::no_receipt_does_not_count ... ok
+test breeds::gps::tests::gps_denied_when_goal_missing ... ok
+test breeds::hearsay::tests::one_confirmed_is_alert ... ok
+test breeds::hearsay::tests::two_confirmed_is_engaged ... ok
+test breeds::hearsay::tests::zero_outcomes_is_calm ... ok
+test breeds::gps::tests::gps_materialize_pairs_sorted_subjects ... ok
+test breeds::soar::tests::soar_denied_on_empty_field ... ok
+test breeds::prs::tests::prs_denied_missing_intention ... ok
+test breeds::prs::tests::prs_admitted_with_full_bdi_triple ... ok
+test breeds::strips::breed_probe_tests::compiled_hook_always_admitted ... ok
+test breeds::soar::tests::soar_admitted_with_three_matching_traces ... ok
+test breeds::strips::breed_probe_tests::dendral_admitted_when_prov_was_generated_by_present ... ok
+test breeds::soar::tests::soar_denied_when_history_diverges ... ok
+test breeds::strips::breed_probe_tests::eliza_admitted_when_pref_label_present ... ok
+test breeds::strips::breed_probe_tests::eliza_denied_on_empty_field ... ok
+test breeds::strips::breed_probe_tests::mycin_admitted_when_no_dd_present ... ok
+test breeds::strips::breed_probe_tests::hearsay_admitted_when_prov_was_informed_by_present ... ok
+test breeds::strips::breed_probe_tests::mycin_admitted_when_prov_value_present ... ok
+test breeds::strips::breed_probe_tests::mycin_denied_when_dd_missing_prov_value ... ok
+test breeds::strips::breed_probe_tests::prolog_admitted_when_skos_broader_present ... ok
+test breeds::strips::breed_probe_tests::shrdlu_admitted_when_rdf_type_present ... ok
+test breeds::strips::breed_probe_tests::strips_admitted_when_all_dds_have_value ... ok
+test compiled::tests::snapshot_has_any_with_predicate ... ok
+test breeds::strips::breed_probe_tests::strips_denied_when_dd_missing_value ... ok
+test compiled::tests::snapshot_indexes_instances_by_class ... ok
+test compiled::tests::snapshot_indexes_labels_lowercase ... ok
+test compiled_hook::tests::compile_builtin_recognizes_all_four ... ok
+test compiled::tests::snapshot_tracks_subject_predicate_presence ... ok
+test compiled::tests::snapshot_pairs_with_predicate ... ok
+test compiled_hook::tests::compiled_table_fires_receipt_unconditionally ... ok
+test compiled::tests::subject_predicate_present_collision_test ... ok
+test compiled_hook::tests::compiled_table_skips_when_mask_unmet ... ok
+test compiled_hook::tests::compiled_table_fires_missing_evidence ... ok
+test conformance::tests::replay_matches_self_on_empty_field ... ok
+test construct8::tests::empty_construct8_has_len_zero ... ok
+test compiled_hook::tests::present_mask_detects_dd_and_gap ... ok
+test construct8::tests::receipt_bytes_deterministic ... ok
+test construct8::tests::to_ntriples_valid ... ok
+test export::jsonld::tests::jsonld_context_only_public_iris ... ok
+test construct8::tests::push_to_capacity_succeeds ... FAILED
+test conformance::tests::replay_matches_self_on_loaded_field ... ok
+test export::ontology::tests::extra_allow_admits_custom_prefix ... ok
+test export::ontology::tests::allows_prov_and_blake3_iris ... ok
+test export::ontology::tests::rejects_example_org ... ok
+test export::ontology::tests::rejects_private_ccog_internal ... ok
+test hooks::tests::always_trigger_fires_in_registry ... ok
+test hooks::tests::fire_one_invokes_manual_only_hook ... ok
+test hooks::tests::hook_registry_fires_all_matching ... ok
+test export::jsonld::tests::jsonld_trace_roundtrip_stable_bytes ... ok
+test hooks::tests::manual_only_trigger_skipped_in_registry ... ok
+test hooks::tests::missing_evidence_hook_emits_ask_action_not_placeholder ... ok
+test hooks::tests::missing_evidence_does_not_fill_evidence ... ok
+test hooks::tests::missing_evidence_hook_does_not_fire_complete ... ok
+test hooks::tests::phrase_binding_hook_emits_was_informed_by ... ok
+test hooks::tests::missing_evidence_hook_fires_on_gap ... ok
+test instinct::tests::calm_with_no_signals_yields_ignore ... ok
+test hooks::tests::transition_admissibility_hook_fires_on_typed_subject_not_shacl_shape ... ok
+test hooks::tests::snapshot_admit_check_dispatches ... FAILED
+test hooks::tests::hook_registry_returns_receipts ... ok
+test instinct::tests::default_falls_back_to_ask ... ok
+test instinct::tests::must_escalate_overrides_retrieve ... ok
+test instinct::tests::must_escalate_overrides_other_signals ... ok
+test instinct::tests::missing_evidence_yields_ask ... ok
+test instinct::tests::inspect_affordance_with_engaged_yields_inspect ... ok
+test instinct::tests::package_expected_plus_delivery_cadence_yields_retrieve ... ok
+test instinct::tests::partner_due_plus_cadence_yields_settle ... ok
+test instinct::tests::safety_risk_without_inspect_affordance_escalates ... ok
+test instinct::tests::settled_overrides_must_escalate ... ok
+test instinct::tests::settled_yields_settle ... ok
+test mask::build::tests::k128_const_builder_spans_words ... ok
+test mask::build::tests::k256_const_builder_drops_oob ... ok
+test instinct::tests::theft_risk_with_alert_yields_refuse ... ok
+test mask::build::tests::k64_const_builder ... ok
+test mask::ktier::tests::k128_spans_word_boundary ... ok
+test mask::ktier::tests::k256_zero_and_oob ... ok
+test mask::ktier::tests::k64_bit_and_count_ones ... ok
+test mask::ktier::tests::k_widths ... ok
+test mask::simd::tests::k256_simd_and_matches_scalar ... ok
+test mask::simd::tests::k256_simd_or_matches_scalar ... ok
+test multimodal::tests::afford_has_isolates_affordance_channel ... ok
+test multimodal::tests::expect_has_isolates_expectation_channel ... ok
+test multimodal::tests::posture_has_returns_true_for_set_bit ... ok
+test multimodal::tests::risk_has_isolates_risk_channel ... ok
+test packs::bits::tests::dev_range_terminates_at_canonical_boundary ... ok
+test packs::bits::tests::in_range_boundary_is_half_open ... ok
+test packs::bits::tests::ranges_are_pairwise_disjoint ... ok
+test hooks::tests::sparql_ask_trigger_does_not_fire_when_false ... ok
+test hooks::tests::sparql_ask_trigger_fires_when_true ... ok
+test packs::dev::tests::escalate_is_clamped_to_ask ... ok
+test packs::dev::tests::refuse_is_clamped_to_ask ... ok
+test packs::dev::tests::settle_passes_through ... ok
+test packs::edge::tests::pii_marker_detector_flags_at_sign ... ok
+test packs::edge::tests::all_acts_emit_only_deterministic_ids ... ok
+test packs::lifestyle::tests::all_acts_emit_one_triple ... ok
+test packs::enterprise::tests::every_act_emits_was_informed_by_and_used ... ok
+test packs::lifestyle_overlap::tests::pack_validates_clean ... ok
+test packs::lifestyle::tests::fatigued_rewrites_refuse_to_ask ... ok
+test packs::lifestyle::tests::unfatigued_passes_through ... ok
+test packs::lifestyle_overlap::tests::precedence_ranks_are_distinct_and_ordered ... ok
+test packs::lifestyle_overlap::tests::safety_outranks_routine_in_precedence_table ... ok
+test packs::metadata_ids::tests::display_writes_underlying_str ... ok
+test packs::metadata_ids::tests::ids_are_copy_repr_transparent ... ok
+test packs::metadata_ids::tests::ids_compare_to_str_literals ... ok
+test packs::metadata_ids::tests::ids_serialize_as_plain_strings ... ok
+test packs::tests::iri_is_public_accepts_blake3 ... ok
+test packs::tests::iri_is_public_rejects_unknown_namespace ... ok
+test packs::tests::load_compiled_admits_valid_digest ... ok
+test packs::tests::load_compiled_rejects_tampered_content ... ok
+test packs::tests::load_compiled_rejects_tampered_digest ... ok
+test powl::tests::binary_relation_oob_ignored ... ok
+test powl::tests::binary_relation_set_and_query ... ok
+test powl::tests::compile_linear_plan_yields_topological_order ... ok
+test powl::tests::compile_partial_order_respects_rel_edges ... ok
+test powl::tests::compile_propagates_shape_match_errors ... ok
+test powl::tests::compile_returns_malformed_on_excess_runtime_nodes ... ok
+test powl::tests::compile_strips_operator_nodes ... ok
+test powl::tests::powl8_push_caps_at_max_nodes ... ok
+test powl::tests::shape_match_acyclic_partial_order_is_sound ... ok
+test powl::tests::shape_match_cyclic_partial_order_is_cyclic ... ok
+test powl::tests::shape_match_empty_is_malformed ... ok
+test powl::tests::shape_match_root_oob_is_malformed ... ok
+test powl::tests::shape_match_self_referencing_operator_is_malformed ... ok
+test powl::tests::shape_match_seq_cycle_detected_globally ... ok
+test powl::tests::shape_match_seq_oob_child_is_malformed ... ok
+test powl::tests::try_add_edge_accepts_valid ... ok
+test powl::tests::try_add_edge_rejects_oob ... ok
+test receipt::tests::canonical_material_layout_is_nul_separated ... ok
+test receipt::tests::derive_urn_format_is_urn_blake3_with_64_hex ... ok
+test receipt::tests::derive_urn_is_deterministic ... ok
+test receipt::tests::distinct_inputs_distinct_urns ... ok
+test receipt::tests::polarity_changes_urn ... ok
+test receipt::tests::prior_chain_none_matches_some_zeros ... ok
+test runtime::alignment::tests::test_alignment_insert ... ok
+test runtime::alignment::tests::test_alignment_perfect ... ok
+test runtime::alignment::tests::test_alignment_skip ... ok
+test runtime::coevo::tests::test_enhancement_logic ... ok
+test runtime::conformance::tests::test_fitness_violation ... ok
+test runtime::conformance::tests::test_generalization_and_simplicity ... ok
+test runtime::conformance::tests::test_perfect_conformance ... ok
+test runtime::event::tests::event_attribute_table_usage ... ok
+test runtime::event::tests::event_basic_construction ... ok
+test runtime::mcp::tests::test_mcp_projection ... ok
+test runtime::mcp_transport::tests::test_strips_guard_blocks_unfulfilled_precondition ... ok
+test runtime::mining::tests::test_heuristic_mining_logic ... ok
+test runtime::mining::tests::test_map_to_xes ... ok
+test runtime::ocel::tests::test_object_centric_closure ... ok
+test runtime::ocel::tests::test_ocel_event_binding ... ok
+test runtime::mcp_transport::tests::test_mcp_transport_full_loop ... ok
+test runtime::ocel::tests::test_ocel_from_powl64 ... ok
+test runtime::posture::tests::display_strings ... ok
+test runtime::posture::tests::settle_resets ... ok
+test runtime::posture::tests::transitions_through_bands ... ok
+test runtime::posture::tests::zero_observes_calm ... ok
+test runtime::reentry::tests::test_cold_reentry_overflow ... ok
+test runtime::reentry::tests::test_deduplication ... ok
+test runtime::reentry::tests::test_hot_reentry ... ok
+test runtime::tournament::cold_arena::tests::test_cold_arena_ingestion ... ok
+test runtime::tournament::cold_arena::tests::test_reject_routes ... ok
+test runtime::tournament::l1_arena::tests::test_arena_size_constraints ... ok
+test runtime::tournament::cold_arena::tests::test_replay_flood_benchmark ... ok
+test runtime::tournament::l1_arena::tests::test_duplicate_storm ... ok
+test runtime::tournament::l2_arena::tests::test_l2_arena_size ... ok
+test runtime::tournament::l1_arena::tests::test_unsafe_command_storm ... ok
+test runtime::tournament::cold_arena::tests::test_receipt_flood_benchmark ... ok
+test trace::tests::skipped_count_matches_skip_reason_some ... ok
+test runtime::xes::tests::test_xes_log_serialization ... ok
+test trace::tests::trace_default_builtins_on_empty_field_skips_three ... ok
+test utils::dense::tests::fnv1a_64_is_deterministic_and_distinct ... ok
+test utils::dense::tests::packed_key_table_basic_insert_get ... ok
+test utils::dense::tests::packed_key_table_clear_resets_len_but_keeps_capacity ... ok
+test trace::tests::trace_present_mask_matches_compute_present_mask ... ok
+test trace::tests::trace_default_builtins_on_loaded_field_fires_all ... ok
+test utils::dense::tests::packed_key_table_default_equals_new ... ok
+test utils::dense::tests::packed_key_table_iter_yields_all_entries ... ok
+test utils::dense::tests::packed_key_table_replaces_on_same_hash ... ok
+test utils::dense::tests::packed_key_table_grows_through_rebuild ... ok
+test export::bundle::tests::bundle_write_read_roundtrip ... ok
+test export::bundle::tests::bundle_deterministic_bytes ... ok
+test runtime::tournament::l2_arena::tests::test_stress_storms ... ok
+test runtime::tournament::l2_arena::tests::test_load_and_bench ... ok
+test runtime::tournament::l1_arena::tests::bench_pure_closure_reflex ... ok
+
+failures:
+
+---- admit::tests::commit_masked_bool_selects_correctly stdout ----
+
+thread 'admit::tests::commit_masked_bool_selects_correctly' (8723964) panicked at crates/ccog/src/admit.rs:211:9:
+assertion failed: !commit_masked_bool(1, true, false)
+
+---- admit::tests::commit_masked_generic_selects_correctly stdout ----
+
+thread 'admit::tests::commit_masked_generic_selects_correctly' (8723965) panicked at crates/ccog/src/admit.rs:223:9:
+assertion `left == right` failed
+  left: (1, 2)
+ right: (9, 8)
+
+---- admit::tests::commit_masked_u64_selects_fallback_when_denied stdout ----
+
+thread 'admit::tests::commit_masked_u64_selects_fallback_when_denied' (8723966) panicked at crates/ccog/src/admit.rs:201:9:
+assertion `left == right` failed
+  left: 42
+ right: 99
+
+---- admit::tests::admitted_returns_true_only_for_zero stdout ----
+
+thread 'admit::tests::admitted_returns_true_only_for_zero' (8723961) panicked at crates/ccog/src/admit.rs:185:9:
+assertion failed: !admitted(1)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- construct8::tests::push_to_capacity_succeeds stdout ----
+
+thread 'construct8::tests::push_to_capacity_succeeds' (8724027) panicked at crates/ccog/src/construct8.rs:162:9:
+index out of bounds: the len is 8 but the index is 8
+
+---- hooks::tests::snapshot_admit_check_dispatches stdout ----
+
+thread 'hooks::tests::snapshot_admit_check_dispatches' (8724048) panicked at crates/ccog/src/hooks.rs:1136:9:
+assertion `left == right` failed: Only the admitted SnapshotAdmit hook should fire
+  left: 2
+ right: 1
+
+
+failures:
+    admit::tests::admitted_returns_true_only_for_zero
+    admit::tests::commit_masked_bool_selects_correctly
+    admit::tests::commit_masked_generic_selects_correctly
+    admit::tests::commit_masked_u64_selects_fallback_when_denied
+    construct8::tests::push_to_capacity_succeeds
+    hooks::tests::snapshot_admit_check_dispatches
+
+test result: FAILED. 211 passed; 6 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.59s
+
+error: test failed, to rerun pass `-p ccog --lib`
+
+*** result: Failure(101)

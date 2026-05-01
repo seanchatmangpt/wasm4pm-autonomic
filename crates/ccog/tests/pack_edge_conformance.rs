@@ -21,16 +21,14 @@ fn pack_edge_positive_passes_canonical_lattice_through() {
         posture_mask: 1u64 << PostureBit::SETTLED,
         confidence: 200,
     };
-    let context = ClosedFieldContext { human_burden: 0,
+    let context = ClosedFieldContext {
+        human_burden: 0,
         snapshot: std::sync::Arc::new(snap.clone()),
         posture,
         context: ContextBundle::default(),
         tiers: TierMasks::ZERO,
     };
-    assert_eq!(
-        select_instinct(&context),
-        AutonomicInstinct::Settle
-    );
+    assert_eq!(select_instinct(&context), AutonomicInstinct::Settle);
 }
 
 #[test]
@@ -47,7 +45,8 @@ fn pack_edge_negative_no_response_class_invented() {
         risk_mask: 1u64 << ContextBit::THEFT_RISK,
         affordance_mask: 0,
     };
-    let context = ClosedFieldContext { human_burden: 0,
+    let context = ClosedFieldContext {
+        human_burden: 0,
         snapshot: std::sync::Arc::new(snap.clone()),
         posture,
         context: ctx,

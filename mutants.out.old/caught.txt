@@ -1,0 +1,47 @@
+crates/ccog/src/admit.rs:47:5: replace bool_mask -> u64 with 0
+crates/ccog/src/admit.rs:47:5: replace bool_mask -> u64 with 1
+crates/ccog/src/admit.rs:47:24: delete ! in bool_mask
+crates/ccog/src/admit.rs:57:5: replace admit2 -> u64 with 0
+crates/ccog/src/admit.rs:57:5: replace admit2 -> u64 with 1
+crates/ccog/src/admit.rs:57:7: replace | with & in admit2
+crates/ccog/src/admit.rs:66:5: replace admit3 -> u64 with 0
+crates/ccog/src/admit.rs:66:5: replace admit3 -> u64 with 1
+crates/ccog/src/admit.rs:66:11: replace | with & in admit3
+crates/ccog/src/admit.rs:66:7: replace | with & in admit3
+crates/ccog/src/admit.rs:75:5: replace admit4 -> u64 with 0
+crates/ccog/src/admit.rs:75:5: replace admit4 -> u64 with 1
+crates/ccog/src/admit.rs:75:15: replace | with & in admit4
+crates/ccog/src/admit.rs:75:11: replace | with & in admit4
+crates/ccog/src/admit.rs:75:7: replace | with & in admit4
+crates/ccog/src/admit.rs:86:5: replace admitted -> bool with true
+crates/ccog/src/admit.rs:86:5: replace admitted -> bool with false
+crates/ccog/src/admit.rs:86:13: replace == with != in admitted
+crates/ccog/src/admit.rs:105:5: replace commit_masked_u64 -> u64 with 0
+crates/ccog/src/admit.rs:105:5: replace commit_masked_u64 -> u64 with 1
+crates/ccog/src/admit.rs:106:18: replace | with & in commit_masked_u64
+crates/ccog/src/admit.rs:106:12: replace & with | in commit_masked_u64
+crates/ccog/src/admit.rs:106:12: replace & with ^ in commit_masked_u64
+crates/ccog/src/admit.rs:106:14: delete ! in commit_masked_u64
+crates/ccog/src/admit.rs:106:30: replace & with | in commit_masked_u64
+crates/ccog/src/admit.rs:106:30: replace & with ^ in commit_masked_u64
+crates/ccog/src/admit.rs:117:5: replace commit_masked_bool -> bool with true
+crates/ccog/src/admit.rs:117:5: replace commit_masked_bool -> bool with false
+crates/ccog/src/admit.rs:117:63: replace != with == in commit_masked_bool
+crates/ccog/src/packs/mod.rs:88:5: replace iri_is_public -> bool with true
+crates/ccog/src/packs/mod.rs:88:5: replace iri_is_public -> bool with false
+crates/ccog/src/packs/mod.rs:293:12: delete ! in load_compiled
+crates/ccog/src/packs/mod.rs:303:19: replace != with == in load_compiled
+crates/ccog/src/packs/mod.rs:380:45: replace + with - in validate
+crates/ccog/src/packs/mod.rs:380:45: replace + with * in validate
+crates/ccog/src/packs/mod.rs:381:22: replace == with != in validate
+crates/ccog/src/packs/mod.rs:387:35: replace == with != in validate
+crates/ccog/src/packs/mod.rs:398:45: replace + with - in validate
+crates/ccog/src/packs/mod.rs:398:45: replace + with * in validate
+crates/ccog/src/packs/mod.rs:399:26: replace == with != in validate
+crates/ccog/src/packs/mod.rs:419:5: replace rules_overlap_with_conflicting_responses -> bool with true
+crates/ccog/src/packs/mod.rs:423:31: replace & with | in rules_overlap_with_conflicting_responses
+crates/ccog/src/packs/mod.rs:423:31: replace & with ^ in rules_overlap_with_conflicting_responses
+crates/ccog/src/packs/mod.rs:425:31: replace & with | in rules_overlap_with_conflicting_responses
+crates/ccog/src/packs/mod.rs:425:31: replace & with ^ in rules_overlap_with_conflicting_responses
+crates/ccog/src/packs/mod.rs:426:18: replace && with || in rules_overlap_with_conflicting_responses
+crates/ccog/src/packs/mod.rs:426:13: replace != with == in rules_overlap_with_conflicting_responses

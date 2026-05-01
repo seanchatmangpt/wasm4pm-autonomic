@@ -11,14 +11,14 @@
 use crate::bark_artifact::BarkSlot;
 use crate::ccog_const_assert;
 use crate::construct8::{Construct8, ObjectId, PredicateId, Triple};
+use crate::ids::{BreedId, EdgeId, FieldId, GroupId, NodeId, PackId, RuleId};
 use crate::instinct::AutonomicInstinct;
 use crate::packs::bits::LIFESTYLE_RANGE;
 use crate::packs::FieldPack;
-use crate::runtime::ClosedFieldContext;
 use crate::runtime::cog8::{
     Cog8Edge, Cog8Row, CollapseFn, EdgeKind, Instinct, Powl8Instr, Powl8Op,
 };
-use crate::ids::{BreedId, EdgeId, FieldId, GroupId, NodeId, PackId, RuleId};
+use crate::runtime::ClosedFieldContext;
 use crate::utils::dense::fnv1a_64;
 use crate::verdict::Breed;
 use anyhow::Result;
@@ -72,8 +72,13 @@ pub static COG8_NODES: &[Cog8Row] = &[
         collapse_fn: CollapseFn::ExpertRule,
         var_ids: [
             FieldId(Bit::ROUTINE_DUE as u16),
-            FieldId(0), FieldId(0), FieldId(0),
-            FieldId(0), FieldId(0), FieldId(0), FieldId(0),
+            FieldId(0),
+            FieldId(0),
+            FieldId(0),
+            FieldId(0),
+            FieldId(0),
+            FieldId(0),
+            FieldId(0),
         ],
         required_mask: 1u64 << Bit::ROUTINE_DUE,
         forbidden_mask: 0,
@@ -90,8 +95,13 @@ pub static COG8_NODES: &[Cog8Row] = &[
         collapse_fn: CollapseFn::ReflectivePosture,
         var_ids: [
             FieldId(Bit::FATIGUED as u16),
-            FieldId(0), FieldId(0), FieldId(0),
-            FieldId(0), FieldId(0), FieldId(0), FieldId(0),
+            FieldId(0),
+            FieldId(0),
+            FieldId(0),
+            FieldId(0),
+            FieldId(0),
+            FieldId(0),
+            FieldId(0),
         ],
         required_mask: 1u64 << Bit::FATIGUED,
         forbidden_mask: 0,
@@ -108,8 +118,13 @@ pub static COG8_NODES: &[Cog8Row] = &[
         collapse_fn: CollapseFn::Preconditions,
         var_ids: [
             FieldId(Bit::TRANSITION_OPEN as u16),
-            FieldId(0), FieldId(0), FieldId(0),
-            FieldId(0), FieldId(0), FieldId(0), FieldId(0),
+            FieldId(0),
+            FieldId(0),
+            FieldId(0),
+            FieldId(0),
+            FieldId(0),
+            FieldId(0),
+            FieldId(0),
         ],
         required_mask: 1u64 << Bit::TRANSITION_OPEN,
         forbidden_mask: 0,
@@ -126,8 +141,13 @@ pub static COG8_NODES: &[Cog8Row] = &[
         collapse_fn: CollapseFn::Grounding,
         var_ids: [
             FieldId(Bit::AFFORDANCE_OFFERED as u16),
-            FieldId(0), FieldId(0), FieldId(0),
-            FieldId(0), FieldId(0), FieldId(0), FieldId(0),
+            FieldId(0),
+            FieldId(0),
+            FieldId(0),
+            FieldId(0),
+            FieldId(0),
+            FieldId(0),
+            FieldId(0),
         ],
         required_mask: 1u64 << Bit::AFFORDANCE_OFFERED,
         forbidden_mask: 0,
@@ -144,8 +164,13 @@ pub static COG8_NODES: &[Cog8Row] = &[
         collapse_fn: CollapseFn::ReflectivePosture,
         var_ids: [
             FieldId(Bit::OVERSTIMULATED as u16),
-            FieldId(0), FieldId(0), FieldId(0),
-            FieldId(0), FieldId(0), FieldId(0), FieldId(0),
+            FieldId(0),
+            FieldId(0),
+            FieldId(0),
+            FieldId(0),
+            FieldId(0),
+            FieldId(0),
+            FieldId(0),
         ],
         required_mask: 1u64 << Bit::OVERSTIMULATED,
         forbidden_mask: 0,
@@ -324,8 +349,7 @@ fn act_overstim_settle(_context: &ClosedFieldContext) -> Result<Construct8> {
 #[must_use]
 pub fn select_instinct(context: &ClosedFieldContext) -> AutonomicInstinct {
     let base = crate::instinct::select_instinct_v0(context);
-    let fatigued = context.posture.has(Bit::FATIGUED)
-        || context.posture.has(Bit::OVERSTIMULATED);
+    let fatigued = context.posture.has(Bit::FATIGUED) || context.posture.has(Bit::OVERSTIMULATED);
     if fatigued && matches!(base, AutonomicInstinct::Refuse) {
         return AutonomicInstinct::Ask;
     }
@@ -357,7 +381,8 @@ mod tests {
             risk_mask: 1u64 << crate::multimodal::ContextBit::THEFT_RISK,
             affordance_mask: 0,
         };
-        let context = ClosedFieldContext { human_burden: 0,
+        let context = ClosedFieldContext {
+            human_burden: 0,
             snapshot: std::sync::Arc::new(snap.clone()),
             posture,
             context: ctx,
@@ -379,7 +404,8 @@ mod tests {
             risk_mask: 1u64 << crate::multimodal::ContextBit::THEFT_RISK,
             affordance_mask: 0,
         };
-        let context = ClosedFieldContext { human_burden: 0,
+        let context = ClosedFieldContext {
+            human_burden: 0,
             snapshot: std::sync::Arc::new(snap.clone()),
             posture,
             context: ctx,
@@ -401,7 +427,12 @@ mod tests {
         };
         for slot in BUILTINS {
             let delta = (slot.act)(&context).expect("act");
-            assert_eq!(delta.len(), 1, "lifestyle act {} must emit exactly one triple", slot.name);
+            assert_eq!(
+                delta.len(),
+                1,
+                "lifestyle act {} must emit exactly one triple",
+                slot.name
+            );
         }
     }
 }

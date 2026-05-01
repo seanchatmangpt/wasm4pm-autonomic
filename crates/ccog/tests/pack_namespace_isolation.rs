@@ -58,7 +58,8 @@ fn pack_response_class_canonical_only() {
     };
     let ctx = ContextBundle::default();
 
-    let context = ClosedFieldContext { human_burden: 0,
+    let context = ClosedFieldContext {
+        human_burden: 0,
         snapshot: std::sync::Arc::new(snap.clone()),
         posture,
         context: ctx,

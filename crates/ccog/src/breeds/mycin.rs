@@ -1,10 +1,10 @@
 //! MYCIN breed: evidence-gap detection via direct triple-pattern walks.
 
-use anyhow::Result;
-use oxigraph::model::NamedNode;
 use crate::field::FieldContext;
 use crate::graph::GraphIri;
 use crate::verdict::{BoundTerms, EvidenceGap};
+use anyhow::Result;
+use oxigraph::model::NamedNode;
 
 /// MYCIN: Evidence-gap detection.
 /// For each bound concept, find entities typed as that concept which lack `prov:value`.

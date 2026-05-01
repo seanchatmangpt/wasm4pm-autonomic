@@ -1,9 +1,11 @@
-use proptest::prelude::*;
-use ccog::Construct8;
 use ccog::construct8::Triple;
 use ccog::graph::GraphStore;
-use ccog::runtime::cog8::{execute_cog8_graph, cog8_matches, Cog8Edge, Cog8Row, Instinct, Powl8Instr, Powl8Op, EdgeKind};
 use ccog::ids::*;
+use ccog::runtime::cog8::{
+    cog8_matches, execute_cog8_graph, Cog8Edge, Cog8Row, EdgeKind, Instinct, Powl8Instr, Powl8Op,
+};
+use ccog::Construct8;
+use proptest::prelude::*;
 
 fn arb_triple() -> impl Strategy<Value = Triple> {
     (any::<u32>(), any::<u16>(), any::<u32>()).prop_map(|(s, p, o)| {
@@ -78,21 +80,36 @@ fn arb_cog8_row() -> impl Strategy<Value = Cog8Row> {
         any::<u64>(),
         arb_instinct(),
         any::<u16>(),
-    ).prop_map(|(pack_id, group_id, rule_id, breed_id, collapse_fn, var_ids, required_mask, forbidden_mask, predecessor_mask, response, priority)| {
-        Cog8Row {
-            pack_id,
-            group_id,
-            rule_id,
-            breed_id,
-            collapse_fn,
-            var_ids,
-            required_mask,
-            forbidden_mask,
-            predecessor_mask,
-            response,
-            priority,
-        }
-    })
+    )
+        .prop_map(
+            |(
+                pack_id,
+                group_id,
+                rule_id,
+                breed_id,
+                collapse_fn,
+                var_ids,
+                required_mask,
+                forbidden_mask,
+                predecessor_mask,
+                response,
+                priority,
+            )| {
+                Cog8Row {
+                    pack_id,
+                    group_id,
+                    rule_id,
+                    breed_id,
+                    collapse_fn,
+                    var_ids,
+                    required_mask,
+                    forbidden_mask,
+                    predecessor_mask,
+                    response,
+                    priority,
+                }
+            },
+        )
 }
 
 fn arb_powl8_instr() -> impl Strategy<Value = Powl8Instr> {
@@ -103,16 +120,17 @@ fn arb_powl8_instr() -> impl Strategy<Value = Powl8Instr> {
         any::<u16>().prop_map(EdgeId),
         any::<u64>(),
         any::<u64>(),
-    ).prop_map(|(op, collapse_fn, node_id, edge_id, guard_mask, effect_mask)| {
-        Powl8Instr {
-            op,
-            collapse_fn,
-            node_id,
-            edge_id,
-            guard_mask,
-            effect_mask,
-        }
-    })
+    )
+        .prop_map(
+            |(op, collapse_fn, node_id, edge_id, guard_mask, effect_mask)| Powl8Instr {
+                op,
+                collapse_fn,
+                node_id,
+                edge_id,
+                guard_mask,
+                effect_mask,
+            },
+        )
 }
 
 fn arb_cog8_edge() -> impl Strategy<Value = Cog8Edge> {
@@ -121,16 +139,14 @@ fn arb_cog8_edge() -> impl Strategy<Value = Cog8Edge> {
         any::<u16>().prop_map(NodeId),
         arb_edge_kind(),
         arb_powl8_instr(),
-    ).prop_map(|(from, to, kind, instr)| {
-        Cog8Edge {
+    )
+        .prop_map(|(from, to, kind, instr)| Cog8Edge {
             from,
             to,
             kind,
             instr,
-        }
-    })
+        })
 }
-
 
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(64))]
@@ -193,7 +209,7 @@ proptest! {
         let expected = (present & row.required_mask) == row.required_mask
             && (present & row.forbidden_mask) == 0
             && (completed & row.predecessor_mask) == row.predecessor_mask;
-        
+
         let actual = cog8_matches(&row, present, completed);
         prop_assert_eq!(expected, actual);
     }

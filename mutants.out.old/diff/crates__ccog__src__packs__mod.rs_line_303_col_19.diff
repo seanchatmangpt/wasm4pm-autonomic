@@ -1,0 +1,21 @@
+--- crates/ccog/src/packs/mod.rs
++++ replace != with == in load_compiled
+@@ -295,17 +295,17 @@
+         }
+     }
+ 
+     // Enforce cryptographic admission (Phase 3).
+     // Recompute the BLAKE3 digest of the load-bearing content.
+     let recomputed_hash = compute_manifest_digest(name, ontology_profile, rules);
+     let expected_urn = format!("urn:blake3:{}", recomputed_hash.to_hex());
+ 
+-    if digest_urn != expected_urn {
++    if digest_urn == /* ~ changed by cargo-mutants ~ */ expected_urn {
+         return Err(PackLoadError::ManifestTamper(format!(
+             "declared {}, recomputed {}",
+             digest_urn, expected_urn
+         )));
+     }
+ 
+     // Create loaded pack.
+     Ok(LoadedFieldPack {

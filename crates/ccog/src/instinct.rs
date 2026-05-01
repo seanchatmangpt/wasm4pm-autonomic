@@ -59,19 +59,31 @@ pub fn select_instinct_v0_with_reason(
         return (AutonomicInstinct::Escalate, "must escalate risk");
     }
     if ctx.risk_has(ContextBit::SAFETY_RISK) && !ctx.afford_has(ContextBit::CAN_INSPECT) {
-        return (AutonomicInstinct::Escalate, "safety risk without inspect affordance");
+        return (
+            AutonomicInstinct::Escalate,
+            "safety risk without inspect affordance",
+        );
     }
     if ctx.expect_has(ContextBit::PACKAGE_EXPECTED)
         && ctx.afford_has(ContextBit::CAN_RETRIEVE_NOW)
         && (posture.has(PostureBit::CADENCE_DELIVERY) || posture.has(PostureBit::ORIENTED_TO_ENTRY))
     {
-        return (AutonomicInstinct::Retrieve, "package expected with retrieve affordance");
+        return (
+            AutonomicInstinct::Retrieve,
+            "package expected with retrieve affordance",
+        );
     }
     if ctx.expect_has(ContextBit::PARTNER_DUE) && posture.has(PostureBit::CADENCE_PARTNER) {
-        return (AutonomicInstinct::Settle, "partner due with partner cadence");
+        return (
+            AutonomicInstinct::Settle,
+            "partner due with partner cadence",
+        );
     }
     if (present & (1u64 << Predicate::DD_MISSING_PROV_VALUE)) != 0 {
-        return (AutonomicInstinct::Ask, "missing evidence (DD missing prov:value)");
+        return (
+            AutonomicInstinct::Ask,
+            "missing evidence (DD missing prov:value)",
+        );
     }
     if ctx.risk_has(ContextBit::THEFT_RISK) && posture.has(PostureBit::ALERT) {
         return (AutonomicInstinct::Refuse, "theft risk under alert posture");
@@ -79,7 +91,10 @@ pub fn select_instinct_v0_with_reason(
     if ctx.afford_has(ContextBit::CAN_INSPECT)
         && (posture.has(PostureBit::ALERT) || posture.has(PostureBit::ENGAGED))
     {
-        return (AutonomicInstinct::Inspect, "can inspect under alert/engaged posture");
+        return (
+            AutonomicInstinct::Inspect,
+            "can inspect under alert/engaged posture",
+        );
     }
     if posture.has(PostureBit::CALM) && ctx.expectation_mask == 0 && ctx.risk_mask == 0 {
         return (AutonomicInstinct::Ignore, "calm baseline");
@@ -122,7 +137,8 @@ mod tests {
             posture_mask: 1u64 << PostureBit::SETTLED,
             confidence: 200,
         };
-        let context = ClosedFieldContext { human_burden: 0,
+        let context = ClosedFieldContext {
+            human_burden: 0,
             snapshot: std::sync::Arc::new(snap.clone()),
             posture,
             context: ContextBundle::default(),
@@ -229,7 +245,8 @@ mod tests {
             posture_mask: 1u64 << PostureBit::ALERT,
             confidence: 200,
         };
-        let context = ClosedFieldContext { human_burden: 0,
+        let context = ClosedFieldContext {
+            human_burden: 0,
             snapshot: std::sync::Arc::new(snap.clone()),
             posture,
             context: ContextBundle::default(),
@@ -289,7 +306,8 @@ mod tests {
             posture_mask: 1u64 << PostureBit::CALM,
             confidence: 200,
         };
-        let context = ClosedFieldContext { human_burden: 0,
+        let context = ClosedFieldContext {
+            human_burden: 0,
             snapshot: std::sync::Arc::new(snap.clone()),
             posture,
             context: ContextBundle::default(),
@@ -305,7 +323,8 @@ mod tests {
             posture_mask: 1u64 << PostureBit::ORIENTED_INTERIOR,
             confidence: 200,
         };
-        let context = ClosedFieldContext { human_burden: 0,
+        let context = ClosedFieldContext {
+            human_burden: 0,
             snapshot: std::sync::Arc::new(snap.clone()),
             posture,
             context: ContextBundle::default(),

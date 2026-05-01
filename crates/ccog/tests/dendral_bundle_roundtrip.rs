@@ -56,7 +56,8 @@ fn fixture_path_3_entries() -> Vec<u8> {
 fn build_genuine_bundle() -> ProofBundle {
     let field = fixture_field();
     let snap = CompiledFieldSnapshot::from_field(&field).expect("snap");
-    let context = ClosedFieldContext { human_burden: 0,
+    let context = ClosedFieldContext {
+        human_burden: 0,
         snapshot: std::sync::Arc::new(snap.clone()),
         posture: PostureBundle::default(),
         context: ContextBundle::default(),
@@ -139,7 +140,8 @@ fn read_back_entries(bytes: &[u8]) -> BTreeMap<String, Vec<u8>> {
 fn jsonld_trace_roundtrip_stable_bytes() {
     let field = fixture_field();
     let snap = CompiledFieldSnapshot::from_field(&field).expect("snap");
-    let context = ClosedFieldContext { human_burden: 0,
+    let context = ClosedFieldContext {
+        human_burden: 0,
         snapshot: std::sync::Arc::new(snap.clone()),
         posture: PostureBundle::default(),
         context: ContextBundle::default(),
@@ -155,7 +157,8 @@ fn jsonld_trace_roundtrip_stable_bytes() {
 fn jsonld_context_only_public_iris() {
     let field = fixture_field();
     let snap = CompiledFieldSnapshot::from_field(&field).expect("snap");
-    let context = ClosedFieldContext { human_burden: 0,
+    let context = ClosedFieldContext {
+        human_burden: 0,
         snapshot: std::sync::Arc::new(snap.clone()),
         posture: PostureBundle::default(),
         context: ContextBundle::default(),
@@ -190,10 +193,22 @@ fn bundle_deterministic_bytes() {
 fn replay_verifier_accepts_genuine_bundle() {
     let bundle = build_genuine_bundle();
     let v = verify_bundle(&bundle, &[], None).expect("verify");
-    assert!(v.manifest_intact, "manifest must be intact for genuine bundle");
-    assert!(v.ontology_intact, "ontology must be intact for genuine bundle");
-    assert!(v.chain_match, "chain must be self-consistent for genuine bundle");
-    assert!(v.decision_match, "decision invariant must hold for genuine bundle");
+    assert!(
+        v.manifest_intact,
+        "manifest must be intact for genuine bundle"
+    );
+    assert!(
+        v.ontology_intact,
+        "ontology must be intact for genuine bundle"
+    );
+    assert!(
+        v.chain_match,
+        "chain must be self-consistent for genuine bundle"
+    );
+    assert!(
+        v.decision_match,
+        "decision invariant must hold for genuine bundle"
+    );
     assert!(v.all_intact());
 }
 
@@ -245,7 +260,10 @@ fn tamper_receipt_polarity_fails_replay() {
 
     let tampered = tar_zst_from_entries(&entries);
     let v = verify_bundle_bytes(&tampered, &[], None).expect("verify call");
-    assert!(!v.manifest_intact, "polarity tamper must surface as manifest mismatch");
+    assert!(
+        !v.manifest_intact,
+        "polarity tamper must surface as manifest mismatch"
+    );
 }
 
 #[test]
@@ -256,7 +274,7 @@ fn tamper_powl64_path_breaks_chain_match() {
     let bundle = build_genuine_bundle();
     let mut tampered_entries = bundle.entries.clone();
     tampered_entries.insert("powl64-path.bin".into(), vec![0xAA; 17]); // odd length
-    // Recompute manifest so the manifest layer accepts the entries.
+                                                                       // Recompute manifest so the manifest layer accepts the entries.
     let mut map = serde_json::Map::new();
     for (k, v) in &tampered_entries {
         if k == "manifest.json" {

@@ -6,8 +6,8 @@
 //! It maps collaborative routes to XES-standard event logs and identifies
 //! 'Frequent Routes' for potential COG8 promotion.
 
-use crate::powl64::{Powl64, ProjectionTarget, PartnerId};
-use crate::runtime::cog8::{NodeId, CollapseFn};
+use crate::powl64::{PartnerId, Powl64, ProjectionTarget};
+use crate::runtime::cog8::{CollapseFn, NodeId};
 
 /// Maximum number of unique nodes supported by the zero-allocation mining workspace.
 pub const MAX_MINING_NODES: usize = 64;
@@ -154,7 +154,9 @@ impl HeuristicMiner {
         (0..workspace.node_count).flat_map(move |i| {
             (0..workspace.node_count).filter_map(move |j| {
                 let dep = Self::dependency(workspace, i, j);
-                if dep >= config.dependency_threshold && workspace.follows[i][j] >= config.frequency_threshold {
+                if dep >= config.dependency_threshold
+                    && workspace.follows[i][j] >= config.frequency_threshold
+                {
                     Some((workspace.node_map[i], workspace.node_map[j]))
                 } else {
                     None
@@ -178,14 +180,14 @@ impl HeuristicMiner {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::powl64::{Powl64RouteCell, Polarity};
-    use crate::runtime::cog8::{NodeId, EdgeKind};
     use crate::ids::EdgeId;
+    use crate::powl64::{Polarity, Powl64RouteCell};
+    use crate::runtime::cog8::{EdgeKind, NodeId};
 
     #[test]
     fn test_heuristic_mining_logic() {
         let mut trace = Powl64::new();
-        
+
         // Node 1 -> Node 2 -> Node 3
         trace.extend(Powl64RouteCell {
             graph_id: 1,
@@ -236,9 +238,7 @@ mod tests {
             chain_head: 300,
         });
 
-        let ledger = EvidenceLedger {
-            traces: &[trace],
-        };
+        let ledger = EvidenceLedger { traces: &[trace] };
 
         let mut workspace = MiningWorkspace::new();
         HeuristicMiner::mine(&ledger, &mut workspace);
@@ -258,7 +258,8 @@ mod tests {
             frequency_threshold: 1,
         };
 
-        let routes: Vec<_> = HeuristicMiner::discover_frequent_routes(&workspace, &config).collect();
+        let routes: Vec<_> =
+            HeuristicMiner::discover_frequent_routes(&workspace, &config).collect();
         assert_eq!(routes.len(), 2);
         assert!(routes.contains(&(NodeId(1), NodeId(2))));
         assert!(routes.contains(&(NodeId(2), NodeId(3))));

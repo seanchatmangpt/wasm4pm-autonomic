@@ -35,10 +35,7 @@ impl StripsGuard {
     ///
     /// Checks if the `required_vars` bitmask of the call is fully satisfied by the
     /// `present_mask` computed from the current snapshot.
-    pub fn evaluate(
-        call: &MCPCall,
-        context: &ClosedFieldContext,
-    ) -> Result<(), GuardRejection> {
+    pub fn evaluate(call: &MCPCall, context: &ClosedFieldContext) -> Result<(), GuardRejection> {
         let present_mask = compute_present_mask(&context.snapshot);
 
         if (present_mask & call.required_vars) != call.required_vars {

@@ -1,0 +1,21 @@
+--- crates/ccog/src/admit.rs
++++ replace | with ^ in admit2
+@@ -49,17 +49,17 @@
+ 
+ /// Composes two admission verdicts via bitwise OR.
+ ///
+ /// The result is admitted (`0`) iff *both* inputs are admitted; otherwise the
+ /// denial bits propagate.
+ #[must_use]
+ #[inline(always)]
+ pub const fn admit2(a: u64, b: u64) -> u64 {
+-    a | b
++    a ^ /* ~ changed by cargo-mutants ~ */ b
+ }
+ 
+ /// Composes three admission verdicts via bitwise OR.
+ ///
+ /// The result is admitted (`0`) iff *all three* inputs are admitted.
+ #[must_use]
+ #[inline(always)]
+ pub const fn admit3(a: u64, b: u64, c: u64) -> u64 {

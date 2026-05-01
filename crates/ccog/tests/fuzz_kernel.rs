@@ -8,12 +8,12 @@
 //! 4. Terminal state lawfulness.
 //! 5. Convergence and budget violations.
 
-use proptest::prelude::*;
+use ccog::compiled::CompiledFieldSnapshot;
+use ccog::multimodal::{ContextBundle, PostureBundle};
+use ccog::packs::TierMasks;
 use ccog::runtime::cog8::*;
 use ccog::runtime::ClosedFieldContext;
-use ccog::compiled::CompiledFieldSnapshot;
-use ccog::multimodal::{PostureBundle, ContextBundle};
-use ccog::packs::TierMasks;
+use proptest::prelude::*;
 use std::alloc::{GlobalAlloc, Layout, System};
 use std::cell::Cell;
 use std::sync::Arc;
@@ -125,28 +125,31 @@ fn arb_cog8_row() -> impl Strategy<Value = Cog8Row> {
         any::<u8>(),  // breed_id
         arb_collapse_fn(),
         prop::array::uniform8(any::<u16>()), // var_ids
-        any::<u64>(), // required_mask
-        any::<u64>(), // forbidden_mask
-        any::<u64>(), // predecessor_mask
+        any::<u64>(),                        // required_mask
+        any::<u64>(),                        // forbidden_mask
+        any::<u64>(),                        // predecessor_mask
         arb_instinct(),
         any::<u16>(), // priority
-    ).prop_map(|(p, g, r, b, c, v, req, forb, pred, inst, prio)| {
-        let mut var_ids = [FieldId(0); 8];
-        for i in 0..8 { var_ids[i] = FieldId(v[i]); }
-        Cog8Row {
-            pack_id: PackId(p),
-            group_id: GroupId(g),
-            rule_id: RuleId(r),
-            breed_id: BreedId(b),
-            collapse_fn: c,
-            var_ids,
-            required_mask: req,
-            forbidden_mask: forb,
-            predecessor_mask: pred,
-            response: inst,
-            priority: prio,
-        }
-    })
+    )
+        .prop_map(|(p, g, r, b, c, v, req, forb, pred, inst, prio)| {
+            let mut var_ids = [FieldId(0); 8];
+            for i in 0..8 {
+                var_ids[i] = FieldId(v[i]);
+            }
+            Cog8Row {
+                pack_id: PackId(p),
+                group_id: GroupId(g),
+                rule_id: RuleId(r),
+                breed_id: BreedId(b),
+                collapse_fn: c,
+                var_ids,
+                required_mask: req,
+                forbidden_mask: forb,
+                predecessor_mask: pred,
+                response: inst,
+                priority: prio,
+            }
+        })
 }
 
 fn arb_powl8_instr(num_nodes: u16, num_edges: u16) -> impl Strategy<Value = Powl8Instr> {
@@ -157,14 +160,15 @@ fn arb_powl8_instr(num_nodes: u16, num_edges: u16) -> impl Strategy<Value = Powl
         (0..num_edges).prop_map(EdgeId),
         any::<u64>(), // guard_mask
         any::<u64>(), // effect_mask
-    ).prop_map(|(op, col, node, edge, guard, effect)| Powl8Instr {
-        op,
-        collapse_fn: col,
-        node_id: node,
-        edge_id: edge,
-        guard_mask: guard,
-        effect_mask: effect,
-    })
+    )
+        .prop_map(|(op, col, node, edge, guard, effect)| Powl8Instr {
+            op,
+            collapse_fn: col,
+            node_id: node,
+            edge_id: edge,
+            guard_mask: guard,
+            effect_mask: effect,
+        })
 }
 
 fn arb_cog8_edge(num_nodes: u16, num_edges: u16) -> impl Strategy<Value = Cog8Edge> {
@@ -173,12 +177,13 @@ fn arb_cog8_edge(num_nodes: u16, num_edges: u16) -> impl Strategy<Value = Cog8Ed
         (0..num_nodes).prop_map(NodeId),
         arb_edge_kind(),
         arb_powl8_instr(num_nodes, num_edges),
-    ).prop_map(|(f, t, k, i)| Cog8Edge {
-        from: f,
-        to: t,
-        kind: k,
-        instr: i,
-    })
+    )
+        .prop_map(|(f, t, k, i)| Cog8Edge {
+            from: f,
+            to: t,
+            kind: k,
+            instr: i,
+        })
 }
 
 fn arb_graph() -> impl Strategy<Value = (Vec<Cog8Row>, Vec<Cog8Edge>, u64, u64)> {

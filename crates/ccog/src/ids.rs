@@ -6,7 +6,19 @@ macro_rules! numeric_id {
     ($name:ident, $inner:ty, $doc:literal) => {
         #[doc = $doc]
         #[repr(transparent)]
-        #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Default, Hash, Serialize, Deserialize)]
+        #[derive(
+            Clone,
+            Copy,
+            PartialEq,
+            Eq,
+            PartialOrd,
+            Ord,
+            Debug,
+            Default,
+            Hash,
+            Serialize,
+            Deserialize,
+        )]
         pub struct $name(pub $inner);
 
         impl $name {
@@ -61,7 +73,11 @@ macro_rules! numeric_id {
 numeric_id!(PackId, u16, "Pack-level identifier.");
 numeric_id!(GroupId, u16, "Precedence-group identifier.");
 numeric_id!(RuleId, u16, "Rule identifier.");
-numeric_id!(FieldId, u16, "Field variable identifier (bit position or dense index).");
+numeric_id!(
+    FieldId,
+    u16,
+    "Field variable identifier (bit position or dense index)."
+);
 numeric_id!(BreedId, u8, "Cognitive breed identifier.");
 numeric_id!(ObligationId, u16, "Obligation identifier.");
 numeric_id!(NodeId, u16, "Graph node identifier.");

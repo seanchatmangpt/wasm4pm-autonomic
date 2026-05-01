@@ -192,7 +192,8 @@ pub fn build_lifestyle_overlap_pack(name: &str, digest_urn: &str) -> LoadedField
             require_expectation_mask: 0,
             require_risk_mask: 0,
             require_affordance_mask: 0,
-            require_k1_mask: (1u64 << CapacityBit::FATIGUE_HIGH) | (1u64 << RoutineBit::ROUTINE_DUE),
+            require_k1_mask: (1u64 << CapacityBit::FATIGUE_HIGH)
+                | (1u64 << RoutineBit::ROUTINE_DUE),
             require_k2_mask: 0,
             require_k3_mask: 0,
         }],

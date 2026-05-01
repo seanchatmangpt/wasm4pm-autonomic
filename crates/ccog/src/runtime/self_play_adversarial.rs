@@ -1,10 +1,10 @@
 //! ccog Adversarial Self-Play (ASP) Framework (PRD v0.9.5).
 //!
 //! Implements active adversarial search to maximize false-closure discovery.
-//! The goal is to pressure-test lawful closure under hostile ambiguity, 
+//! The goal is to pressure-test lawful closure under hostile ambiguity,
 //! conflicting evidence, and misleading process history.
 
-use crate::runtime::{ClosedFieldContext, cog8::Instinct};
+use crate::runtime::{cog8::Instinct, ClosedFieldContext};
 use anyhow::Result;
 
 /// Adversarial Loss Components (L_adv).
@@ -27,12 +27,12 @@ pub struct AdversarialLoss {
 impl AdversarialLoss {
     /// Calculate total weighted loss.
     pub fn total(&self) -> f64 {
-        self.false_closure * 10.0 +
-        self.missed_closure * 5.0 +
-        self.overgeneralization * 8.0 +
-        self.wrong_projection * 3.0 +
-        self.proof_gap * 7.0 +
-        self.human_burden_violation * 4.0
+        self.false_closure * 10.0
+            + self.missed_closure * 5.0
+            + self.overgeneralization * 8.0
+            + self.wrong_projection * 3.0
+            + self.proof_gap * 7.0
+            + self.human_burden_violation * 4.0
     }
 }
 
@@ -59,7 +59,10 @@ pub struct AdversarialTournament<A: CcogAdversary> {
 impl<A: CcogAdversary> AdversarialTournament<A> {
     /// Create a new adversarial tournament.
     pub fn new(adversary: A, iterations: usize) -> Self {
-        Self { adversary, iterations }
+        Self {
+            adversary,
+            iterations,
+        }
     }
 
     /// Run the tournament and return the scenario that caused the maximum loss.
@@ -71,7 +74,8 @@ impl<A: CcogAdversary> AdversarialTournament<A> {
         for _ in 0..self.iterations {
             // 1. Setup field via adversary
             let field = crate::field::FieldContext::new("asp-temp");
-            let snap = std::sync::Arc::new(crate::compiled::CompiledFieldSnapshot::from_field(&field)?);
+            let snap =
+                std::sync::Arc::new(crate::compiled::CompiledFieldSnapshot::from_field(&field)?);
             let mut context = ClosedFieldContext {
                 snapshot: snap,
                 posture: crate::multimodal::PostureBundle::default(),
@@ -92,7 +96,9 @@ impl<A: CcogAdversary> AdversarialTournament<A> {
             let mut current_loss = AdversarialLoss::default();
             if actual != expected {
                 // Any mismatch is a form of missed or false closure
-                if (expected == Instinct::Ask || expected == Instinct::Retrieve) && actual == Instinct::Ignore {
+                if (expected == Instinct::Ask || expected == Instinct::Retrieve)
+                    && actual == Instinct::Ignore
+                {
                     current_loss.missed_closure = 1.0;
                 } else if expected != Instinct::Settle && actual == Instinct::Settle {
                     current_loss.false_closure = 1.0;
@@ -125,13 +131,15 @@ impl SearchAdversary {
     fn evaluate_loss(&self, context: &ClosedFieldContext) -> f64 {
         let expected = self.expected_response(context);
         let actual: Instinct = crate::instinct::select_instinct_v0(context).into();
-        
+
         if actual == expected {
             return 0.0;
         }
 
         let mut loss = AdversarialLoss::default();
-        if (expected == Instinct::Ask || expected == Instinct::Retrieve) && actual == Instinct::Ignore {
+        if (expected == Instinct::Ask || expected == Instinct::Retrieve)
+            && actual == Instinct::Ignore
+        {
             loss.missed_closure = 1.0;
         } else if expected != Instinct::Settle && actual == Instinct::Settle {
             loss.false_closure = 1.0;
@@ -200,7 +208,7 @@ impl CcogAdversary for SearchAdversary {
         if (present & (1u64 << crate::compiled_hook::Predicate::DD_MISSING_PROV_VALUE)) != 0 {
             return Instinct::Ask;
         }
-        
+
         // Otherwise fallback to whatever the Actor would normally do in a clean state
         // (Simplified for the search)
         Instinct::Ignore

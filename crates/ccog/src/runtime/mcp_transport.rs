@@ -3,10 +3,10 @@
 //! Provides the JSON-RPC 2.0 framing and serialization logic for invoking
 //! external tools and harvesting results into the provenance chain.
 
-use serde::{Deserialize, Serialize};
+use crate::construct8::Triple;
 use crate::runtime::mcp::MCPCall;
 use crate::runtime::mcp_result::MCPResult;
-use crate::construct8::Triple;
+use serde::{Deserialize, Serialize};
 
 /// JSON-RPC 2.0 Request structure.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -97,12 +97,17 @@ impl MCPTransport {
             return Err(format!("JSON-RPC Error ({}): {}", err.code, err.message));
         }
 
-        let result = response.result.as_ref().ok_or_else(|| "Missing result in response".to_string())?;
-        
+        let result = response
+            .result
+            .as_ref()
+            .ok_or_else(|| "Missing result in response".to_string())?;
+
         // MCP tool calls usually return { "content": [...] }
         // We look for a custom "triples" field to populate MCPResult.
-        let triples_val = result.get("triples").ok_or_else(|| "Missing 'triples' in result".to_string())?;
-        
+        let triples_val = result
+            .get("triples")
+            .ok_or_else(|| "Missing 'triples' in result".to_string())?;
+
         let triples: Vec<Triple> = serde_json::from_value(triples_val.clone())
             .map_err(|e| format!("Invalid triple format: {}", e))?;
 
@@ -140,20 +145,20 @@ impl MCPTransport {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::runtime::mcp::{MCPCall, MCPArguments, ToolId};
-    use crate::runtime::mcp_guard::{StripsGuard, GuardRejection};
+    use crate::compiled::CompiledFieldSnapshot;
+    use crate::compiled_hook::Predicate;
+    use crate::field::FieldContext;
+    use crate::multimodal::{ContextBundle, PostureBundle};
+    use crate::packs::TierMasks;
+    use crate::runtime::mcp::{MCPArguments, MCPCall, ToolId};
+    use crate::runtime::mcp_guard::{GuardRejection, StripsGuard};
     use crate::runtime::mcp_result::{DefaultProjector, ResultProjector};
     use crate::runtime::ClosedFieldContext;
-    use crate::field::FieldContext;
-    use crate::compiled::CompiledFieldSnapshot;
-    use crate::multimodal::{PostureBundle, ContextBundle};
-    use crate::packs::TierMasks;
-    use crate::compiled_hook::Predicate;
 
     #[test]
     fn test_mcp_transport_full_loop() {
         let transport = MCPTransport;
-        
+
         // 1. Setup a tool call
         let call = MCPCall {
             tool_id: ToolId(42),
@@ -178,7 +183,10 @@ mod tests {
 
         // 3. Verify StripsGuard ADMITS the call
         let guard_result = StripsGuard::evaluate(&call, &context);
-        assert!(guard_result.is_ok(), "Guard should admit call when precondition is met");
+        assert!(
+            guard_result.is_ok(),
+            "Guard should admit call when precondition is met"
+        );
 
         // 4. Map to JSON-RPC request
         let request = transport.map_call(&call, 1);
@@ -197,7 +205,7 @@ mod tests {
         let projector = DefaultProjector;
         let construct = projector.project(&mcp_result).unwrap();
         assert_eq!(construct.len(), 1);
-        
+
         let triple = construct.iter().next().unwrap();
         assert_eq!(triple.subject.0, 0x100);
         assert_eq!(triple.predicate.0, 0x10);

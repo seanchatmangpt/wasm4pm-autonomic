@@ -1,0 +1,25 @@
+--- crates/ccog/src/bin/dendral.rs
++++ replace blake3_hex -> String with String::new()
+@@ -173,21 +173,17 @@
+         "ReceiptPath" => BenchmarkTier::ReceiptPath,
+         "FullProcess" => BenchmarkTier::FullProcess,
+         "ConformanceReplay" => BenchmarkTier::ConformanceReplay,
+         other => anyhow::bail!("unknown tier: {}", other),
+     })
+ }
+ 
+ fn blake3_hex(bytes: &[u8]) -> String {
+-    let mut out = String::with_capacity(bytes.len() * 2);
+-    for b in bytes {
+-        out.push_str(&format!("{:02x}", b));
+-    }
+-    out
++    String::new() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn print_verdict(v: &ReplayVerdict) {
+     println!(
+         "verify: manifest_intact={} ontology_intact={} chain_match={} decision_match={}",
+         v.manifest_intact, v.ontology_intact, v.chain_match, v.decision_match,
+     );
+ }

@@ -9,7 +9,7 @@ repository = "https://github.com/dteam-ai/dteam"
 homepage = "https://dteam.ai"
 
 [workspace]
-members = ["crates/ccog", "crates/ccog-bridge", "crates/autoinstinct"]
+members = ["crates/ccog", "crates/ccog-bridge", "crates/autoinstinct", "crates/insa/insa-types", "crates/insa/insa-hotpath", "crates/insa/insa-proof", "crates/insa/insa-truthforge"]
 
 [dependencies]
 unibit-globe = { path = "../unibit/crates/unibit-globe" }

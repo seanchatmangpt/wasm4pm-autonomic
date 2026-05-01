@@ -152,7 +152,10 @@ fn replay_decision_from_trace(trace_json: &serde_json::Value) -> bool {
             Some(m) => m,
             None => return false,
         };
-        let trigger_fired = match node.get("urn:ccog:vocab:triggerFired").and_then(|v| v.as_bool()) {
+        let trigger_fired = match node
+            .get("urn:ccog:vocab:triggerFired")
+            .and_then(|v| v.as_bool())
+        {
             Some(b) => b,
             None => return false,
         };
@@ -180,4 +183,3 @@ fn chain_self_consistent(path_bytes: &[u8], expected_head: Option<[u8; 32]>) -> 
     }
     true
 }
-

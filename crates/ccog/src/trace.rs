@@ -193,7 +193,10 @@ fn slot_to_collapse_fn(name: &str) -> CollapseFn {
 
 /// Map a (trigger_fired, check_passed) pair to the canonical typed skip
 /// reason and its display string. Returns `None` if the slot fired.
-fn classify_skip(trigger_fired: bool, check_passed: bool) -> Option<(BarkSkipReason, &'static str)> {
+fn classify_skip(
+    trigger_fired: bool,
+    check_passed: bool,
+) -> Option<(BarkSkipReason, &'static str)> {
     if !trigger_fired {
         Some((
             BarkSkipReason::RequireMaskUnsatisfied,
@@ -211,7 +214,10 @@ fn slot_to_mcp_info(name: &str) -> (Option<ToolId>, Option<String>) {
     match name {
         "missing_evidence" => (Some(ToolId(1)), Some("mcp:tool:ask_evidence".to_string())),
         "phrase_binding" => (Some(ToolId(2)), Some("mcp:tool:resolve_phrase".to_string())),
-        "transition_admissibility" => (Some(ToolId(3)), Some("mcp:tool:validate_transition".to_string())),
+        "transition_admissibility" => (
+            Some(ToolId(3)),
+            Some("mcp:tool:validate_transition".to_string()),
+        ),
         "receipt" => (Some(ToolId(4)), Some("mcp:tool:emit_receipt".to_string())),
         _ => (None, None),
     }
@@ -349,22 +355,15 @@ pub fn decide_with_trace_table(
     let (global_mcp, global_target, global_partner) = decision
         .selected_node
         .and_then(|id| {
-            nodes.get(id.0 as usize).map(|n| {
-                (
-                    n.mcp_projection.clone(),
-                    n.projection_target,
-                    n.partner_id,
-                )
-            })
+            nodes
+                .get(id.0 as usize)
+                .map(|n| (n.mcp_projection.clone(), n.projection_target, n.partner_id))
         })
         .or_else(|| {
-            nodes.iter().find(|n| n.trigger_fired && n.check_passed).map(|n| {
-                (
-                    n.mcp_projection.clone(),
-                    n.projection_target,
-                    n.partner_id,
-                )
-            })
+            nodes
+                .iter()
+                .find(|n| n.trigger_fired && n.check_passed)
+                .map(|n| (n.mcp_projection.clone(), n.projection_target, n.partner_id))
         })
         .unwrap_or((None, None, PartnerId::NONE));
 
@@ -404,10 +403,10 @@ mod tests {
     use crate::compiled::CompiledFieldSnapshot;
     use crate::compiled_hook::compute_present_mask;
     // use super::*;
-    use std::sync::Arc;
     use crate::field::FieldContext;
     use crate::multimodal::{ContextBundle, PostureBundle};
     use crate::packs::TierMasks;
+    use std::sync::Arc;
 
     fn empty_context(snap: Arc<CompiledFieldSnapshot>) -> ClosedFieldContext {
         ClosedFieldContext {

@@ -1,5 +1,5 @@
-use ccog::{FieldContext, HookRegistry, Scheduler};
 use ccog::hooks::missing_evidence_hook;
+use ccog::{FieldContext, HookRegistry, Scheduler};
 
 const NT_DOC1: &str = "<http://example.org/doc1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/DigitalDocument> .\n";
 const NT_DOC2: &str = "<http://example.org/doc2> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/DigitalDocument> .\n";
@@ -25,7 +25,10 @@ fn scheduler_first_tick_fires_then_idempotent_then_refires() {
 
     field.graph.load_ntriples(NT_DOC2).unwrap();
     let r4 = sched.tick(&field).unwrap();
-    assert!(!r4.delta.is_empty(), "loading new triples ⇒ non-empty delta");
+    assert!(
+        !r4.delta.is_empty(),
+        "loading new triples ⇒ non-empty delta"
+    );
 
     // suppress unused-warnings
     let _ = r2;

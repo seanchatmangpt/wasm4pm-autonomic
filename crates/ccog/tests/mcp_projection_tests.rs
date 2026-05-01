@@ -1,11 +1,13 @@
-use ccog::runtime::mcp::{MCPProjectionTable, ProjectionRule, ToolCallTemplate, ToolId, ExpectedResultType, EffectPolicy};
-use ccog::runtime::cog8::{Cog8Decision, Instinct};
-use ccog::ids::{PackId, GroupId, RuleId, BreedId, NodeId, EdgeId};
 use ccog::compiled::CompiledFieldSnapshot;
 use ccog::field::FieldContext;
-use ccog::runtime::ClosedFieldContext;
-use ccog::multimodal::{PostureBundle, ContextBundle};
+use ccog::ids::{BreedId, EdgeId, GroupId, NodeId, PackId, RuleId};
+use ccog::multimodal::{ContextBundle, PostureBundle};
 use ccog::packs::TierMasks;
+use ccog::runtime::cog8::{Cog8Decision, Instinct};
+use ccog::runtime::mcp::{
+    EffectPolicy, ExpectedResultType, MCPProjectionTable, ProjectionRule, ToolCallTemplate, ToolId,
+};
+use ccog::runtime::ClosedFieldContext;
 use std::sync::Arc;
 
 fn empty_context(snap: Arc<CompiledFieldSnapshot>) -> ClosedFieldContext {
@@ -18,24 +20,20 @@ fn empty_context(snap: Arc<CompiledFieldSnapshot>) -> ClosedFieldContext {
     }
 }
 
-static TEST_RULES: [ProjectionRule; 1] = [
-    ProjectionRule {
-        trigger_instinct: Instinct::Retrieve,
-        collapse_fn: Some(ccog::ids::CollapseFn::ExpertRule),
-        template: ToolCallTemplate {
-            tool_id: ToolId(42),
-            expected_result_type: ExpectedResultType::Construct8,
-            effect_policy: EffectPolicy::Write,
-            required_vars: 0xFF,
-        },
-    }
-];
+static TEST_RULES: [ProjectionRule; 1] = [ProjectionRule {
+    trigger_instinct: Instinct::Retrieve,
+    collapse_fn: Some(ccog::ids::CollapseFn::ExpertRule),
+    template: ToolCallTemplate {
+        tool_id: ToolId(42),
+        expected_result_type: ExpectedResultType::Construct8,
+        effect_policy: EffectPolicy::Write,
+        required_vars: 0xFF,
+    },
+}];
 
 #[test]
 fn test_mcp_projection_positive() {
-    let table = MCPProjectionTable {
-        rules: &TEST_RULES,
-    };
+    let table = MCPProjectionTable { rules: &TEST_RULES };
 
     let decision = Cog8Decision {
         response: Instinct::Retrieve,
@@ -62,9 +60,7 @@ fn test_mcp_projection_positive() {
 
 #[test]
 fn test_mcp_projection_negative_mismatch() {
-    let table = MCPProjectionTable {
-        rules: &TEST_RULES,
-    };
+    let table = MCPProjectionTable { rules: &TEST_RULES };
 
     let decision = Cog8Decision {
         response: Instinct::Ask, // Different instinct

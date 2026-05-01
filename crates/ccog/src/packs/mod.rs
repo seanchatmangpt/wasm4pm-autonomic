@@ -30,9 +30,9 @@ pub mod bits;
 pub mod dev;
 pub mod edge;
 pub mod enterprise;
-pub mod metadata_ids;
 pub mod lifestyle;
 pub mod lifestyle_overlap;
+pub mod metadata_ids;
 
 pub use metadata_ids::{GroupId, ObligationId, PackId, RuleId};
 
@@ -85,9 +85,7 @@ pub const PUBLIC_ONTOLOGY_PREFIXES: &[&str] = &[
 /// True iff `iri` starts with any prefix in [`PUBLIC_ONTOLOGY_PREFIXES`].
 #[must_use]
 pub fn iri_is_public(iri: &str) -> bool {
-    PUBLIC_ONTOLOGY_PREFIXES
-        .iter()
-        .any(|p| iri.starts_with(p))
+    PUBLIC_ONTOLOGY_PREFIXES.iter().any(|p| iri.starts_with(p))
 }
 
 // =============================================================================
@@ -149,7 +147,11 @@ pub struct TierMasks {
 
 impl TierMasks {
     /// All-zero tier masks (no Lifestyle context supplied).
-    pub const ZERO: Self = Self { k1: 0, k2: 0, k3: 0 };
+    pub const ZERO: Self = Self {
+        k1: 0,
+        k2: 0,
+        k3: 0,
+    };
 }
 
 /// A single runtime-evaluable pack rule.
@@ -551,7 +553,8 @@ mod tests {
         let profile = vec!["https://schema.org/".to_string()];
         let rules = vec![("urn:ctx".to_string(), "Settle".to_string())];
         // Tamper with digest
-        let digest_urn = "urn:blake3:0000000000000000000000000000000000000000000000000000000000000000";
+        let digest_urn =
+            "urn:blake3:0000000000000000000000000000000000000000000000000000000000000000";
 
         let res = load_compiled(name, &profile, &rules, "Ignore", digest_urn);
         assert!(

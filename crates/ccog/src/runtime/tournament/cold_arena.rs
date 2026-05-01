@@ -5,10 +5,10 @@
 //! tournament-style evaluation without impacting hot-path execution.
 
 use crate::powl64::Powl64;
-use crate::runtime::conformance::{EvidenceLedger, check_conformance, ConformanceReport};
-use crate::runtime::CompiledCcogConfig;
 use crate::receipt::Receipt;
-use std::time::{Instant, Duration};
+use crate::runtime::conformance::{check_conformance, ConformanceReport, EvidenceLedger};
+use crate::runtime::CompiledCcogConfig;
+use std::time::{Duration, Instant};
 
 /// Offline storage and analysis arena for cognitive evidence.
 #[derive(Debug, Default, Clone)]
@@ -85,12 +85,12 @@ impl ColdEvidenceArena {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::graph::GraphIri;
+    use crate::ids::CollapseFn;
+    use crate::ids::{EdgeId, FieldId, GroupId, NodeId, PackId, RuleId};
     use crate::powl64::Powl64RouteCell;
     use crate::receipt::Receipt;
-    use crate::graph::GraphIri;
-    use crate::ids::{PackId, GroupId, RuleId, FieldId, NodeId, EdgeId};
     use crate::runtime::cog8::*;
-    use crate::ids::CollapseFn;
     use chrono::Utc;
 
     fn mock_config() -> CompiledCcogConfig<2, 1> {
@@ -195,7 +195,7 @@ mod tests {
     fn test_replay_flood_benchmark() {
         let mut arena = ColdEvidenceArena::new();
         let config = mock_config();
-        
+
         for i in 0..50 {
             let mut trace = Powl64::new();
             trace.extend(Powl64RouteCell {
@@ -231,7 +231,7 @@ mod tests {
             to_node: NodeId(1),
             ..Default::default()
         });
-        
+
         // Invalid trace
         let mut t2 = Powl64::new();
         t2.extend(Powl64RouteCell {
@@ -241,8 +241,22 @@ mod tests {
             ..Default::default()
         });
 
-        arena.ingest(t1, Receipt::new(GraphIri::from_iri("urn:t:1").unwrap(), "0".repeat(64), Utc::now()));
-        arena.ingest(t2, Receipt::new(GraphIri::from_iri("urn:t:2").unwrap(), "1".repeat(64), Utc::now()));
+        arena.ingest(
+            t1,
+            Receipt::new(
+                GraphIri::from_iri("urn:t:1").unwrap(),
+                "0".repeat(64),
+                Utc::now(),
+            ),
+        );
+        arena.ingest(
+            t2,
+            Receipt::new(
+                GraphIri::from_iri("urn:t:2").unwrap(),
+                "1".repeat(64),
+                Utc::now(),
+            ),
+        );
 
         let rejected = arena.reject_routes(&config, 1.0);
         assert_eq!(rejected, vec![1]);

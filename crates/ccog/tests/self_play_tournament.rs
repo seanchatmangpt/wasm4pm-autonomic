@@ -1,13 +1,15 @@
 //! Self-Play Tournament Integration Tests.
 
-use ccog::runtime::self_play::{CcogEnvironment, CcogCritic, CcogCounterfactual, ScenarioFamily, SelfPlayLoop};
-use ccog::runtime::{ClosedFieldContext, cog8::Cog8Decision};
-use ccog::powl64::Powl64;
-use ccog::field::FieldContext;
-use ccog::compiled::CompiledFieldSnapshot;
-use ccog::multimodal::{PostureBundle, ContextBundle};
-use ccog::packs::TierMasks;
 use anyhow::Result;
+use ccog::compiled::CompiledFieldSnapshot;
+use ccog::field::FieldContext;
+use ccog::multimodal::{ContextBundle, PostureBundle};
+use ccog::packs::TierMasks;
+use ccog::powl64::Powl64;
+use ccog::runtime::self_play::{
+    CcogCounterfactual, CcogCritic, CcogEnvironment, ScenarioFamily, SelfPlayLoop,
+};
+use ccog::runtime::{cog8::Cog8Decision, ClosedFieldContext};
 
 struct TestEnvironment {
     pub field: FieldContext,
@@ -43,8 +45,8 @@ impl CcogEnvironment for TestEnvironment {
     fn step(&mut self, decision: &Cog8Decision) -> Result<()> {
         // Simple mock: if we Ask, we provide the missing evidence in the next step
         if decision.response == ccog::runtime::cog8::Instinct::Ask {
-             self.field.load_field_state(
-                "<urn:test:doc1> <http://www.w3.org/ns/prov#value> \"verified\" .\n"
+            self.field.load_field_state(
+                "<urn:test:doc1> <http://www.w3.org/ns/prov#value> \"verified\" .\n",
             )?;
         }
         self.snapshot = CompiledFieldSnapshot::from_field(&self.field)?;
@@ -64,7 +66,12 @@ impl CcogEnvironment for TestEnvironment {
 
 struct StandardCritic;
 impl CcogCritic for StandardCritic {
-    fn critique(&self, _context: &ClosedFieldContext, _decision: &Cog8Decision, _proof: &Powl64) -> Result<()> {
+    fn critique(
+        &self,
+        _context: &ClosedFieldContext,
+        _decision: &Cog8Decision,
+        _proof: &Powl64,
+    ) -> Result<()> {
         // Law of 8 check (placeholder for more complex checks)
         Ok(())
     }
@@ -84,17 +91,20 @@ fn tournament_missing_evidence_closes_successfully() -> Result<()> {
     let env = TestEnvironment::new();
     let critic = StandardCritic;
     let mutator = StressMutator;
-    
+
     let mut loop_test = SelfPlayLoop::new(env, critic, mutator);
     loop_test.run(ScenarioFamily::MissingEvidence, 5)?;
 
-    // We expect: 
+    // We expect:
     // Step 1: Ask (due to missing doc1 value)
     // Step 2: Settle (due to env providing value)
     assert!(loop_test.steps.len() >= 2);
-    assert_eq!(loop_test.steps[0].decision.response, ccog::runtime::cog8::Instinct::Ask);
+    assert_eq!(
+        loop_test.steps[0].decision.response,
+        ccog::runtime::cog8::Instinct::Ask
+    );
     // Note: select_instinct_v0 might need to be biased by packs to reach Settle.
     // Since we're using raw select_instinct_v0, it might stay at Ignore or Settle.
-    
+
     Ok(())
 }

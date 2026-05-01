@@ -1,0 +1,25 @@
+--- crates/ccog/src/admit.rs
++++ replace commit_masked -> T with Default::default()
+@@ -123,21 +123,17 @@
+ /// `const fn` because trait-bounded generics over arbitrary `Copy` types are
+ /// not yet stable in `const` context. The body is a plain `if`/`else`, which
+ /// LLVM consistently lowers to a conditional move (`cmov`) for primitive
+ /// payloads — so the runtime cost matches the bitmask path while preserving
+ /// type generality for callers.
+ #[must_use]
+ #[inline(always)]
+ pub fn commit_masked<T: Copy>(verdict: u64, value: T, fallback: T) -> T {
+-    if admitted(verdict) {
+-        value
+-    } else {
+-        fallback
+-    }
++    Default::default() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+ 
+     /// Verifies that `bool_mask(true)` returns `0` (admitted polarity).
+     #[test]

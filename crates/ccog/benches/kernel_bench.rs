@@ -1,5 +1,5 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use ccog::runtime::cog8::*;
+use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use std::alloc::{GlobalAlloc, Layout, System};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -33,14 +33,23 @@ fn kernel_bench(c: &mut Criterion) {
             rule_id: RuleId(i as u16),
             breed_id: BreedId(1),
             collapse_fn: CollapseFn::ExpertRule,
-            var_ids: [FieldId(0), FieldId(1), FieldId(2), FieldId(3), FieldId(4), FieldId(5), FieldId(6), FieldId(7)],
+            var_ids: [
+                FieldId(0),
+                FieldId(1),
+                FieldId(2),
+                FieldId(3),
+                FieldId(4),
+                FieldId(5),
+                FieldId(6),
+                FieldId(7),
+            ],
             required_mask: 1 << (i % 8),
             forbidden_mask: 0,
             predecessor_mask: if i > 0 { 1 << (i - 1) } else { 0 },
             response: Instinct::Settle,
             priority: i as u16,
         });
-        
+
         edges.push(Cog8Edge {
             from: NodeId(if i > 0 { (i - 1) as u16 } else { 0 }),
             to: NodeId(i as u16),
@@ -62,19 +71,22 @@ fn kernel_bench(c: &mut Criterion) {
     c.bench_function("execute_cog8_graph_64_nodes", |b| {
         b.iter(|| {
             let start_count = ALLOC_COUNT.load(Ordering::Relaxed);
-            
+
             let res = execute_cog8_graph(
                 black_box(&nodes),
                 black_box(&edges),
                 black_box(present),
                 black_box(completed),
             );
-            
+
             let end_count = ALLOC_COUNT.load(Ordering::Relaxed);
             if start_count != end_count {
-                panic!("Heap allocation detected in execute_cog8_graph hot path! ({} -> {})", start_count, end_count);
+                panic!(
+                    "Heap allocation detected in execute_cog8_graph hot path! ({} -> {})",
+                    start_count, end_count
+                );
             }
-            
+
             black_box(res)
         })
     });
@@ -87,7 +99,7 @@ fn l3_arena_10m_bench(c: &mut Criterion) {
     c.bench_function("l3_arena_1k_batch", |b| {
         b.iter(|| {
             let start_count = ALLOC_COUNT.load(Ordering::Relaxed);
-            
+
             // Execute a 1k batch per iteration. Criterion will scale the number of iterations
             // automatically to achieve statistical significance within the 3-second window.
             for i in 0..1000 {
@@ -100,7 +112,7 @@ fn l3_arena_10m_bench(c: &mut Criterion) {
                 );
                 let _ = black_box(res);
             }
-            
+
             let end_count = ALLOC_COUNT.load(Ordering::Relaxed);
             if start_count != end_count {
                 panic!("Heap allocation detected in L3 1k batch!");

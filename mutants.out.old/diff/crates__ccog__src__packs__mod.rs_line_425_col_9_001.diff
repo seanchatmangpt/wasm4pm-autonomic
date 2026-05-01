@@ -1,0 +1,21 @@
+--- crates/ccog/src/packs/mod.rs
++++ replace | with ^ in rules_overlap_with_conflicting_responses
+@@ -417,17 +417,17 @@
+ #[inline]
+ fn rules_overlap_with_conflicting_responses(r1: &LoadedPackRule, r2: &LoadedPackRule) -> bool {
+     let overlap = (r1.require_posture_mask & r2.require_posture_mask)
+         | (r1.require_expectation_mask & r2.require_expectation_mask)
+         | (r1.require_risk_mask & r2.require_risk_mask)
+         | (r1.require_affordance_mask & r2.require_affordance_mask)
+         | (r1.require_k1_mask & r2.require_k1_mask)
+         | (r1.require_k2_mask & r2.require_k2_mask)
+-        | (r1.require_k3_mask & r2.require_k3_mask);
++        ^ /* ~ changed by cargo-mutants ~ */ (r1.require_k3_mask & r2.require_k3_mask);
+     overlap != 0 && r1.response != r2.response
+ }
+ 
+ /// Subset match: every set bit in `require` must also be set in `actual`.
+ #[inline]
+ const fn mask_satisfies(actual: u64, require: u64) -> bool {
+     (actual & require) == require
+ }

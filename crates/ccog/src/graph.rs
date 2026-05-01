@@ -179,14 +179,20 @@ impl GraphStore {
     ///
     /// Direct triple-pattern lookup — no SPARQL parsing. Filters non-IRI objects.
     pub fn objects_of(&self, subject: &NamedNode, predicate: &NamedNode) -> Result<Vec<NamedNode>> {
-        let results = self.subjects_objects_of(&oxigraph::model::NamedOrBlankNode::NamedNode(subject.clone()), predicate)?;
-        Ok(results.into_iter().filter_map(|n| {
-            if let oxigraph::model::NamedOrBlankNode::NamedNode(nn) = n {
-                Some(nn)
-            } else {
-                None
-            }
-        }).collect())
+        let results = self.subjects_objects_of(
+            &oxigraph::model::NamedOrBlankNode::NamedNode(subject.clone()),
+            predicate,
+        )?;
+        Ok(results
+            .into_iter()
+            .filter_map(|n| {
+                if let oxigraph::model::NamedOrBlankNode::NamedNode(nn) = n {
+                    Some(nn)
+                } else {
+                    None
+                }
+            })
+            .collect())
     }
 
     /// Find all named-node or blank-node objects of `(subject, predicate, ?)`.
@@ -198,9 +204,9 @@ impl GraphStore {
         let s_ref = subject.as_ref();
         let p_ref = predicate.as_ref();
         let mut out = Vec::new();
-        for quad_result in
-            self.store
-                .quads_for_pattern(Some(s_ref), Some(p_ref), None, None)
+        for quad_result in self
+            .store
+            .quads_for_pattern(Some(s_ref), Some(p_ref), None, None)
         {
             let quad = quad_result.map_err(|e| anyhow!("quads_for_pattern: {}", e))?;
             match quad.object {
@@ -223,9 +229,9 @@ impl GraphStore {
         let p_ref: NamedNodeRef = predicate.into();
         let o_ref: TermRef = object.into();
         let mut out = Vec::new();
-        for quad_result in
-            self.store
-                .quads_for_pattern(None, Some(p_ref), Some(o_ref), None)
+        for quad_result in self
+            .store
+            .quads_for_pattern(None, Some(p_ref), Some(o_ref), None)
         {
             let quad = quad_result.map_err(|e| anyhow!("quads_for_pattern: {}", e))?;
             if let NamedOrBlankNode::NamedNode(n) = quad.subject {
@@ -292,10 +298,7 @@ impl GraphStore {
     ///
     /// Used by ELIZA to build a label index in one pass without SPARQL.
     /// Subjects must be NamedNodes; object terms are returned verbatim (literals OK).
-    pub fn pairs_with_predicate(
-        &self,
-        predicate: &NamedNode,
-    ) -> Result<Vec<(NamedNode, Term)>> {
+    pub fn pairs_with_predicate(&self, predicate: &NamedNode) -> Result<Vec<(NamedNode, Term)>> {
         let p_ref: NamedNodeRef = predicate.into();
         let mut out = Vec::new();
         for quad_result in self.store.quads_for_pattern(None, Some(p_ref), None, None) {

@@ -10,10 +10,16 @@ pub struct PostureMachine {
 
 impl PostureMachine {
     /// Create a new machine starting at `Calm`.
-    pub fn new() -> Self { Self { current: PackPosture::Calm } }
+    pub fn new() -> Self {
+        Self {
+            current: PackPosture::Calm,
+        }
+    }
 
     /// Current posture (no mutation).
-    pub fn current(&self) -> PackPosture { self.current }
+    pub fn current(&self) -> PackPosture {
+        self.current
+    }
 
     /// Update posture based on this tick's `signal_count` and return the new state.
     /// 0 → Calm, 1 → Alert, 2-3 → Engaged, 4+ → Settled.
@@ -28,11 +34,15 @@ impl PostureMachine {
     }
 
     /// Manually reset posture to `Calm`.
-    pub fn settle(&mut self) { self.current = PackPosture::Calm; }
+    pub fn settle(&mut self) {
+        self.current = PackPosture::Calm;
+    }
 }
 
 impl Default for PostureMachine {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 #[cfg(test)]
