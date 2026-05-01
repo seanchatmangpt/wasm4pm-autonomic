@@ -113,6 +113,10 @@ impl ElizaByte {
     pub const fn union(self, other: Self) -> Self {
         Self(self.0 | other.0)
     }
+    #[inline(always)]
+    pub const fn contains(self, other: Self) -> bool {
+        (self.0 & other.0) == other.0
+    }
 }
 
 #[repr(transparent)]
@@ -136,6 +140,10 @@ impl StripsByte {
     #[inline(always)]
     pub const fn union(self, other: Self) -> Self {
         Self(self.0 | other.0)
+    }
+    #[inline(always)]
+    pub const fn contains(self, other: Self) -> bool {
+        (self.0 & other.0) == other.0
     }
 }
 
@@ -161,6 +169,10 @@ impl ShrdluByte {
     pub const fn union(self, other: Self) -> Self {
         Self(self.0 | other.0)
     }
+    #[inline(always)]
+    pub const fn contains(self, other: Self) -> bool {
+        (self.0 & other.0) == other.0
+    }
 }
 
 #[repr(transparent)]
@@ -184,6 +196,10 @@ impl PrologByte {
     #[inline(always)]
     pub const fn union(self, other: Self) -> Self {
         Self(self.0 | other.0)
+    }
+    #[inline(always)]
+    pub const fn contains(self, other: Self) -> bool {
+        (self.0 & other.0) == other.0
     }
 }
 
@@ -209,6 +225,10 @@ impl MycinByte {
     pub const fn union(self, other: Self) -> Self {
         Self(self.0 | other.0)
     }
+    #[inline(always)]
+    pub const fn contains(self, other: Self) -> bool {
+        (self.0 & other.0) == other.0
+    }
 }
 
 #[repr(transparent)]
@@ -232,6 +252,10 @@ impl DendralByte {
     #[inline(always)]
     pub const fn union(self, other: Self) -> Self {
         Self(self.0 | other.0)
+    }
+    #[inline(always)]
+    pub const fn contains(self, other: Self) -> bool {
+        (self.0 & other.0) == other.0
     }
 }
 
@@ -257,6 +281,10 @@ impl HearsayByte {
     pub const fn union(self, other: Self) -> Self {
         Self(self.0 | other.0)
     }
+    #[inline(always)]
+    pub const fn contains(self, other: Self) -> bool {
+        (self.0 & other.0) == other.0
+    }
 }
 
 #[repr(transparent)]
@@ -280,6 +308,10 @@ impl GpsByte {
     #[inline(always)]
     pub const fn union(self, other: Self) -> Self {
         Self(self.0 | other.0)
+    }
+    #[inline(always)]
+    pub const fn contains(self, other: Self) -> bool {
+        (self.0 & other.0) == other.0
     }
 }
 

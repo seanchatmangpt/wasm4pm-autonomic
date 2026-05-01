@@ -57,7 +57,7 @@ impl CollapseEngine for ReflectEliza {
             }
         }
 
-        if let Some(_) = self.detect_slot_gap(ctx) {
+        if self.detect_slot_gap(ctx).is_some() {
             emits = emits.union(InstinctByte::ASK);
             status = CollapseStatus::Partial;
             eliza = eliza

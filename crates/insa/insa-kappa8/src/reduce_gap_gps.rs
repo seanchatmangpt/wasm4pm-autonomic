@@ -1,105 +1,136 @@
 use crate::{ClosureCtx, Cog8Support, CollapseEngine, CollapseResult, CollapseStatus};
 use insa_instinct::{GpsByte, InstinctByte, KappaByte, KappaDetail16};
-use insa_types::FieldMask;
+use insa_types::{CompletedMask, FieldMask};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub struct GoalState {
     pub required: FieldMask,
     pub forbidden: FieldMask,
+    pub completed: CompletedMask,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub struct Gap {
     pub missing_required: FieldMask,
     pub present_forbidden: FieldMask,
     pub width: u8,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub struct GapOperator {
     pub id: u32,
+    pub required_preconditions: FieldMask,
     pub resolves: FieldMask,
     pub emits: InstinctByte,
+}
+
+#[derive(Debug, Clone)]
+pub struct GapReductionResult {
+    pub status: CollapseStatus,
+    pub gap: Gap,
+    pub selected_operator: Option<u32>,
+    pub emits: InstinctByte,
+    pub gps: GpsByte,
 }
 
 pub struct ReduceGapGps {
     pub goal: GoalState,
     pub operators: &'static [GapOperator],
+    pub max_depth: u8,
 }
 
 impl ReduceGapGps {
-    pub fn compute_gap(current: FieldMask, goal: &GoalState) -> Gap {
-        let missing = (current.0 & goal.required.0) ^ goal.required.0;
-        let forbidden = current.0 & goal.forbidden.0;
-        Gap {
-            missing_required: FieldMask(missing),
-            present_forbidden: FieldMask(forbidden),
-            width: missing.count_ones() as u8 + forbidden.count_ones() as u8,
+    pub fn reduce(&self, ctx: &ClosureCtx) -> GapReductionResult {
+        self.search(ctx.present, 0)
+    }
+
+    fn search(&self, current_state: FieldMask, depth: u8) -> GapReductionResult {
+        let missing = FieldMask(self.goal.required.0 & !current_state.0);
+        let forbidden = FieldMask(self.goal.forbidden.0 & current_state.0);
+
+        let width = missing.0.count_ones() as u8 + forbidden.0.count_ones() as u8;
+        let gap = Gap {
+            missing_required: missing,
+            present_forbidden: forbidden,
+            width,
+        };
+
+        if width == 0 {
+            return GapReductionResult {
+                status: CollapseStatus::Success,
+                gap,
+                selected_operator: None,
+                emits: InstinctByte::SETTLE,
+                gps: GpsByte::empty().union(GpsByte::GAP_SMALL),
+            };
+        }
+
+        if depth >= self.max_depth {
+            return GapReductionResult {
+                status: CollapseStatus::Partial,
+                gap,
+                selected_operator: None,
+                emits: InstinctByte::ESCALATE,
+                gps: GpsByte::empty().union(GpsByte::NO_PROGRESS),
+            };
+        }
+
+        // Means-ends analysis: Find operator that reduces the gap
+        let mut best_operator = None;
+        let mut best_resolved_count = 0;
+
+        for op in self.operators {
+            // Operator must be applicable (preconditions met in current state)
+            if (current_state.0 & op.required_preconditions.0) == op.required_preconditions.0 {
+                let resolved = op.resolves.0 & missing.0;
+                let resolved_count = resolved.count_ones();
+
+                if resolved_count > best_resolved_count {
+                    best_resolved_count = resolved_count;
+                    best_operator = Some(op);
+                }
+            }
+        }
+
+        if let Some(op) = best_operator {
+            GapReductionResult {
+                status: CollapseStatus::Partial,
+                gap,
+                selected_operator: Some(op.id),
+                emits: op.emits,
+                gps: GpsByte::empty().union(GpsByte::OPERATOR_AVAILABLE),
+            }
+        } else {
+            GapReductionResult {
+                status: CollapseStatus::Failed,
+                gap,
+                selected_operator: None,
+                emits: if !forbidden.is_empty() {
+                    InstinctByte::REFUSE.union(InstinctByte::ESCALATE)
+                } else {
+                    InstinctByte::ASK.union(InstinctByte::ESCALATE)
+                },
+                gps: GpsByte::empty().union(GpsByte::OPERATOR_BLOCKED),
+            }
         }
     }
 }
 
 impl CollapseEngine for ReduceGapGps {
     fn evaluate(&self, ctx: &ClosureCtx) -> CollapseResult {
-        let gap = Self::compute_gap(ctx.present, &self.goal);
-        let mut gps = GpsByte::empty().union(GpsByte::GOAL_KNOWN);
+        let res = self.reduce(ctx);
+
         let mut detail = KappaDetail16::empty();
         detail.kappa = KappaByte::REDUCE_GAP;
-
-        if gap.width == 0 {
-            gps = gps.union(GpsByte::PROGRESS_MADE);
-            detail.gps = gps;
-            return CollapseResult {
-                detail,
-                instincts: InstinctByte::SETTLE,
-                support: Cog8Support::new(ctx.present),
-                status: CollapseStatus::Success,
-            };
-        }
-
-        gps = gps.union(GpsByte::GAP_DETECTED);
-
-        if gap.width < 4 {
-            gps = gps.union(GpsByte::GAP_SMALL);
-        } else {
-            gps = gps.union(GpsByte::GAP_LARGE);
-        }
-
-        let mut combined_instincts = InstinctByte::empty();
-        let mut best_reduction = 0;
-
-        for op in self.operators {
-            let resolves_missing = op.resolves.0 & gap.missing_required.0;
-            let resolves_forbidden = op.resolves.0 & gap.present_forbidden.0;
-            let reduction = resolves_missing.count_ones() + resolves_forbidden.count_ones();
-
-            if reduction > 0 && reduction >= best_reduction {
-                best_reduction = reduction;
-                combined_instincts = combined_instincts.union(op.emits);
-            }
-        }
-
-        let status = if best_reduction > 0 {
-            gps = gps.union(GpsByte::OPERATOR_AVAILABLE);
-            CollapseStatus::Partial
-        } else {
-            gps = gps
-                .union(GpsByte::OPERATOR_BLOCKED)
-                .union(GpsByte::NO_PROGRESS);
-            CollapseStatus::Failed
-        };
-
-        if best_reduction == 0 {
-            combined_instincts = combined_instincts.union(InstinctByte::ESCALATE);
-        }
-
-        detail.gps = gps;
+        detail.gps = res.gps;
 
         CollapseResult {
             detail,
-            instincts: combined_instincts,
-            support: Cog8Support::new(ctx.present),
-            status,
+            instincts: res.emits,
+            support: Cog8Support::new(FieldMask(
+                res.gap.missing_required.0 | res.gap.present_forbidden.0,
+            )),
+            status: res.status,
         }
     }
 }
