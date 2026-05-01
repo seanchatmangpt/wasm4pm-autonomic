@@ -18,7 +18,7 @@ pub enum ResolutionClass {
     Blocked = 4,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct InstinctResolution {
     pub activation: InstinctByte,
     pub selected: SelectedInstinctByte,
@@ -30,16 +30,22 @@ pub struct InstinctResolution {
 pub struct InstinctResolutionLut {
     pub selected_lut: [SelectedInstinctByte; 256],
     pub class_lut: [ResolutionClass; 256],
+    pub conflict_lut: [ConflictStatus; 256],
 }
 
 impl InstinctResolutionLut {
     pub const fn resolve(&self, activation: InstinctByte) -> InstinctResolution {
         let bits = activation.bits() as usize;
+        let selected = self.selected_lut[bits];
+
+        // Exact semantic law: Inhibited is whatever was activated but not selected.
+        let inhibited_bits = activation.bits() ^ selected.0;
+
         InstinctResolution {
             activation,
-            selected: self.selected_lut[bits],
-            inhibited: InstinctByte(0), // Simplified for now
-            conflict: ConflictStatus::Valid,
+            selected,
+            inhibited: InstinctByte(inhibited_bits),
+            conflict: self.conflict_lut[bits],
             class: self.class_lut[bits],
         }
     }

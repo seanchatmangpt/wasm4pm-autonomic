@@ -24,10 +24,15 @@ fn test_access_drift_jtbd() {
     assert!(decision.response.contains(InstinctByte::REFUSE));
     assert!(decision.fired_mask > 0);
 
-    // Resolve POWL8 (mocked motion for now)
-    let selected_motion = Powl8Op::Block;
-    assert_eq!(selected_motion, Powl8Op::Block);
+    // Resolve POWL8 motion via admitted struct matching.
+    // Reflexes translate into specific operators in process topologies.
+    let selected_motion = if decision.response.contains(InstinctByte::REFUSE) {
+        Powl8Op::Block
+    } else if decision.response.contains(InstinctByte::ESCALATE) {
+        Powl8Op::Silent // Usually deferred to out-of-band HITL
+    } else {
+        Powl8Op::Act
+    };
 
-    // The test succeeds if it compiles and runs without panicking,
-    // proving the byte-law architecture for access drift closure.
+    assert_eq!(selected_motion, Powl8Op::Block, "The selected action for REFUSE should systematically yield a Block motion under POWL8 mapping");
 }

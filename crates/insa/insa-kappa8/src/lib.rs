@@ -9,7 +9,7 @@ pub mod reduce_gap_gps;
 pub mod reflect_eliza;
 pub mod rule_mycin;
 
-use insa_instinct::{InstinctByte, KappaByte};
+use insa_instinct::{InstinctByte, KappaDetail16};
 use insa_types::{CompletedMask, DictionaryDigest, FieldMask, ObjectRef, PolicyEpoch};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -41,13 +41,12 @@ pub enum CollapseStatus {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CollapseResult {
-    pub kappa: KappaByte,
+    pub detail: KappaDetail16,
     pub instincts: InstinctByte,
     pub support: Cog8Support,
     pub status: CollapseStatus,
 }
 
 pub trait CollapseEngine {
-    const KAPPA_BIT: KappaByte;
     fn evaluate(&self, ctx: &ClosureCtx) -> CollapseResult;
 }
