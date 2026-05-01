@@ -1,32 +1,33 @@
 #![no_std]
 
-pub mod fuse_hearsay;
-pub mod ground_shrdlu;
-pub mod precondition_strips;
-pub mod prove_prolog;
-pub mod reconstruct_dendral;
-pub mod reduce_gap_gps;
 pub mod reflect_eliza;
+pub mod precondition_strips;
+pub mod ground_shrdlu;
+pub mod prove_prolog;
 pub mod rule_mycin;
+pub mod reconstruct_dendral;
+pub mod fuse_hearsay;
+pub mod reduce_gap_gps;
 
-use insa_instinct::{InstinctByte, KappaByte};
-use insa_types::{CompletedMask, FieldMask};
+use insa_types::{FieldMask, CompletedMask, ObjectRef, PolicyEpoch, DictionaryDigest};
+use insa_instinct::{KappaByte, InstinctByte};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Cog8Support {
     pub support: FieldMask,
 }
 
 impl Cog8Support {
-    pub fn new(support: FieldMask) -> Self {
-        Self { support }
-    }
+    pub fn new(support: FieldMask) -> Self { Self { support } }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ClosureCtx {
     pub present: FieldMask,
     pub completed: CompletedMask,
+    pub object: ObjectRef,
+    pub policy: PolicyEpoch,
+    pub dictionary: DictionaryDigest,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -36,7 +37,7 @@ pub enum CollapseStatus {
     Partial,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CollapseResult {
     pub kappa: KappaByte,
     pub instincts: InstinctByte,

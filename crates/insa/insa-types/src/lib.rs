@@ -1,7 +1,9 @@
 #![no_std]
 
-pub mod id;
 pub mod mask;
+pub mod id;
+pub mod domain;
 
-pub use id::{BreedId, EdgeId, GroupId, NodeId, PackId, RouteId, RuleId};
-pub use mask::{CompletedMask, FieldBit, FieldMask};
+pub use mask::{FieldMask, CompletedMask, FieldBit};
+pub use id::{NodeId, RouteId, PackId, GroupId, RuleId, BreedId, EdgeId};
+pub use domain::{ObjectRef, PolicyEpoch, DictionaryDigest};
