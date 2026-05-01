@@ -1,0 +1,8 @@
+[package]
+name = "insa-types"
+version = "0.1.0"
+edition = "2021"
+description = "Fundamental, zero-logic, cache-shaped primitives for INSA."
+publish = false
+
+[dependencies]

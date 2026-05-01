@@ -1,0 +1,8 @@
+[workspace]
+members = [
+    "insa-types",
+    "insa-hotpath",
+    "insa-proof",
+    "insa-truthforge"
+]
+resolver = "2"

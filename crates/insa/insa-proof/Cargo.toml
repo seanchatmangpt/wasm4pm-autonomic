@@ -1,0 +1,10 @@
+[package]
+name = "insa-proof"
+version = "0.1.0"
+edition = "2021"
+description = "Cold-path evidence layer for INSA: POWL64, receipts, replayability, and encoding."
+publish = false
+
+[dependencies]
+insa-types = { path = "../insa-types" }
+insa-hotpath = { path = "../insa-hotpath" }
