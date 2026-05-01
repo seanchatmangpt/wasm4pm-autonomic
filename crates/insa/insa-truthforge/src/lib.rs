@@ -1,3 +1,4 @@
+#![doc = include_str!("../README.md")]
 //! Comprehensive verification harness for INSA.
 //!
 //! This crate acts as the central gatekeeper, containing property tests,

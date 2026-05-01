@@ -1,3 +1,4 @@
+#![doc = include_str!("../README.md")]
 //! Security Domain Closure and Access Drift JTBD.
 
 use insa_hotpath::cog8::Cog8Row;

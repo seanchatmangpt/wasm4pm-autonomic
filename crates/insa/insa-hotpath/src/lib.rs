@@ -1,3 +1,4 @@
+#![doc = include_str!("../README.md")]
 //! Reference Law Path for INSA execution.
 //!
 //! This crate contains the semantic oracle for COG8, POWL8, CONSTRUCT8, and

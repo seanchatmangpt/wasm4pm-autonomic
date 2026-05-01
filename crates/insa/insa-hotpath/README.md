@@ -1,12 +1,23 @@
 # `insa-hotpath`
 
-The Reference Law Path for INSA execution.
+**The Reference Law Path for INSA execution.**
 
-This is the primary execution kernel representing the "hot path" for compiled cognition. It contains the core semantic oracle for executing truth closures over bounded memory inputs. 
+This crate is the high-performance core of the architecture. It implements the `COG8` execution kernel, `CONSTRUCT8` state mutators, and fast logical Lookup Tables (`lut`). The hotpath never allocates memory, ensuring nanosecond-tier predictable execution bounded entirely within CPU caches.
 
-## Key Modules
-* **`cog8`**: Contains the `Cog8Row`, a strictly aligned 32-byte C-repr struct. Each row evaluates a `required_mask` and `forbidden_mask` against the current semantic field. Matches map deterministically to an `InstinctByte` and `KappaByte`.
-* **`construct8`**: Provides `Construct8Delta`, ensuring zero-allocation state mutations bounded strictly to 8 operations (e.g. `Set` or `Clear` on a `FieldBit`). By keeping this inline within a single struct array, the architecture prevents runaway state mutations.
-* **`powl8`**: Sub-byte representation of logical operations.
-* **`lut`**: Fast lookup tables.
-* **`resolution`**: Converging outputs into a singular instinct outcome.
+## `COG8` Semantic Evaluation
+At the heart of the hotpath is the `Cog8Row`. Marked with `#[repr(C, align(32))]`, every row maps perfectly into AVX/SIMD instruction boundaries. 
+
+The evaluation logic (`execute_cog8_graph`) processes an array of these rules against the current environment state (`present: u64` and `completed: u64`). The core matching function utilizes a branchless XOR-mask check:
+```rust,ignore,ignore
+let m1 = (present & row.required_mask.0) ^ row.required_mask.0;
+let m2 = present & row.forbidden_mask.0;
+let m3 = (completed & row.completed_block_mask.0) ^ row.completed_block_mask.0;
+let matched = (m1 | m2 | m3) == 0;
+```
+If matched, the rule emits its embedded `InstinctByte` and `KappaByte`.
+
+## `CONSTRUCT8` Mutation Bounds
+INSA actively prevents runaway state alterations via the `Construct8Delta` structure. 
+* All output mutations must fit within a strictly bounded array: `pub ops: [Construct8Op; 8]`.
+* Each `Construct8Op` is restricted to `Set` or `Clear` against a single bit index.
+* If an execution attempts to mutate more than 8 state variables simultaneously, the `push` operation fails synchronously, escalating the violation.
