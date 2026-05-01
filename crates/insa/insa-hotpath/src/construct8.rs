@@ -6,21 +6,16 @@
 use insa_types::FieldMask;
 
 /// The type of modification to apply to the field.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 #[repr(u8)]
 pub enum Construct8OpKind {
     /// No operation / empty slot.
+    #[default]
     None = 0,
     /// Set the field bit to present.
     Set = 1,
     /// Clear the field bit.
     Clear = 2,
-}
-
-impl Default for Construct8OpKind {
-    fn default() -> Self {
-        Self::None
-    }
 }
 
 /// A single bounded mutation operation.

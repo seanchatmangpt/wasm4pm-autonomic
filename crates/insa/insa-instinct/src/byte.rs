@@ -265,6 +265,11 @@ pub struct HearsayByte(pub u8);
 
 impl HearsayByte {
     pub const SOURCE_AGREES: Self = Self(1 << 0);
+    #[inline(always)]
+    pub const fn bits(self) -> u8 {
+        self.0
+    }
+
     pub const SOURCE_CONFLICTS: Self = Self(1 << 1);
     pub const SOURCE_MISSING: Self = Self(1 << 2);
     pub const SOURCE_STALE: Self = Self(1 << 3);

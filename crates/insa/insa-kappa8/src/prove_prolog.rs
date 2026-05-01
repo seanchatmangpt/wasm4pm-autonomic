@@ -124,6 +124,9 @@ impl ProveProlog {
                     kappa: KappaByte::PROVE,
                     emits: InstinctByte::SETTLE,
                     support: FieldMask::empty(), // Simulated: record support
+                    witness: ProofWitness {
+                        steps_recorded: current_depth + 1,
+                    },
                 };
             }
         }
