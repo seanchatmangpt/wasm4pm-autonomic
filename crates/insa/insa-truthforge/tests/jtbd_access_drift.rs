@@ -1,8 +1,8 @@
 use insa_hotpath::cog8::execute_cog8_graph;
-use insa_hotpath::powl8::Powl8Op;
 use insa_instinct::InstinctByte;
 use insa_security::*;
 use insa_types::FieldMask;
+use insa_types::Powl8Op;
 
 #[test]
 fn test_access_drift_jtbd() {

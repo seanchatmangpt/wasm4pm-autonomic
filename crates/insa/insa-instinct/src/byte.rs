@@ -298,6 +298,11 @@ pub struct GpsByte(pub u8);
 
 impl GpsByte {
     pub const GOAL_KNOWN: Self = Self(1 << 0);
+    #[inline(always)]
+    pub const fn bits(self) -> u8 {
+        self.0
+    }
+
     pub const GAP_DETECTED: Self = Self(1 << 1);
     pub const GAP_SMALL: Self = Self(1 << 2);
     pub const GAP_LARGE: Self = Self(1 << 3);
