@@ -1,11 +1,12 @@
 [package]
-name = "insa-hotpath"
+name = "insa-security"
 version = "0.1.0"
 edition = "2021"
-description = "Reference Law Path for INSA: COG8, POWL8, CONSTRUCT8 and Instinct resolution."
+description = "Converged Security Closure rules and domain logic."
 publish = false
 
 [dependencies]
 insa-types = { path = "../insa-types" }
 insa-instinct = { path = "../insa-instinct" }
 insa-kappa8 = { path = "../insa-kappa8" }
+insa-hotpath = { path = "../insa-hotpath" }

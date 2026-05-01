@@ -4,5 +4,5 @@ members = [
     "insa-hotpath",
     "insa-proof",
     "insa-truthforge"
-]
+, "insa-security", "insa-instinct", "insa-kappa8"]
 resolver = "2"

@@ -2,12 +2,15 @@
 name = "insa-truthforge"
 version = "0.1.0"
 edition = "2021"
-description = "Comprehensive verification harness for INSA."
-publish = false
+
+[dependencies]
+insa-types = { path = "../insa-types" }
+insa-hotpath = { path = "../insa-hotpath" }
+insa-proof = { path = "../insa-proof" }
+insa-security = { path = "../insa-security" }
+insa-instinct = { path = "../insa-instinct" }
 
 [dev-dependencies]
 proptest = "1.2.0"
 criterion = "0.5"
-insa-types = { path = "../insa-types" }
-insa-hotpath = { path = "../insa-hotpath" }
-insa-proof = { path = "../insa-proof" }
+memoffset = "0.9"

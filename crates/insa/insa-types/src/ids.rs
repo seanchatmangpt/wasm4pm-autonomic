@@ -1,1 +1,32 @@
-//! ID definitions.\n\n/// Identifies a specific node in a topology.\n#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]\npub struct NodeId(pub u16);\n\n/// Indicates an empty node reference.\npub const NODE_NONE: NodeId = NodeId(u16::MAX);\n\n/// Identifies an edge in a topology.\n#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]\npub struct EdgeId(pub u16);\n\n/// Identifies a pack.\n#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]\npub struct PackId(pub u16);\n\n/// Identifies a group within a pack.\n#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]\npub struct GroupId(pub u16);\n\n/// Identifies a rule within a group.\n#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]\npub struct RuleId(pub u16);\n\n/// Identifies a specific breed execution.\n#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]\npub struct BreedId(pub u16);\n
+//! ID definitions.
+
+/// Identifies a specific node in a topology.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+pub struct NodeId(pub u16);
+
+/// Indicates an empty node reference.
+pub const NODE_NONE: NodeId = NodeId(u16::MAX);
+
+/// Identifies an edge in a topology.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+pub struct EdgeId(pub u16);
+
+/// Identifies a pack.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+pub struct PackId(pub u16);
+
+/// Identifies a group within a pack.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+pub struct GroupId(pub u16);
+
+/// Identifies a rule within a group.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+pub struct RuleId(pub u16);
+
+/// Identifies a specific breed execution.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+pub struct BreedId(pub u16);
+
+/// Identifies a specific proof route segment.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+pub struct RouteId(pub u64);

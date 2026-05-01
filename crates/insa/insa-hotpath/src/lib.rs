@@ -1,20 +1,19 @@
+//! Reference Law Path for INSA execution.
+//!
+//! This crate contains the semantic oracle for COG8, POWL8, CONSTRUCT8, and
+//! Instinct resolution.
+
+#![forbid(unsafe_code)]
+#![allow(missing_docs)]
+
 pub mod cog8;
 pub mod construct8;
 pub mod lut;
 pub mod powl8;
-pub mod scalar;
-pub mod simd;
+pub mod resolution;
 
-pub use cog8::Cog8Executor;
-pub use construct8::Construct8Bounds;
-pub use lut::InstinctResolutionLut;
-pub use powl8::Powl8Router;
-pub use scalar::ScalarExecutor;
-pub use simd::SimdExecutor;
-
-pub struct ReferenceLawPath {
-    pub cog8: Cog8Executor,
-    pub powl8: Powl8Router,
-    pub construct8: Construct8Bounds,
-    pub luts: InstinctResolutionLut,
-}
+pub use crate::cog8::*;
+pub use crate::construct8::*;
+pub use crate::lut::*;
+pub use crate::powl8::*;
+pub use crate::resolution::*;

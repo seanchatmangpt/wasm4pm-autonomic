@@ -1,1 +1,82 @@
-//! InstinctByte definitions.\n\n/// A byte representing simultaneous activation of autonomic instincts.\n#[repr(transparent)]\n#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]\npub struct InstinctByte(pub u8);\n\nimpl InstinctByte {\n    /// Settle: excess processing\n    pub const SETTLE: Self = Self(1 << 0);\n    /// Retrieve: fetch missing known evidence\n    pub const RETRIEVE: Self = Self(1 << 1);\n    /// Inspect: bounds ambiguity\n    pub const INSPECT: Self = Self(1 << 2);\n    /// Ask: request missing input\n    pub const ASK: Self = Self(1 << 3);\n    /// Await: wait for expected future event\n    pub const AWAIT: Self = Self(1 << 4);\n    /// Refuse: block unlawful action\n    pub const REFUSE: Self = Self(1 << 5);\n    /// Escalate: insufficient local authority\n    pub const ESCALATE: Self = Self(1 << 6);\n    /// Ignore: duplicate/noise/stale signal\n    pub const IGNORE: Self = Self(1 << 7);\n\n    /// Combines two instinct bytes.\n    #[inline(always)]\n    pub const fn union(self, other: Self) -> Self {\n        Self(self.0 | other.0)\n    }\n\n    /// Checks if this byte contains all bits of the other.\n    #[inline(always)]\n    pub const fn contains(self, other: Self) -> bool {\n        (self.0 & other.0) == other.0\n    }\n}\n\n/// A selected instinct, mathematically constrained to be one-hot.\n#[repr(transparent)]\n#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]\npub struct SelectedInstinctByte(u8);\n\nimpl SelectedInstinctByte {\n    /// Creates a new SelectedInstinctByte, ensuring it is one-hot.\n    pub const fn onehot(bits: u8) -> Option<Self> {\n        if bits != 0 && bits.count_ones() == 1 {\n            Some(Self(bits))\n        } else {\n            None\n        }\n    }\n\n    /// Decodes raw bytes (e.g. from .powl64).\n    pub const fn decode(bits: u8) -> Self {\n        Self(bits)\n    }\n\n    /// Returns the underlying byte.\n    pub const fn get(self) -> u8 {\n        self.0\n    }\n}\n
+//! InstinctByte definitions.
+
+/// A byte representing simultaneous activation of autonomic instincts.
+#[repr(transparent)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+pub struct InstinctByte(pub u8);
+
+impl InstinctByte {
+    /// Settle: excess processing
+    pub const SETTLE: Self = Self(1 << 0);
+    /// Retrieve: fetch missing known evidence
+    pub const RETRIEVE: Self = Self(1 << 1);
+    /// Inspect: bounds ambiguity
+    pub const INSPECT: Self = Self(1 << 2);
+    /// Ask: request missing input
+    pub const ASK: Self = Self(1 << 3);
+    /// Await: wait for expected future event
+    pub const AWAIT: Self = Self(1 << 4);
+    /// Refuse: block unlawful action
+    pub const REFUSE: Self = Self(1 << 5);
+    /// Escalate: insufficient local authority
+    pub const ESCALATE: Self = Self(1 << 6);
+    /// Ignore: duplicate/noise/stale signal
+    pub const IGNORE: Self = Self(1 << 7);
+
+    /// Combines two instinct bytes.
+    #[inline(always)]
+    pub const fn union(self, other: Self) -> Self {
+        Self(self.0 | other.0)
+    }
+
+    /// Checks if this byte contains all bits of the other.
+    #[inline(always)]
+    pub const fn contains(self, other: Self) -> bool {
+        (self.0 & other.0) == other.0
+    }
+
+    /// Exposes the underlying bits.
+    #[inline(always)]
+    pub const fn bits(self) -> u8 {
+        self.0
+    }
+}
+
+/// A selected instinct, mathematically constrained to be zero or one-hot.
+#[repr(transparent)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+pub struct SelectedInstinctByte(u8);
+
+impl SelectedInstinctByte {
+    /// Creates an empty selected instinct (no selection made).
+    #[inline(always)]
+    pub const fn empty() -> Self {
+        Self(0)
+    }
+
+    /// Creates a new SelectedInstinctByte, ensuring it is one-hot.
+    #[inline(always)]
+    pub const fn onehot(bits: u8) -> Option<Self> {
+        if bits.count_ones() == 1 {
+            Some(Self(bits))
+        } else {
+            None
+        }
+    }
+
+    /// Decodes raw bytes (e.g. from .powl64), enforcing the one-hot or empty invariant.
+    #[inline(always)]
+    pub const fn decode(bits: u8) -> Option<Self> {
+        if bits == 0 || bits.count_ones() == 1 {
+            Some(Self(bits))
+        } else {
+            None
+        }
+    }
+
+    /// Returns the underlying byte.
+    #[inline(always)]
+    pub const fn get(self) -> u8 {
+        self.0
+    }
+}

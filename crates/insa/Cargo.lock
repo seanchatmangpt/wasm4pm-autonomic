@@ -342,6 +342,23 @@ dependencies = [
 name = "insa-hotpath"
 version = "0.1.0"
 dependencies = [
+ "insa-instinct",
+ "insa-kappa8",
+ "insa-types",
+]
+
+[[package]]
+name = "insa-instinct"
+version = "0.1.0"
+dependencies = [
+ "insa-types",
+]
+
+[[package]]
+name = "insa-kappa8"
+version = "0.1.0"
+dependencies = [
+ "insa-instinct",
  "insa-types",
 ]
 
@@ -350,6 +367,17 @@ name = "insa-proof"
 version = "0.1.0"
 dependencies = [
  "insa-hotpath",
+ "insa-instinct",
+ "insa-types",
+]
+
+[[package]]
+name = "insa-security"
+version = "0.1.0"
+dependencies = [
+ "insa-hotpath",
+ "insa-instinct",
+ "insa-kappa8",
  "insa-types",
 ]
 
@@ -359,8 +387,11 @@ version = "0.1.0"
 dependencies = [
  "criterion",
  "insa-hotpath",
+ "insa-instinct",
  "insa-proof",
+ "insa-security",
  "insa-types",
+ "memoffset",
  "proptest",
 ]
 
@@ -435,6 +466,15 @@ name = "memchr"
 version = "2.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f8ca58f447f06ed17d5fc4043ce1b10dd205e060fb3ce5b979b8ed8e59ff3f79"
+
+[[package]]
+name = "memoffset"
+version = "0.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "488016bfae457b036d996092f6cb448677611ce4449e970ceaf42695203f218a"
+dependencies = [
+ "autocfg",
+]
 
 [[package]]
 name = "num-traits"
