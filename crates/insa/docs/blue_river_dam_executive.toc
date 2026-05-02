@@ -1,18 +1,17 @@
-\contentsline {chapter}{\numberline {1}The LLM Bubble: A Failure of Operational Integrity}{3}{chapter.1}%
-\contentsline {section}{\numberline {1.1}The Fluency Trap}{3}{section.1.1}%
-\contentsline {section}{\numberline {1.2}The Productivity Paradox of Generation}{3}{section.1.2}%
-\contentsline {section}{\numberline {1.3}The Fragmentation of Truth}{4}{section.1.3}%
-\contentsline {chapter}{\numberline {2}The Blue River Dam: Upstream Control}{5}{chapter.2}%
-\contentsline {section}{\numberline {2.1}The Analogy of the River}{5}{section.2.1}%
-\contentsline {section}{\numberline {2.2}The Three Planes of Assurance}{5}{section.2.2}%
-\contentsline {section}{\numberline {2.3}Monetizing the Denominator}{6}{section.2.3}%
-\contentsline {chapter}{\numberline {3}The Four Quadrants of Operational Closure}{7}{chapter.3}%
-\contentsline {section}{\numberline {3.1}Quadrant I: Admitted and Closed}{7}{section.3.1}%
-\contentsline {section}{\numberline {3.2}Quadrant II: Admitted but Open}{7}{section.3.2}%
-\contentsline {section}{\numberline {3.3}Quadrant III: Unadmitted (The Danger Zone)}{7}{section.3.3}%
-\contentsline {section}{\numberline {3.4}Quadrant IV: Exceptional Projections}{7}{section.3.4}%
-\contentsline {chapter}{\numberline {4}SaaS Manufacturing: From Building to Projecting}{8}{chapter.4}%
-\contentsline {section}{\numberline {4.1}The Hyper-Speed Factory}{8}{section.4.1}%
-\contentsline {section}{\numberline {4.2}The Moat of Restraint}{8}{section.4.2}%
-\contentsline {section}{\numberline {4.3}Strategic Pricing: The Value of Evidence}{8}{section.4.3}%
-\contentsline {chapter}{\numberline {5}Conclusion: The Board-Level Imperative}{9}{chapter.5}%
+\contentsline {chapter}{\numberline {1}The Great Divergence: Generative Noise vs. Admitted Truth}{3}{chapter.1}%
+\contentsline {section}{\numberline {1.1}The Semantic Liquidity Trap}{3}{section.1.1}%
+\contentsline {section}{\numberline {1.2}The Latent Space Fallacy in Management}{3}{section.1.2}%
+\contentsline {section}{\numberline {1.3}Conway’s Law and the Fragmentation of Corporate Reality}{4}{section.1.3}%
+\contentsline {chapter}{\numberline {2}The Blue River Dam: The Strategy of Upstream Control}{5}{chapter.2}%
+\contentsline {section}{\numberline {2.1}The Architecture of the Dam}{5}{section.2.1}%
+\contentsline {section}{\numberline {2.2}The End of the Dashboard}{5}{section.2.2}%
+\contentsline {section}{\numberline {2.3}The Three Planes of Communication Service Assurance}{6}{section.2.3}%
+\contentsline {chapter}{\numberline {3}The Economics of the No: Monetizing Work Avoidance}{7}{chapter.3}%
+\contentsline {section}{\numberline {3.1}The Denominator Problem}{7}{section.3.1}%
+\contentsline {section}{\numberline {3.2}The Cost of an Admitted Bit vs. a Generated Token}{7}{section.3.2}%
+\contentsline {section}{\numberline {3.3}The Pivot from Seats to Evidence Packs}{8}{section.3.3}%
+\contentsline {chapter}{\numberline {4}The Operational Lifecycle: From Doctor to Wizard}{9}{chapter.4}%
+\contentsline {section}{\numberline {4.1}The Role of the Doctor: Diagnostic Admission}{9}{section.4.1}%
+\contentsline {section}{\numberline {4.2}The Role of the Wizard: Admissible Construction}{9}{section.4.2}%
+\contentsline {section}{\numberline {4.3}The Co-evolutionary Handler Model}{9}{section.4.3}%
+\contentsline {chapter}{\numberline {5}Conclusion: The Inevitability of Admitted Autonomics}{11}{chapter.5}%
