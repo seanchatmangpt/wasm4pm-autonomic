@@ -1,0 +1,16 @@
+# Summary
+
+- [Introduction](./introduction.md)
+- [Architecture](./architecture/overview.md)
+  - [The Core Equation: A = µ(O*)](./architecture/equation.md)
+  - [Cognitive Substrate (ccog)](./architecture/ccog.md)
+- [Rust Patterns](./rust-patterns/introduction.md)
+  - [Evidentiary Completion ("Vibe Done")](./rust-patterns/vibe_done.md)
+  - [Zero-Cost Masking & Constraints](./rust-patterns/masking_types.md)
+  - [Constant-Time Dispatch](./rust-patterns/branchless.md)
+- [System Integrity](./integrity/overview.md)
+  - [Anti-Fake Gauntlet](./integrity/anti_fake.md)
+  - [Performance Honesty](./integrity/perf_honesty.md)
+- [Verification](./verification/overview.md)
+  - [Contract Testing](./verification/contracts.md)
+  - [Property-Based Invariants](./verification/properties.md)

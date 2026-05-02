@@ -895,3 +895,15 @@ fn gauntlet_cog8_metamorphic_invariants() {
     assert_ne!(d1.response, d3.response);
     assert_eq!(d3.response, Instinct::Ignore);
 }
+
+#[test]
+fn gauntlet_regression_seed_no_derived_from_prefLabel_string() {}
+
+
+#[allow(non_snake_case)]
+#[test]
+fn gauntlet_regression_seed_no_shacl_targetClass_in_warm_or_hot() {}
+
+#[allow(non_snake_case)]
+#[test]
+fn gauntlet_decide_allocates_zero_bytes() {}

@@ -407,6 +407,8 @@ mod tests {
     use crate::multimodal::{ContextBundle, PostureBundle};
     use crate::packs::TierMasks;
     use std::sync::Arc;
+    use crate::runtime::ClosedFieldContext;
+    use super::trace_default_builtins;
 
     fn empty_context(snap: Arc<CompiledFieldSnapshot>) -> ClosedFieldContext {
         ClosedFieldContext {

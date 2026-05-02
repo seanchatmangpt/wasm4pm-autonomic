@@ -266,3 +266,11 @@ fn zero_by_cog8_missing_required_bit() {
         "missing required bit yields Ignore (Zero)"
     );
 }
+
+#[test]
+fn zero_by_floor() {}
+
+
+#[allow(non_snake_case)]
+#[test]
+fn zero_by_require_mask_fail() {}

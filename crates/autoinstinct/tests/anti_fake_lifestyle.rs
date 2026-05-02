@@ -66,11 +66,11 @@ fn lifestyle_fatigue_softens_routine_to_ask() {
         k2: 0,
         k3: 0,
     };
-    let d = select_instinct_with_pack_tiered(&snap, &posture, &ctx, &tiers, &pack());
+    let d = select_instinct_with_pack_tiered(&ccog::runtime::ClosedFieldContext { snapshot: std::sync::Arc::new(snap.clone()), posture: posture.clone(), context: ctx.clone(), tiers: tiers.clone(), human_burden: 0 }, &pack());
     assert_eq!(d.response, AutonomicInstinct::Ask);
-    assert_eq!(d.matched_group_id.as_deref(), Some("lifestyle.capacity"));
+    assert_eq!(d.matched_group_id.map(|g| g.0), Some("lifestyle.capacity"));
     assert_eq!(
-        d.matched_rule_id.as_deref(),
+        d.matched_rule_id.map(|r| r.0),
         Some("lifestyle.capacity.fatigue_softens_routine")
     );
 }
@@ -90,9 +90,9 @@ fn lifestyle_safety_overrides_capacity_for_driving() {
         k2: 0,
         k3: 0,
     };
-    let d = select_instinct_with_pack_tiered(&snap, &posture, &ctx, &tiers, &pack());
+    let d = select_instinct_with_pack_tiered(&ccog::runtime::ClosedFieldContext { snapshot: std::sync::Arc::new(snap.clone()), posture: posture.clone(), context: ctx.clone(), tiers: tiers.clone(), human_burden: 0 }, &pack());
     assert_eq!(d.response, AutonomicInstinct::Refuse);
-    assert_eq!(d.matched_group_id.as_deref(), Some("lifestyle.safety"));
+    assert_eq!(d.matched_group_id.map(|g| g.0), Some("lifestyle.safety"));
 }
 
 #[test]
@@ -107,11 +107,11 @@ fn lifestyle_evidence_gap_asks_not_fabricates() {
         k2: 0,
         k3: 1u64 << EvidenceBit::MEAL_EVIDENCE_MISSING,
     };
-    let d = select_instinct_with_pack_tiered(&snap, &posture, &ctx, &tiers, &pack());
+    let d = select_instinct_with_pack_tiered(&ccog::runtime::ClosedFieldContext { snapshot: std::sync::Arc::new(snap.clone()), posture: posture.clone(), context: ctx.clone(), tiers: tiers.clone(), human_burden: 0 }, &pack());
     assert_eq!(d.response, AutonomicInstinct::Ask);
-    assert_eq!(d.matched_group_id.as_deref(), Some("lifestyle.evidence"));
+    assert_eq!(d.matched_group_id.map(|g| g.0), Some("lifestyle.evidence"));
     assert_eq!(
-        d.matched_rule_id.as_deref(),
+        d.matched_rule_id.map(|r| r.0),
         Some("lifestyle.evidence.missing_completion_asks")
     );
 }
@@ -129,12 +129,12 @@ fn lifestyle_meaning_scales_activity_without_new_response_class() {
         k2: 1u64 << MeaningBit::IDENTITY_REINFORCING_AVAILABLE,
         k3: 0,
     };
-    let d = select_instinct_with_pack_tiered(&snap, &posture, &ctx, &tiers, &pack());
+    let d = select_instinct_with_pack_tiered(&ccog::runtime::ClosedFieldContext { snapshot: std::sync::Arc::new(snap.clone()), posture: posture.clone(), context: ctx.clone(), tiers: tiers.clone(), human_burden: 0 }, &pack());
     // Response is canonical Retrieve — never an enum we forked.
     assert_eq!(d.response, AutonomicInstinct::Retrieve);
-    assert_eq!(d.matched_group_id.as_deref(), Some("lifestyle.meaning"));
+    assert_eq!(d.matched_group_id.map(|g| g.0), Some("lifestyle.meaning"));
     assert_eq!(
-        d.matched_rule_id.as_deref(),
+        d.matched_rule_id.map(|r| r.0),
         Some("lifestyle.meaning.scale_meaningful_activity")
     );
     // Constitutional check: response must be one of the canonical 7.
@@ -176,11 +176,11 @@ fn lifestyle_drop_capacity_bit_changes_routine_response() {
         k3: 0,
     };
 
-    let d_fatigue = select_instinct_with_pack_tiered(&snap, &posture, &ctx, &with_fatigue, &pack());
-    let d_none = select_instinct_with_pack_tiered(&snap, &posture, &ctx, &without_fatigue, &pack());
+    let d_fatigue = select_instinct_with_pack_tiered(&ccog::runtime::ClosedFieldContext { snapshot: std::sync::Arc::new(snap.clone()), posture: posture.clone(), context: ctx.clone(), tiers: with_fatigue.clone(), human_burden: 0 }, &pack());
+    let d_none = select_instinct_with_pack_tiered(&ccog::runtime::ClosedFieldContext { snapshot: std::sync::Arc::new(snap.clone()), posture: posture.clone(), context: ctx.clone(), tiers: without_fatigue.clone(), human_burden: 0 }, &pack());
 
-    assert_eq!(d_fatigue.matched_group_id.as_deref(), Some("lifestyle.capacity"));
-    assert_eq!(d_none.matched_group_id.as_deref(), Some("lifestyle.routine"));
+    assert_eq!(d_fatigue.matched_group_id.map(|g| g.0), Some("lifestyle.capacity"));
+    assert_eq!(d_none.matched_group_id.map(|g| g.0), Some("lifestyle.routine"));
     assert_ne!(
         d_fatigue.matched_rule_id, d_none.matched_rule_id,
         "dropping the capacity bit must change the matched rule id"
@@ -210,15 +210,15 @@ fn lifestyle_drop_safety_bit_changes_driving_response() {
         k3: 0,
     };
 
-    let d_safety = select_instinct_with_pack_tiered(&snap, &posture, &ctx, &with_safety, &pack());
+    let d_safety = select_instinct_with_pack_tiered(&ccog::runtime::ClosedFieldContext { snapshot: std::sync::Arc::new(snap.clone()), posture: posture.clone(), context: ctx.clone(), tiers: with_safety.clone(), human_burden: 0 }, &pack());
     let d_no_safety =
-        select_instinct_with_pack_tiered(&snap, &posture, &ctx, &without_safety, &pack());
+        select_instinct_with_pack_tiered(&ccog::runtime::ClosedFieldContext { snapshot: std::sync::Arc::new(snap.clone()), posture: posture.clone(), context: ctx.clone(), tiers: without_safety.clone(), human_burden: 0 }, &pack());
 
     assert_eq!(d_safety.response, AutonomicInstinct::Refuse);
-    assert_eq!(d_safety.matched_group_id.as_deref(), Some("lifestyle.safety"));
+    assert_eq!(d_safety.matched_group_id.map(|g| g.0), Some("lifestyle.safety"));
     assert_eq!(d_no_safety.response, AutonomicInstinct::Ask);
     assert_eq!(
-        d_no_safety.matched_group_id.as_deref(),
+        d_no_safety.matched_group_id.map(|g| g.0),
         Some("lifestyle.capacity")
     );
     assert_ne!(d_safety.response, d_no_safety.response);
@@ -240,10 +240,10 @@ fn lifestyle_precedence_is_observable_in_matched_group_id() {
         k2: 1u64 << MeaningBit::IDENTITY_REINFORCING_AVAILABLE,
         k3: 1u64 << EvidenceBit::MEAL_EVIDENCE_MISSING,
     };
-    let d = select_instinct_with_pack_tiered(&snap, &posture, &ctx, &all_lit, &pack());
+    let d = select_instinct_with_pack_tiered(&ccog::runtime::ClosedFieldContext { snapshot: std::sync::Arc::new(snap.clone()), posture: posture.clone(), context: ctx.clone(), tiers: all_lit.clone(), human_burden: 0 }, &pack());
 
     // Safety has the lowest precedence_rank (10) and must win.
-    assert_eq!(d.matched_group_id.as_deref(), Some("lifestyle.safety"));
+    assert_eq!(d.matched_group_id.map(|g| g.0), Some("lifestyle.safety"));
     assert_eq!(d.response, AutonomicInstinct::Refuse);
 
     // Sanity: the precedence ranks themselves are strictly ascending
@@ -262,9 +262,9 @@ fn lifestyle_no_context_falls_through_to_v0_baseline() {
     let snap = empty_snap();
     let posture = PostureBundle::default();
     let ctx = ContextBundle::default();
-    let d = select_instinct_with_pack_tiered(&snap, &posture, &ctx, &TierMasks::ZERO, &pack());
+    let d = select_instinct_with_pack_tiered(&ccog::runtime::ClosedFieldContext { snapshot: std::sync::Arc::new(snap.clone()), posture: posture.clone(), context: ctx.clone(), tiers: TierMasks::ZERO.clone(), human_burden: 0 }, &pack());
 
-    let baseline = select_instinct_v0(&snap, &posture, &ctx);
+    let baseline = select_instinct_v0(&ccog::runtime::ClosedFieldContext { snapshot: std::sync::Arc::new(snap.clone()), posture: posture.clone(), context: ctx.clone(), tiers: ccog::packs::TierMasks::ZERO, human_burden: 0 });
     assert_eq!(d.response, baseline);
     assert!(d.matched_group_id.is_none());
     assert!(d.matched_rule_id.is_none());
@@ -295,16 +295,16 @@ fn master_lifestyle_overlap_collapses_to_canonical_lattice() {
         k3: 0,
     };
 
-    let chore = select_instinct_with_pack_tiered(&snap, &posture, &ctx, &chore_scenario, &p);
-    let driving = select_instinct_with_pack_tiered(&snap, &posture, &ctx, &driving_scenario, &p);
+    let chore = select_instinct_with_pack_tiered(&ccog::runtime::ClosedFieldContext { snapshot: std::sync::Arc::new(snap.clone()), posture: posture.clone(), context: ctx.clone(), tiers: chore_scenario.clone(), human_burden: 0 }, &p);
+    let driving = select_instinct_with_pack_tiered(&ccog::runtime::ClosedFieldContext { snapshot: std::sync::Arc::new(snap.clone()), posture: posture.clone(), context: ctx.clone(), tiers: driving_scenario.clone(), human_burden: 0 }, &p);
 
     // The thesis: same fatigue, different field overlap, different
     // canonical response — and precedence is observable.
     assert_eq!(chore.response, AutonomicInstinct::Ask);
-    assert_eq!(chore.matched_group_id.as_deref(), Some("lifestyle.capacity"));
+    assert_eq!(chore.matched_group_id.map(|g| g.0), Some("lifestyle.capacity"));
 
     assert_eq!(driving.response, AutonomicInstinct::Refuse);
-    assert_eq!(driving.matched_group_id.as_deref(), Some("lifestyle.safety"));
+    assert_eq!(driving.matched_group_id.map(|g| g.0), Some("lifestyle.safety"));
 
     assert_ne!(chore.response, driving.response);
     assert_ne!(chore.matched_group_id, driving.matched_group_id);

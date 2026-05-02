@@ -1,0 +1,255 @@
+crates/ccog/src/compiled_hook.rs:            .expect("Invalid schema:DigitalDocument IRI")
+crates/ccog/src/compiled_hook.rs:        NamedNode::new("http://www.w3.org/ns/prov#value").expect("Invalid prov:value IRI")
+crates/ccog/src/compiled_hook.rs:            .expect("Invalid skos:prefLabel IRI")
+crates/ccog/src/compiled_hook.rs:            .expect("Invalid rdf:type IRI")
+crates/ccog/src/compiled_hook.rs:        table.register(compile_builtin(&missing_evidence_hook()).expect("compile"));
+crates/ccog/src/compiled_hook.rs:        table.register(compile_builtin(&missing_evidence_hook()).expect("compile"));
+crates/ccog/src/compiled_hook.rs:        table.register(compile_builtin(&phrase_binding_hook()).expect("compile"));
+crates/ccog/src/compiled_hook.rs:        table.register(compile_builtin(&transition_admissibility_hook()).expect("compile"));
+crates/ccog/src/compiled_hook.rs:        table.register(compile_builtin(&receipt_hook()).expect("compile"));
+crates/ccog/src/instinct.rs:        CompiledFieldSnapshot::from_field(&f).expect("snapshot")
+crates/ccog/src/instinct.rs:        .expect("load");
+crates/ccog/src/instinct.rs:        CompiledFieldSnapshot::from_field(&f).expect("snapshot")
+crates/ccog/src/graph.rs:            store: Store::new().expect("Failed to create Oxigraph store"),
+crates/ccog/src/bark_kernel.rs:                        .expect("derive_urn must produce a valid urn:blake3 IRI");
+crates/ccog/src/bark_kernel.rs:            compile_builtin(&phrase_binding_hook()).expect("compile"),
+crates/ccog/src/bark_kernel.rs:            compile_builtin(&transition_admissibility_hook()).expect("compile"),
+crates/ccog/src/bark_kernel.rs:            compile_builtin(&receipt_hook()).expect("compile"),
+crates/ccog/src/bark_kernel.rs:            compile_builtin(&missing_evidence_hook()).expect("compile"),
+crates/ccog/src/bark_kernel.rs:            compile_builtin(&receipt_hook()).expect("compile"),
+crates/ccog/src/bark_kernel.rs:            compile_builtin(&missing_evidence_hook()).expect("compile"),
+crates/ccog/src/bark_kernel.rs:            compile_builtin(&receipt_hook()).expect("compile"),
+crates/ccog/src/bark_kernel.rs:            compile_builtin(&missing_evidence_hook()).expect("compile"),
+crates/ccog/src/bark_kernel.rs:            compile_builtin(&phrase_binding_hook()).expect("compile"),
+crates/ccog/src/bark_kernel.rs:            compile_builtin(&receipt_hook()).expect("compile"),
+crates/ccog/src/bark_kernel.rs:            compile_builtin(&missing_evidence_hook()).expect("compile"),
+crates/ccog/src/bark_kernel.rs:            compile_builtin(&receipt_hook()).expect("compile"),
+crates/ccog/src/bark_kernel.rs:            compile_builtin(&missing_evidence_hook()).expect("compile"),
+crates/ccog/src/bark_kernel.rs:            compile_builtin(&receipt_hook()).expect("compile"),
+crates/ccog/src/powl.rs:            let kind = kind_of[orig as usize].expect("executable node must have a kind");
+crates/ccog/src/powl.rs:            p.push(Powl8Node::Silent).unwrap();
+crates/ccog/src/powl.rs:        p.push(Powl8Node::StartNode).unwrap();
+crates/ccog/src/powl.rs:        let s = p.push(Powl8Node::StartNode).unwrap();
+crates/ccog/src/powl.rs:        let _e = p.push(Powl8Node::Activity(Breed::Eliza)).unwrap();
+crates/ccog/src/powl.rs:        let _m = p.push(Powl8Node::Activity(Breed::Mycin)).unwrap();
+crates/ccog/src/powl.rs:        let _x = p.push(Powl8Node::Activity(Breed::Strips)).unwrap();
+crates/ccog/src/powl.rs:            .unwrap();
+crates/ccog/src/powl.rs:        p.push(Powl8Node::StartNode).unwrap();
+crates/ccog/src/powl.rs:        p.push(Powl8Node::Activity(Breed::Eliza)).unwrap();
+crates/ccog/src/powl.rs:        p.push(Powl8Node::Activity(Breed::Mycin)).unwrap();
+crates/ccog/src/powl.rs:        p.push(Powl8Node::Activity(Breed::Strips)).unwrap();
+crates/ccog/src/powl.rs:        .unwrap();
+crates/ccog/src/powl.rs:        p.push(Powl8Node::StartNode).unwrap();
+crates/ccog/src/powl.rs:        p.push(Powl8Node::Activity(Breed::Eliza)).unwrap();
+crates/ccog/src/powl.rs:        p.push(Powl8Node::OperatorSequence { a: 1, b: 2 }).unwrap();
+crates/ccog/src/powl.rs:        p.push(Powl8Node::StartNode).unwrap();
+crates/ccog/src/powl.rs:        p.push(Powl8Node::OperatorSequence { a: 0, b: 99 }).unwrap();
+crates/ccog/src/powl.rs:        p.push(Powl8Node::Activity(Breed::Eliza)).unwrap();
+crates/ccog/src/powl.rs:        p.push(Powl8Node::Activity(Breed::Mycin)).unwrap();
+crates/ccog/src/powl.rs:        p.push(Powl8Node::Activity(Breed::Strips)).unwrap();
+crates/ccog/src/powl.rs:        p.push(Powl8Node::OperatorSequence { a: 0, b: 1 }).unwrap();
+crates/ccog/src/powl.rs:        p.push(Powl8Node::OperatorSequence { a: 1, b: 2 }).unwrap();
+crates/ccog/src/powl.rs:        p.push(Powl8Node::OperatorSequence { a: 2, b: 0 }).unwrap();
+crates/ccog/src/powl.rs:        let s = p.push(Powl8Node::StartNode).unwrap();
+crates/ccog/src/powl.rs:        let _e = p.push(Powl8Node::Activity(Breed::Eliza)).unwrap();
+crates/ccog/src/powl.rs:        let _m = p.push(Powl8Node::Activity(Breed::Mycin)).unwrap();
+crates/ccog/src/powl.rs:        let _x = p.push(Powl8Node::EndNode).unwrap();
+crates/ccog/src/powl.rs:        p.push(Powl8Node::OperatorSequence { a: 0, b: 1 }).unwrap();
+crates/ccog/src/powl.rs:        p.push(Powl8Node::OperatorSequence { a: 1, b: 2 }).unwrap();
+crates/ccog/src/powl.rs:        p.push(Powl8Node::OperatorSequence { a: 2, b: 3 }).unwrap();
+crates/ccog/src/powl.rs:        let compiled = p.compile().expect("compile must succeed");
+crates/ccog/src/powl.rs:        let s = p.push(Powl8Node::StartNode).unwrap();
+crates/ccog/src/powl.rs:        let _c0 = p.push(Powl8Node::Activity(Breed::Eliza)).unwrap();
+crates/ccog/src/powl.rs:        let _c1 = p.push(Powl8Node::Activity(Breed::Mycin)).unwrap();
+crates/ccog/src/powl.rs:        let _c2 = p.push(Powl8Node::Activity(Breed::Strips)).unwrap();
+crates/ccog/src/powl.rs:        .unwrap();
+crates/ccog/src/powl.rs:        let compiled = p.compile().expect("compile must succeed");
+crates/ccog/src/powl.rs:                .expect("must contain orig")
+crates/ccog/src/powl.rs:        let s = p.push(Powl8Node::StartNode).unwrap(); // 0
+crates/ccog/src/powl.rs:        p.push(Powl8Node::Activity(Breed::Eliza)).unwrap(); // 1
+crates/ccog/src/powl.rs:        p.push(Powl8Node::Activity(Breed::Mycin)).unwrap(); // 2
+crates/ccog/src/powl.rs:        let op = p.push(Powl8Node::OperatorSequence { a: 1, b: 2 }).unwrap(); // 3 — stripped
+crates/ccog/src/powl.rs:        p.push(Powl8Node::EndNode).unwrap(); // 4
+crates/ccog/src/powl.rs:        let compiled = p.compile().expect("compile must succeed");
+crates/ccog/src/powl.rs:            p.push(Powl8Node::Silent).unwrap();
+crates/ccog/src/powl.rs:        p.push(Powl8Node::Activity(Breed::Eliza)).unwrap(); // 0
+crates/ccog/src/powl.rs:        p.push(Powl8Node::Activity(Breed::Mycin)).unwrap(); // 1
+crates/ccog/src/powl.rs:        p.push(Powl8Node::OperatorSequence { a: 0, b: 1 }).unwrap();
+crates/ccog/src/powl.rs:        p.push(Powl8Node::OperatorSequence { a: 1, b: 0 }).unwrap();
+crates/ccog/src/runtime/xes.rs:        Self::write_events(&sorted, &mut out).expect("String writing never fails");
+crates/ccog/src/runtime/tournament/mutations_alpha.rs:        ).expect("failed to load field state");
+crates/ccog/src/runtime/tournament/mutations_alpha.rs:        let snap = CompiledFieldSnapshot::from_field(&field).expect("failed to compile snapshot");
+crates/ccog/src/runtime/tournament/mutations_alpha.rs:        ).expect("failed to load field state");
+crates/ccog/src/runtime/tournament/mutations_alpha.rs:        let snap = CompiledFieldSnapshot::from_field(&field).expect("failed to compile snapshot");
+crates/ccog/src/runtime/tournament/mutations_alpha.rs:        let snap = CompiledFieldSnapshot::from_field(&field).expect("failed to compile snapshot");
+crates/ccog/src/runtime/tournament/l1_arena.rs:        let snap = Arc::new(crate::compiled::CompiledFieldSnapshot::from_field(&field).unwrap());
+crates/ccog/src/runtime/tournament/l1_arena.rs:        let snap = Arc::new(crate::compiled::CompiledFieldSnapshot::from_field(&field).unwrap());
+crates/ccog/src/runtime/tournament/l1_arena.rs:        let snap = Arc::new(crate::compiled::CompiledFieldSnapshot::from_field(&field).unwrap());
+crates/ccog/src/runtime/tournament/cold_arena.rs:            GraphIri::from_iri("http://example.org/activity").unwrap(),
+crates/ccog/src/runtime/tournament/cold_arena.rs:                GraphIri::from_iri("http://example.org/activity").unwrap(),
+crates/ccog/src/runtime/tournament/cold_arena.rs:                GraphIri::from_iri("http://example.org/activity").unwrap(),
+crates/ccog/src/runtime/tournament/cold_arena.rs:                GraphIri::from_iri("urn:t:1").unwrap(),
+crates/ccog/src/runtime/tournament/cold_arena.rs:                GraphIri::from_iri("urn:t:2").unwrap(),
+crates/ccog/src/runtime/tournament/runners.rs:        runner.mutate(&mut ledger, 60).unwrap();
+crates/ccog/src/runtime/tournament/l2_arena.rs:            crate::compiled::CompiledFieldSnapshot::from_field(&field).unwrap(),
+crates/ccog/src/runtime/tournament/l2_arena.rs:            crate::compiled::CompiledFieldSnapshot::from_field(&field).unwrap(),
+crates/ccog/src/runtime/tournament/l2_arena.rs:            crate::compiled::CompiledFieldSnapshot::from_field(&field).unwrap(),
+crates/ccog/src/runtime/mcp_transport.rs:        ).unwrap();
+crates/ccog/src/runtime/mcp_transport.rs:        let snap = CompiledFieldSnapshot::from_field(&field).unwrap();
+crates/ccog/src/runtime/mcp_transport.rs:        let mcp_result = transport.parse_response(&response).unwrap();
+crates/ccog/src/runtime/mcp_transport.rs:        let construct = projector.project(&mcp_result).unwrap();
+crates/ccog/src/runtime/mcp_transport.rs:        let triple = construct.iter().next().unwrap();
+crates/ccog/src/runtime/mcp_transport.rs:        let snap = CompiledFieldSnapshot::from_field(&field).unwrap();
+crates/ccog/src/runtime/mcp.rs:        let snap = crate::compiled::CompiledFieldSnapshot::from_field(&field).unwrap();
+crates/ccog/src/runtime/mcp.rs:        assert_eq!(call.unwrap().tool_id.0, 42);
+crates/ccog/src/hooks.rs:        .expect("Invalid schema:DigitalDocument IRI");
+crates/ccog/src/hooks.rs:        .expect("Invalid prov:value IRI");
+crates/ccog/src/hooks.rs:        .expect("Invalid schema:DigitalDocument IRI");
+crates/ccog/src/hooks.rs:        .expect("Invalid prov:value IRI");
+crates/ccog/src/hooks.rs:            .expect("Invalid skos:prefLabel IRI");
+crates/ccog/src/hooks.rs:            .expect("Invalid skos:prefLabel IRI");
+crates/ccog/src/hooks.rs:            .expect("Invalid rdf:type IRI");
+crates/ccog/src/hooks.rs:            .expect("Invalid rdf:type IRI");
+crates/ccog/src/hooks.rs:                .expect("Invalid schema:DigitalDocument IRI"),
+crates/ccog/src/hooks.rs:            .expect("Invalid skos:prefLabel IRI");
+crates/ccog/src/hooks.rs:            .expect("Invalid rdf:type IRI");
+crates/ccog/src/hooks.rs:            .expect("missing_evidence should fire");
+crates/ccog/src/hooks.rs:            .expect("phrase_binding should fire");
+crates/ccog/src/hooks.rs:            .expect("transition_admissibility should fire on typed subject");
+crates/ccog/src/hooks.rs:        let receipt = outcomes[0].receipt.as_ref().unwrap();
+crates/ccog/src/hooks.rs:        assert_eq!(outcome.unwrap().hook_name, "manual_only_invoked");
+crates/ccog/src/trace.rs:            let chain_head = u64::from_le_bytes(hash.as_bytes()[0..8].try_into().unwrap());
+crates/ccog/src/trace.rs:        let snap = Arc::new(CompiledFieldSnapshot::from_field(&field).expect("snapshot"));
+crates/ccog/src/trace.rs:            .expect("receipt node present");
+crates/ccog/src/trace.rs:            .expect("load field state");
+crates/ccog/src/trace.rs:        let snap = Arc::new(CompiledFieldSnapshot::from_field(&field).expect("snapshot"));
+crates/ccog/src/trace.rs:        let snap = Arc::new(CompiledFieldSnapshot::from_field(&field).expect("snapshot"));
+crates/ccog/src/trace.rs:            .expect("load field state");
+crates/ccog/src/trace.rs:        let snap = Arc::new(CompiledFieldSnapshot::from_field(&field).expect("snapshot"));
+crates/ccog/src/abi/jsonld.rs:        p.push(Powl8Node::StartNode).unwrap();
+crates/ccog/src/abi/jsonld.rs:        p.push(Powl8Node::Activity(Breed::Gps)).unwrap();
+crates/ccog/src/abi/jsonld.rs:        p.push(Powl8Node::EndNode).unwrap();
+crates/ccog/src/abi/jsonld.rs:        let s1 = serde_json::to_string(&powl8_to_jsonld(&p)).unwrap();
+crates/ccog/src/abi/jsonld.rs:        let s2 = serde_json::to_string(&powl8_to_jsonld(&p)).unwrap();
+crates/ccog/src/abi/jsonld.rs:        p.push(Powl8Node::StartNode).unwrap();
+crates/ccog/src/abi/jsonld.rs:        p.push(Powl8Node::Activity(Breed::Eliza)).unwrap();
+crates/ccog/src/abi/jsonld.rs:        p.push(Powl8Node::Activity(Breed::Cbr)).unwrap();
+crates/ccog/src/abi/jsonld.rs:        .unwrap();
+crates/ccog/src/abi/jsonld.rs:        .unwrap();
+crates/ccog/src/abi/jsonld.rs:        let s = serde_json::to_string(&powl8_to_jsonld(&p)).unwrap();
+crates/ccog/src/abi/binary.rs:        p.push(Powl8Node::StartNode).unwrap();
+crates/ccog/src/abi/binary.rs:        p.push(Powl8Node::Activity(Breed::Gps)).unwrap();
+crates/ccog/src/abi/binary.rs:        p.push(Powl8Node::Activity(Breed::Cbr)).unwrap();
+crates/ccog/src/abi/binary.rs:        .unwrap();
+crates/ccog/src/abi/binary.rs:        .unwrap();
+crates/ccog/src/abi/binary.rs:        p.push(Powl8Node::EndNode).unwrap();
+crates/ccog/src/abi/binary.rs:        let bytes = powl8_to_postcard(&p).unwrap();
+crates/ccog/src/abi/binary.rs:        let p2 = powl8_from_postcard(&bytes).unwrap();
+crates/ccog/src/abi/debug.rs:        p.push(Powl8Node::StartNode).unwrap();
+crates/ccog/src/abi/debug.rs:        p.push(Powl8Node::Activity(Breed::Eliza)).unwrap();
+crates/ccog/src/abi/debug.rs:        .unwrap();
+crates/ccog/src/abi/debug.rs:        .unwrap();
+crates/ccog/src/packs/edge.rs:        let snap = CompiledFieldSnapshot::from_field(&f).expect("snap");
+crates/ccog/src/packs/edge.rs:            let delta = (slot.act)(&context).expect("act");
+crates/ccog/src/packs/lifestyle_overlap.rs:        validate(&p).expect("Phase 7.1 lifestyle pack must validate");
+crates/ccog/src/packs/metadata_ids.rs:        let s = serde_json::to_string(&p).unwrap();
+crates/ccog/src/packs/dev.rs:        CompiledFieldSnapshot::from_field(&f).expect("snap")
+crates/ccog/src/packs/enterprise.rs:        let snap = CompiledFieldSnapshot::from_field(&f).expect("snap");
+crates/ccog/src/packs/enterprise.rs:            let delta = (slot.act)(&context).expect("act");
+crates/ccog/src/packs/lifestyle.rs:        CompiledFieldSnapshot::from_field(&f).expect("snap")
+crates/ccog/src/packs/lifestyle.rs:        let snap = CompiledFieldSnapshot::from_field(&f).expect("snap");
+crates/ccog/src/packs/lifestyle.rs:            let delta = (slot.act)(&context).expect("act");
+crates/ccog/src/breeds/gps.rs:        f.load_field_state(triples).expect("load");
+crates/ccog/src/breeds/hearsay.rs:        assert_eq!(fuse_posture(&[], &f).unwrap(), PackPosture::Calm);
+crates/ccog/src/breeds/hearsay.rs:        assert_eq!(fuse_posture(&o, &f).unwrap(), PackPosture::Alert);
+crates/ccog/src/breeds/hearsay.rs:        assert_eq!(fuse_posture(&o, &f).unwrap(), PackPosture::Engaged);
+crates/ccog/src/breeds/hearsay.rs:        assert_eq!(fuse_posture(&o, &f).unwrap(), PackPosture::Settled);
+crates/ccog/src/breeds/hearsay.rs:        assert_eq!(fuse_posture(&o, &f).unwrap(), PackPosture::Engaged);
+crates/ccog/src/breeds/hearsay.rs:        assert_eq!(fuse_posture(&o, &f).unwrap(), PackPosture::Alert);
+crates/ccog/src/breeds/prs.rs:        belief: GraphIri(beliefs.into_iter().next().unwrap()),
+crates/ccog/src/breeds/prs.rs:        desire: GraphIri(desires.into_iter().next().unwrap()),
+crates/ccog/src/breeds/prs.rs:        intention: GraphIri(intentions.into_iter().next().unwrap()),
+crates/ccog/src/breeds/prs.rs:        f.load_field_state(triples).expect("load");
+crates/ccog/src/breeds/prs.rs:        let commit = materialize(&f)?.expect("must yield a commit");
+crates/ccog/src/breeds/soar.rs:        f.load_field_state(triples).expect("load");
+crates/ccog/src/breeds/strips.rs:        f.load_field_state(triples).expect("load");
+crates/ccog/src/breeds/cbr.rs:        f.load_field_state(triples).expect("load");
+crates/ccog/src/breeds/cbr.rs:        let r = materialize(&f)?.expect("must yield a case");
+crates/ccog/src/bark_artifact.rs:        .expect("Invalid schema:DigitalDocument IRI");
+crates/ccog/src/bark_artifact.rs:    let pv = NamedNode::new("http://www.w3.org/ns/prov#value").expect("Invalid prov:value IRI");
+crates/ccog/src/bark_artifact.rs:        .expect("Invalid skos:prefLabel IRI");
+crates/ccog/src/bark_artifact.rs:        .expect("Invalid rdf:type IRI");
+crates/ccog/src/bark_artifact.rs:                    .expect("derive_urn must produce a valid urn:blake3 IRI");
+crates/ccog/src/bark_artifact.rs:            staged_lens.push(deltas[i].as_ref().expect("fired => Some").len());
+crates/ccog/src/bark_artifact.rs:            .expect("missing_evidence should fire");
+crates/ccog/src/bark_artifact.rs:            .expect("phrase_binding should fire");
+crates/ccog/src/bark_artifact.rs:            .expect("transition_admissibility should fire");
+crates/ccog/src/export/jsonld.rs:    serde_json::to_vec(v).expect("Value is always serializable")
+crates/ccog/src/export/jsonld.rs:            .expect("load");
+crates/ccog/src/export/jsonld.rs:        let snap = CompiledFieldSnapshot::from_field(&field).expect("snap");
+crates/ccog/src/export/bundle.rs:    serde_json::to_vec(&v).expect("manifest is serializable")
+crates/ccog/src/export/bundle.rs:        let bytes = b.write().expect("write");
+crates/ccog/src/export/bundle.rs:        let b2 = ProofBundle::read(&bytes).expect("read");
+crates/ccog/src/export/bundle.rs:        let x = b.write().expect("write 1");
+crates/ccog/src/export/bundle.rs:        let y = b.write().expect("write 2");
+crates/ccog/src/export/transparency.rs:        serde_json::to_vec(self).expect("SubmissionPacket is always serializable")
+crates/ccog/src/export/transparency.rs:        p.verify().expect("genuine signature must verify");
+crates/ccog/src/export/ontology.rs:        let found = audit_iris(&v, &[]).expect("public IRIs must be allowed");
+crates/ccog/src/conformance.rs:        let snap = std::sync::Arc::new(CompiledFieldSnapshot::from_field(&field).unwrap());
+crates/ccog/src/conformance.rs:            .unwrap();
+crates/ccog/src/conformance.rs:        let snap = std::sync::Arc::new(CompiledFieldSnapshot::from_field(&field).unwrap());
+crates/autoinstinct/src/bridge.rs:        let d = deploy(&p, Tier::Edge, "us-east-1", "https://otlp.example", &[]).unwrap();
+crates/autoinstinct/src/llm/world_corpus.rs:        let corpus = result.unwrap();
+crates/autoinstinct/src/llm/schema.rs:        let w: OcelWorld = serde_json::from_str(json).unwrap();
+crates/autoinstinct/src/llm/gemini_cli.rs:        let r = parse_envelope(raw).unwrap();
+crates/autoinstinct/src/mutation.rs:            .unwrap();
+crates/autoinstinct/src/mutation.rs:            .unwrap();
+crates/autoinstinct/src/registry.rs:        r.register(p.clone()).unwrap();
+crates/autoinstinct/src/registry.rs:        assert_eq!(r.get(&p.name, &p.digest_urn).unwrap(), &p);
+crates/autoinstinct/src/registry.rs:        r.register(p.clone()).unwrap();
+crates/autoinstinct/src/registry.rs:        r.register(p.clone()).unwrap();
+crates/autoinstinct/src/registry.rs:        r.register(p1).unwrap();
+crates/autoinstinct/src/registry.rs:        r.register(p2).unwrap();
+crates/autoinstinct/src/world_gen.rs:        u32::from_le_bytes(self.state[..4].try_into().unwrap())
+crates/autoinstinct/src/world_gen.rs:        let a = generate(&spec()).unwrap();
+crates/autoinstinct/src/world_gen.rs:        let b = generate(&spec()).unwrap();
+crates/autoinstinct/src/world_gen.rs:        let log = generate(&spec()).unwrap();
+crates/autoinstinct/src/world_gen.rs:        validate(&log).expect("generated worlds must pass validation");
+crates/autoinstinct/src/world_gen.rs:        let a = generate(&spec()).unwrap();
+crates/autoinstinct/src/world_gen.rs:        let b = generate(&s2).unwrap();
+crates/autoinstinct/src/metamorphic.rs:        let safety = r.iter().find(|v| v.name == "default-safety").unwrap();
+crates/autoinstinct/src/manifest.rs:    serde_json::to_vec(&clone).expect("PackManifest is always serializable")
+crates/autoinstinct/src/manifest.rs:    let bytes = serde_json::to_vec(&clone).expect("serializable");
+crates/autoinstinct/src/compliance.rs:        let sox = r.findings.iter().find(|f| f.flag == "SOX").unwrap();
+crates/autoinstinct/src/compliance.rs:        let pci = r.findings.iter().find(|f| f.flag == "PCI").unwrap();
+crates/autoinstinct/src/scale.rs:        let u1 = u32::from_le_bytes(self.state[..4].try_into().unwrap()) as f64 / u32::MAX as f64;
+crates/autoinstinct/src/scale.rs:            .unwrap();
+crates/autoinstinct/src/report/gemini.rs:        .unwrap();
+crates/autoinstinct/src/report/gemini.rs:        let r = parse_response(&raw).unwrap();
+crates/autoinstinct/src/report/evidence.rs:            .expect("scorecard.json present after loop");
+crates/autoinstinct/src/report/evidence.rs:        std::fs::create_dir_all(root).unwrap();
+crates/autoinstinct/src/report/evidence.rs:            scorecard.to_json().unwrap(),
+crates/autoinstinct/src/report/evidence.rs:        .unwrap();
+crates/autoinstinct/src/report/evidence.rs:        std::fs::write(root.join("git.txt"), "branch: x\ncommit: abc\n").unwrap();
+crates/autoinstinct/src/report/evidence.rs:        std::fs::write(root.join("toolchain.txt"), "rustc 1.0.0\n").unwrap();
+crates/autoinstinct/src/report/evidence.rs:        let b = EvidenceBundle::load(&dir).unwrap();
+crates/autoinstinct/src/report/evidence.rs:        assert!(b.get("anti_fake_master.out").unwrap().contains("anti_fake_master.out"));
+crates/autoinstinct/src/report/evidence.rs:        std::fs::create_dir_all(&dir).unwrap();
+crates/autoinstinct/src/report/evidence.rs:            crate::scorecard::all_true_scorecard().to_json().unwrap(),
+crates/autoinstinct/src/report/evidence.rs:        .unwrap();
+crates/autoinstinct/src/report/evidence.rs:        std::fs::write(dir.join("scorecard.json"), "{ not json").unwrap();
+crates/autoinstinct/src/report/schema.rs:            assert_eq!(ReportKind::parse(s).unwrap(), k);
+crates/autoinstinct/src/report/schema.rs:        let s = serde_json::to_string(&r).unwrap();
+crates/autoinstinct/src/report/schema.rs:        let back: GeneratedReport = serde_json::from_str(&s).unwrap();
+crates/autoinstinct/src/compile.rs:    serde_json::to_vec(&a).expect("FieldPackArtifact is always serializable")
+crates/autoinstinct/src/lifecycle.rs:        let demoted = history.pop().expect("≥2");
+crates/autoinstinct/src/lifecycle.rs:        let active = history.last().expect("≥1").clone();
+crates/autoinstinct/src/lifecycle.rs:        log.promote(Channel::Canary, Channel::Staging).unwrap();
+crates/autoinstinct/src/lifecycle.rs:        log.promote(Channel::Staging, Channel::Prod).unwrap();
+crates/autoinstinct/src/lifecycle.rs:        log.rollback(Channel::Canary).unwrap();
+crates/autoinstinct/src/scorecard.rs:        let j = s.to_json().expect("serialize");
+crates/autoinstinct/src/scorecard.rs:        let back: Scorecard = serde_json::from_str(&j).expect("deserialize");
+crates/autoinstinct/src/causal_harness.rs:            .expect("scenario field N-Triples must parse");
+crates/autoinstinct/src/causal_harness.rs:    let snap = CompiledFieldSnapshot::from_field(field).expect("snapshot");
+crates/autoinstinct/src/causal_harness.rs:                    .expect("perturbed field reloads");
+crates/autoinstinct/src/causal_harness.rs:                .expect("augmented field reloads");

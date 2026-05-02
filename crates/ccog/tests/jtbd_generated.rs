@@ -1,3 +1,9 @@
+// @tests/jtbd_generated.rs by unrdf sync
+// Source ontology: ontology/insa.ttl
+// Rule: jtbd-generated-tests
+// Template: templates/unrdf/rust/jtbd_generated.rs.njk
+// DO NOT EDIT BY HAND.
+
 //! JTBD (jobs-to-be-done) integration tests with generated scenarios.
 //!
 //! Every test in this file follows the anti-stub pattern:

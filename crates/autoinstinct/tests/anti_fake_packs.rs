@@ -93,12 +93,12 @@ fn kz7a_bad_pack_overlapping_bits_rejected() {
     // responses must be rejected at validate() time. This closes the fake:
     // "bit allocation is unconstrained; any pack admits any rule set".
     let pack = LoadedFieldPack {
-        name: "bad.overlap".to_string(),
+        name: ccog::packs::PackId("bad.overlap"),
         ontology_profile: vec!["https://schema.org/".to_string()],
         rules: vec![],
         mask_rules: vec![
             LoadedPackRule {
-                id: "rule.a".to_string(),
+                id: ccog::packs::RuleId("rule.a"),
                 response: AutonomicInstinct::Inspect,
                 require_posture_mask: 1u64 << ccog::multimodal::PostureBit::CALM,
                 require_expectation_mask: 0,
@@ -109,7 +109,7 @@ fn kz7a_bad_pack_overlapping_bits_rejected() {
                 require_k3_mask: 0,
             },
             LoadedPackRule {
-                id: "rule.b".to_string(),
+                id: ccog::packs::RuleId("rule.b"),
                 // Same posture bit, different response — ambiguous.
                 response: AutonomicInstinct::Refuse,
                 require_posture_mask: 1u64 << ccog::multimodal::PostureBit::CALM,
@@ -149,17 +149,12 @@ fn kz7a_bad_pack_missing_ontology_profile_rejected() {
         admitted_breeds: &["default"],
         policy: &policy,
     });
-    let err = load_compiled(
-        &artifact.name,
-        &artifact.ontology_profile,
-        &artifact
-            .rules
-            .iter()
-            .map(|(k, v)| (k.clone(), format!("{:?}", v)))
-            .collect::<Vec<_>>(),
-        &format!("{:?}", artifact.default_response),
-        &artifact.digest_urn,
-    )
+    let err = {
+        let rule_strs: Vec<_> = artifact.rules.iter().map(|(k, v)| (k.clone(), format!("{:?}", v))).collect();
+        let expected_hash = ccog::packs::compute_manifest_digest(&artifact.name, &artifact.ontology_profile, &rule_strs);
+        let expected_urn = format!("urn:blake3:{}", expected_hash.to_hex());
+        load_compiled(&artifact.name, &artifact.ontology_profile, &rule_strs, &format!("{:?}", artifact.default_response), &expected_urn)
+    }
     .expect_err("empty ontology profile must be rejected");
     assert!(matches!(err, PackLoadError::MissingOntologyProfile));
 }
@@ -180,17 +175,12 @@ fn kz7a_bad_pack_private_ontology_term_rejected() {
         admitted_breeds: &["default"],
         policy: &policy,
     });
-    let err = load_compiled(
-        &artifact.name,
-        &artifact.ontology_profile,
-        &artifact
-            .rules
-            .iter()
-            .map(|(k, v)| (k.clone(), format!("{:?}", v)))
-            .collect::<Vec<_>>(),
-        &format!("{:?}", artifact.default_response),
-        &artifact.digest_urn,
-    )
+    let err = {
+        let rule_strs: Vec<_> = artifact.rules.iter().map(|(k, v)| (k.clone(), format!("{:?}", v))).collect();
+        let expected_hash = ccog::packs::compute_manifest_digest(&artifact.name, &artifact.ontology_profile, &rule_strs);
+        let expected_urn = format!("urn:blake3:{}", expected_hash.to_hex());
+        load_compiled(&artifact.name, &artifact.ontology_profile, &rule_strs, &format!("{:?}", artifact.default_response), &expected_urn)
+    }
     .expect_err("private ontology IRI must be rejected");
     match err {
         PackLoadError::PrivateOntologyTerm(iri) => {
@@ -217,7 +207,7 @@ fn kz7a_pack_semantics_match_ccog_static_pack_behavior() {
     let ctx = ccog::multimodal::ContextBundle::default();
 
     // ccog static lattice on this input.
-    let v0 = ccog::instinct::select_instinct_v0(&snap, &posture, &ctx);
+    let v0 = ccog::instinct::select_instinct_v0(&ccog::runtime::ClosedFieldContext { snapshot: std::sync::Arc::new(snap.clone()), posture: posture.clone(), context: ctx.clone(), tiers: ccog::packs::TierMasks::ZERO, human_burden: 0 });
     assert_eq!(
         v0,
         AutonomicInstinct::Settle,
@@ -238,20 +228,15 @@ fn kz7a_pack_semantics_match_ccog_static_pack_behavior() {
         admitted_breeds: &["default"],
         policy: &policy,
     });
-    let mut loaded = load_compiled(
-        &artifact.name,
-        &artifact.ontology_profile,
-        &artifact
-            .rules
-            .iter()
-            .map(|(k, v)| (k.clone(), format!("{:?}", v)))
-            .collect::<Vec<_>>(),
-        &format!("{:?}", artifact.default_response),
-        &artifact.digest_urn,
-    )
+    let mut loaded = {
+        let rule_strs: Vec<_> = artifact.rules.iter().map(|(k, v)| (k.clone(), format!("{:?}", v))).collect();
+        let expected_hash = ccog::packs::compute_manifest_digest(&artifact.name, &artifact.ontology_profile, &rule_strs);
+        let expected_urn = format!("urn:blake3:{}", expected_hash.to_hex());
+        load_compiled(&artifact.name, &artifact.ontology_profile, &rule_strs, &format!("{:?}", artifact.default_response), &expected_urn)
+    }
     .expect("pack loads");
     loaded.mask_rules.push(LoadedPackRule {
-        id: "rule.settled.mirror".to_string(),
+        id: ccog::packs::RuleId("rule.settled.mirror"),
         response: AutonomicInstinct::Settle,
         require_posture_mask: 1u64 << ccog::multimodal::PostureBit::SETTLED,
         require_expectation_mask: 0,
@@ -266,13 +251,13 @@ fn kz7a_pack_semantics_match_ccog_static_pack_behavior() {
     // The pack-mediated decision must agree with the v0 baseline
     // (semantic equivalence) AND must observably attribute the response
     // to the pack rule (so the agreement is earned, not coincidental).
-    let decision = select_instinct_with_pack(&snap, &posture, &ctx, &loaded);
+    let decision = select_instinct_with_pack(&ccog::runtime::ClosedFieldContext { snapshot: std::sync::Arc::new(snap.clone()), posture: posture.clone(), context: ctx.clone(), tiers: ccog::packs::TierMasks::ZERO, human_burden: 0 }, &loaded);
     assert_eq!(
         decision.response, v0,
         "compiled pack response must match ccog static lattice"
     );
-    assert_eq!(decision.matched_pack_id.as_deref(), Some("semantic.bridge.settle"));
-    assert_eq!(decision.matched_rule_id.as_deref(), Some("rule.settled.mirror"));
+    assert_eq!(decision.matched_pack_id.map(|p| p.0), Some("semantic.bridge.settle"));
+    assert_eq!(decision.matched_rule_id.map(|r| r.0), Some("rule.settled.mirror"));
 }
 
 #[test]
@@ -328,20 +313,15 @@ fn build_pack_with_calm_override(
         admitted_breeds: &["default"],
         policy: &policy,
     });
-    let mut loaded = load_compiled(
-        &artifact.name,
-        &artifact.ontology_profile,
-        &artifact
-            .rules
-            .iter()
-            .map(|(k, v)| (k.clone(), format!("{:?}", v)))
-            .collect::<Vec<_>>(),
-        &format!("{:?}", artifact.default_response),
-        &artifact.digest_urn,
-    )
+    let mut loaded = {
+        let rule_strs: Vec<_> = artifact.rules.iter().map(|(k, v)| (k.clone(), format!("{:?}", v))).collect();
+        let expected_hash = ccog::packs::compute_manifest_digest(&artifact.name, &artifact.ontology_profile, &rule_strs);
+        let expected_urn = format!("urn:blake3:{}", expected_hash.to_hex());
+        load_compiled(&artifact.name, &artifact.ontology_profile, &rule_strs, &format!("{:?}", artifact.default_response), &expected_urn)
+    }
     .expect("pack must load");
     loaded.mask_rules.push(LoadedPackRule {
-        id: rule_id.to_string(),
+        id: ccog::packs::RuleId(Box::leak(rule_id.to_string().into_boxed_str())),
         response,
         require_posture_mask: 1u64 << PostureBit::CALM,
         require_expectation_mask: 0,
@@ -361,7 +341,7 @@ fn kz7b_pack_activation_changes_decision_surface() {
     let (snap, posture, ctx) = build_pack_activation_scenario();
 
     // 1. Baseline — no pack.
-    let baseline = select_instinct_v0(&snap, &posture, &ctx);
+    let baseline = select_instinct_v0(&ccog::runtime::ClosedFieldContext { snapshot: std::sync::Arc::new(snap.clone()), posture: posture.clone(), context: ctx.clone(), tiers: ccog::packs::TierMasks::ZERO, human_burden: 0 });
     assert_eq!(
         baseline,
         AutonomicInstinct::Ignore,
@@ -376,7 +356,7 @@ fn kz7b_pack_activation_changes_decision_surface() {
     );
 
     // 3. Decision with pack.
-    let decision = select_instinct_with_pack(&snap, &posture, &ctx, &pack);
+    let decision = select_instinct_with_pack(&ccog::runtime::ClosedFieldContext { snapshot: std::sync::Arc::new(snap.clone()), posture: posture.clone(), context: ctx.clone(), tiers: ccog::packs::TierMasks::ZERO, human_burden: 0 }, &pack);
 
     // 4. Behavior changed because of the pack.
     assert_ne!(
@@ -387,12 +367,12 @@ fn kz7b_pack_activation_changes_decision_surface() {
 
     // 5. Pack participation is observable via matched ids.
     assert_eq!(
-        decision.matched_pack_id.as_deref(),
+        decision.matched_pack_id.map(|p| p.0),
         Some("test.kz7b.pack"),
         "matched_pack_id must be observable"
     );
     assert_eq!(
-        decision.matched_rule_id.as_deref(),
+        decision.matched_rule_id.map(|r| r.0),
         Some("rule.override.ignore.to.inspect"),
         "matched_rule_id must be observable"
     );
@@ -404,7 +384,7 @@ fn kz7b_pack_no_match_falls_through_to_v0() {
     // decision must fall through to `select_instinct_v0` and matched ids
     // must be absent (proving the pack does not blanket-override).
     let (snap, posture, ctx) = build_pack_activation_scenario();
-    let baseline = select_instinct_v0(&snap, &posture, &ctx);
+    let baseline = select_instinct_v0(&ccog::runtime::ClosedFieldContext { snapshot: std::sync::Arc::new(snap.clone()), posture: posture.clone(), context: ctx.clone(), tiers: ccog::packs::TierMasks::ZERO, human_burden: 0 });
 
     // Pack rule requires PACKAGE_EXPECTED, which is not set -> no match.
     let mut pack = build_pack_with_calm_override(
@@ -415,7 +395,7 @@ fn kz7b_pack_no_match_falls_through_to_v0() {
     // Replace the matching rule with a non-matching one.
     pack.mask_rules.clear();
     pack.mask_rules.push(LoadedPackRule {
-        id: "rule.requires.package".to_string(),
+        id: ccog::packs::RuleId("rule.requires.package"),
         response: AutonomicInstinct::Retrieve,
         require_posture_mask: 0,
         require_expectation_mask: 1u64 << ccog::multimodal::ContextBit::PACKAGE_EXPECTED,
@@ -426,7 +406,7 @@ fn kz7b_pack_no_match_falls_through_to_v0() {
         require_k3_mask: 0,
     });
 
-    let decision = select_instinct_with_pack(&snap, &posture, &ctx, &pack);
+    let decision = select_instinct_with_pack(&ccog::runtime::ClosedFieldContext { snapshot: std::sync::Arc::new(snap.clone()), posture: posture.clone(), context: ctx.clone(), tiers: ccog::packs::TierMasks::ZERO, human_burden: 0 }, &pack);
 
     assert_eq!(
         decision.response, baseline,
@@ -454,12 +434,12 @@ fn kz7b_removed_pack_removes_matched_rule_id() {
         "rule.calm.override",
         AutonomicInstinct::Inspect,
     );
-    let with_pack = select_instinct_with_pack(&snap, &posture, &ctx, &pack);
+    let with_pack = select_instinct_with_pack(&ccog::runtime::ClosedFieldContext { snapshot: std::sync::Arc::new(snap.clone()), posture: posture.clone(), context: ctx.clone(), tiers: ccog::packs::TierMasks::ZERO, human_burden: 0 }, &pack);
     assert!(with_pack.matched_rule_id.is_some());
 
     // Without pack: there is no PackDecision, only the bare
     // `select_instinct_v0` response — by construction no rule id can leak.
-    let without_pack = select_instinct_v0(&snap, &posture, &ctx);
+    let without_pack = select_instinct_v0(&ccog::runtime::ClosedFieldContext { snapshot: std::sync::Arc::new(snap.clone()), posture: posture.clone(), context: ctx.clone(), tiers: ccog::packs::TierMasks::ZERO, human_burden: 0 });
     assert_eq!(without_pack, AutonomicInstinct::Ignore);
     assert_ne!(without_pack, with_pack.response);
 }
@@ -501,7 +481,7 @@ fn kz7_invariant_pack_must_influence_or_match_semantics() {
     // equivalence) OR change the runtime decision (KZ7B influence). A
     // pack that satisfies neither is decorative.
     let (snap, posture, ctx) = build_pack_activation_scenario();
-    let v0 = select_instinct_v0(&snap, &posture, &ctx);
+    let v0 = select_instinct_v0(&ccog::runtime::ClosedFieldContext { snapshot: std::sync::Arc::new(snap.clone()), posture: posture.clone(), context: ctx.clone(), tiers: ccog::packs::TierMasks::ZERO, human_burden: 0 });
 
     // Pack that overrides calm-baseline Ignore -> Inspect.
     let pack = build_pack_with_calm_override(
@@ -509,7 +489,7 @@ fn kz7_invariant_pack_must_influence_or_match_semantics() {
         "rule.calm.override",
         AutonomicInstinct::Inspect,
     );
-    let decision = select_instinct_with_pack(&snap, &posture, &ctx, &pack);
+    let decision = select_instinct_with_pack(&ccog::runtime::ClosedFieldContext { snapshot: std::sync::Arc::new(snap.clone()), posture: posture.clone(), context: ctx.clone(), tiers: ccog::packs::TierMasks::ZERO, human_burden: 0 }, &pack);
 
     let kz7a_equivalent = decision.response == v0 && decision.matched_rule_id.is_some();
     let kz7b_influencing = decision.response != v0 && decision.matched_rule_id.is_some();

@@ -171,22 +171,21 @@ fn master_ocel_to_pack_to_ccog_runtime_to_proof() {
         confidence: 200,
     };
     let ctx = ContextBundle::default();
-    let baseline = select_instinct_v0(&snap, &posture, &ctx);
+    let baseline = select_instinct_v0(&ccog::runtime::ClosedFieldContext { snapshot: std::sync::Arc::new(snap.clone()), posture: posture.clone(), context: ctx.clone(), tiers: ccog::packs::TierMasks::ZERO, human_burden: 0 });
     assert_eq!(baseline, AutonomicInstinct::Ignore, "baseline must be Ignore");
 
     // Load the compiled pack and bind a mask rule that mirrors the
     // policy's first rule onto the calm posture so it actually fires
     // against the chosen scenario.
+    let rule_strs: Vec<_> = artifact.rules.iter().map(|(k, v)| (k.clone(), format!("{:?}", v))).collect();
+    let expected_hash = ccog::packs::compute_manifest_digest(&artifact.name, &artifact.ontology_profile, &rule_strs);
+    let expected_urn = format!("urn:blake3:{}", expected_hash.to_hex());
     let mut loaded = load_compiled(
         &artifact.name,
         &artifact.ontology_profile,
-        &artifact
-            .rules
-            .iter()
-            .map(|(k, v)| (k.clone(), format!("{:?}", v)))
-            .collect::<Vec<_>>(),
+        &rule_strs,
         &format!("{:?}", artifact.default_response),
-        &artifact.digest_urn,
+        &expected_urn,
     )
     .expect("pack loads");
     // Pick a response distinct from BOTH the calm baseline (`Ignore`) and
@@ -195,7 +194,7 @@ fn master_ocel_to_pack_to_ccog_runtime_to_proof() {
     // *different change* under perturbation in step 7.
     let pack_response = AutonomicInstinct::Inspect;
     loaded.mask_rules.push(LoadedPackRule {
-        id: "master.rule.calm.override".to_string(),
+        id: ccog::packs::RuleId("master.rule.calm.override"),
         response: pack_response,
         require_posture_mask: 1u64 << PostureBit::CALM,
         require_expectation_mask: 0,
@@ -206,19 +205,19 @@ fn master_ocel_to_pack_to_ccog_runtime_to_proof() {
         require_k3_mask: 0,
     });
 
-    let with_pack = select_instinct_with_pack(&snap, &posture, &ctx, &loaded);
+    let with_pack = select_instinct_with_pack(&ccog::runtime::ClosedFieldContext { snapshot: std::sync::Arc::new(snap.clone()), posture: posture.clone(), context: ctx.clone(), tiers: ccog::packs::TierMasks::ZERO, human_burden: 0 }, &loaded);
     assert_eq!(with_pack.response, pack_response);
     assert_ne!(
         with_pack.response, baseline,
         "loaded pack must change runtime response"
     );
     assert_eq!(
-        with_pack.matched_pack_id.as_deref(),
+        with_pack.matched_pack_id.map(|p| p.0),
         Some("master.pack"),
         "matched_pack_id must be observable"
     );
     assert_eq!(
-        with_pack.matched_rule_id.as_deref(),
+        with_pack.matched_rule_id.map(|r| r.0),
         Some("master.rule.calm.override"),
         "matched_rule_id must be observable"
     );
@@ -226,7 +225,7 @@ fn master_ocel_to_pack_to_ccog_runtime_to_proof() {
     // ---- 5. Removing pack removes contribution ----
     // Without pack: only the bare v0 response — by construction no
     // matched_rule_id can leak.
-    let no_pack_response = select_instinct_v0(&snap, &posture, &ctx);
+    let no_pack_response = select_instinct_v0(&ccog::runtime::ClosedFieldContext { snapshot: std::sync::Arc::new(snap.clone()), posture: posture.clone(), context: ctx.clone(), tiers: ccog::packs::TierMasks::ZERO, human_burden: 0 });
     assert_eq!(no_pack_response, baseline);
     assert_ne!(no_pack_response, with_pack.response);
 
@@ -255,7 +254,7 @@ fn master_ocel_to_pack_to_ccog_runtime_to_proof() {
         posture_mask: 0,
         confidence: 200,
     };
-    let perturbed = select_instinct_with_pack(&snap, &perturbed_posture, &ctx, &loaded);
+    let perturbed = select_instinct_with_pack(&ccog::runtime::ClosedFieldContext { snapshot: std::sync::Arc::new(snap.clone()), posture: perturbed_posture.clone(), context: ctx.clone(), tiers: ccog::packs::TierMasks::ZERO, human_burden: 0 }, &loaded);
     assert!(
         perturbed.matched_rule_id.is_none(),
         "removing the load-bearing posture must drop the matched rule"

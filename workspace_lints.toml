@@ -1,0 +1,12 @@
+[workspace.lints.rust]
+unsafe_code = "deny"
+missing_docs = "deny"
+unexpected_cfgs = "warn"
+
+[workspace.lints.clippy]
+pedantic = "warn"
+nursery = "warn"
+cargo = "warn"
+# These are necessary for the anti-fake substrate.
+expect_used = "deny"
+unwrap_used = "deny"

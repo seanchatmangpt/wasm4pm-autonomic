@@ -1,3 +1,5 @@
+#![doc = include_str!("../README.md")]
+#![allow(rustdoc::broken_intra_doc_links, rustdoc::invalid_html_tags, rustdoc::bare_urls, rustdoc::private_intra_doc_links)]
 //! **dteam** — Compiled Cognition for enterprise decision pipelines.
 //!
 //! Every model in this crate is a `const`: trained once at build time,

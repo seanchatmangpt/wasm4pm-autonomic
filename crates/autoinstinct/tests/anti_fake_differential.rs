@@ -31,8 +31,8 @@ fn differential_decide_equals_decide_with_trace_baseline() {
     for s in canonical_scenarios() {
         let (f, _, _) = build_inputs(&s);
         let snap = CompiledFieldSnapshot::from_field(&f).expect("snap");
-        let direct = decide(&snap);
-        let (traced, _trace) = decide_with_trace_table(&snap, BUILTINS);
+        let direct = decide(&ccog::runtime::ClosedFieldContext { snapshot: std::sync::Arc::new(snap.clone()), posture: ccog::multimodal::PostureBundle::default(), context: ccog::multimodal::ContextBundle::default(), tiers: ccog::packs::TierMasks::ZERO, human_burden: 0 });
+        let (traced, _trace) = decide_with_trace_table(&ccog::runtime::ClosedFieldContext { snapshot: std::sync::Arc::new(snap.clone()), posture: ccog::multimodal::PostureBundle::default(), context: ccog::multimodal::ContextBundle::default(), tiers: ccog::packs::TierMasks::ZERO, human_burden: 0 }, BUILTINS);
         assert_eq!(
             direct.fired, traced.fired,
             "scenario `{}`: decide.fired ({:#x}) != decide_with_trace.fired ({:#x})",
@@ -52,8 +52,8 @@ fn differential_decide_equals_decide_with_trace_perturbed() {
         for (pert, _, _) in &s.perturbations {
             let (f, _, _) = perturb(&s, pert);
             let snap = CompiledFieldSnapshot::from_field(&f).expect("snap");
-            let direct = decide(&snap);
-            let (traced, _trace) = decide_with_trace_table(&snap, BUILTINS);
+            let direct = decide(&ccog::runtime::ClosedFieldContext { snapshot: std::sync::Arc::new(snap.clone()), posture: ccog::multimodal::PostureBundle::default(), context: ccog::multimodal::ContextBundle::default(), tiers: ccog::packs::TierMasks::ZERO, human_burden: 0 });
+            let (traced, _trace) = decide_with_trace_table(&ccog::runtime::ClosedFieldContext { snapshot: std::sync::Arc::new(snap.clone()), posture: ccog::multimodal::PostureBundle::default(), context: ccog::multimodal::ContextBundle::default(), tiers: ccog::packs::TierMasks::ZERO, human_burden: 0 }, BUILTINS);
             assert_eq!(
                 direct.fired, traced.fired,
                 "scenario `{}` perturbation {:?}: decide vs decide_with_trace drift",
@@ -68,7 +68,7 @@ fn differential_present_mask_matches_compute_present_mask() {
     for s in canonical_scenarios() {
         let (f, _, _) = build_inputs(&s);
         let snap = CompiledFieldSnapshot::from_field(&f).expect("snap");
-        let from_decide = decide(&snap).present_mask;
+        let from_decide = decide(&ccog::runtime::ClosedFieldContext { snapshot: std::sync::Arc::new(snap.clone()), posture: ccog::multimodal::PostureBundle::default(), context: ccog::multimodal::ContextBundle::default(), tiers: ccog::packs::TierMasks::ZERO, human_burden: 0 }).present_mask;
         let from_helper = compute_present_mask(&snap);
         assert_eq!(
             from_decide, from_helper,
@@ -128,8 +128,8 @@ fn differential_present_mask_load_bearing_under_perturbation() {
     for s in canonical_scenarios() {
         let (f0, _, _) = build_inputs(&s);
         let s0 = CompiledFieldSnapshot::from_field(&f0).expect("snap0");
-        let mask0 = decide(&s0).present_mask;
-        let fired0 = decide(&s0).fired;
+        let mask0 = decide(&ccog::runtime::ClosedFieldContext { snapshot: std::sync::Arc::new(s0.clone()), posture: ccog::multimodal::PostureBundle::default(), context: ccog::multimodal::ContextBundle::default(), tiers: ccog::packs::TierMasks::ZERO, human_burden: 0 }).present_mask;
+        let fired0 = decide(&ccog::runtime::ClosedFieldContext { snapshot: std::sync::Arc::new(s0.clone()), posture: ccog::multimodal::PostureBundle::default(), context: ccog::multimodal::ContextBundle::default(), tiers: ccog::packs::TierMasks::ZERO, human_burden: 0 }).fired;
         for (pert, _, _) in &s.perturbations {
             // Only triple-drop perturbations affect the snapshot's
             // present_mask; posture/context bit drops live outside the
@@ -139,8 +139,8 @@ fn differential_present_mask_load_bearing_under_perturbation() {
             }
             let (f1, _, _) = perturb(&s, pert);
             let s1 = CompiledFieldSnapshot::from_field(&f1).expect("snap1");
-            let mask1 = decide(&s1).present_mask;
-            let fired1 = decide(&s1).fired;
+            let mask1 = decide(&ccog::runtime::ClosedFieldContext { snapshot: std::sync::Arc::new(s1.clone()), posture: ccog::multimodal::PostureBundle::default(), context: ccog::multimodal::ContextBundle::default(), tiers: ccog::packs::TierMasks::ZERO, human_burden: 0 }).present_mask;
+            let fired1 = decide(&ccog::runtime::ClosedFieldContext { snapshot: std::sync::Arc::new(s1.clone()), posture: ccog::multimodal::PostureBundle::default(), context: ccog::multimodal::ContextBundle::default(), tiers: ccog::packs::TierMasks::ZERO, human_burden: 0 }).fired;
             assert_ne!(
                 mask0, mask1,
                 "scenario `{}`: triple perturbation {:?} did not change present_mask",

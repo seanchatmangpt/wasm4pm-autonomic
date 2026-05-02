@@ -10,3 +10,7 @@ description = "Bridge crate translating ccog values into dteam runtime types —
 ccog = { path = "../ccog", default-features = false }
 dteam = { path = "../.." }
 blake3 = "1.5"
+
+[dev-dependencies]
+chrono = "0.4"
+oxigraph = "0.4"

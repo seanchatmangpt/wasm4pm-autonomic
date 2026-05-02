@@ -88,7 +88,14 @@ pub fn build_inputs(s: &CausalScenario) -> (FieldContext, PostureBundle, Context
 /// Compute the response under `(field, posture, ctx)`.
 pub fn respond(field: &FieldContext, posture: &PostureBundle, ctx: &ContextBundle) -> (AutonomicInstinct, &'static str) {
     let snap = CompiledFieldSnapshot::from_field(field).expect("snapshot");
-    select_instinct_v0_with_reason(&snap, posture, ctx)
+    let context_bundle = ccog::runtime::ClosedFieldContext {
+        snapshot: std::sync::Arc::new(snap),
+        posture: posture.clone(),
+        context: ctx.clone(),
+        tiers: ccog::packs::TierMasks::ZERO,
+        human_burden: 0,
+    };
+    select_instinct_v0_with_reason(&context_bundle)
 }
 
 /// Apply one perturbation, returning a new closed surface.

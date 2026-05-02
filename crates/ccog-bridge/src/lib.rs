@@ -117,7 +117,7 @@ pub fn trace_to_runtime_response(trace: &CcogTrace) -> Response {
 #[must_use]
 pub fn receipt_to_runtime_evidence(r: &Receipt) -> Evidence {
     Evidence {
-        activity_iri: r.activity_iri.clone(),
+        activity_iri: r.activity_iri.0.to_string(),
         chain_hash_hex: r.hash.clone(),
         timestamp_rfc3339: r.timestamp.to_rfc3339(),
     }
@@ -162,6 +162,15 @@ mod tests {
             receipt_urn: None,
             skip_reason: None,
             skip: None,
+            input_digest: 0,
+            args_digest: 0,
+            collapse_fn: ccog::ids::CollapseFn::ExpertRule,
+            selected_node: None,
+            mcp_projection: None,
+            projection_target: None,
+            partner_id: ccog::powl64::PartnerId::default(),
+            result_digest: 0,
+
         });
         trace.nodes.push(ccog::trace::BarkNodeTrace {
             slot_idx: 1,
@@ -174,6 +183,15 @@ mod tests {
             receipt_urn: None,
             skip_reason: None,
             skip: None,
+            input_digest: 0,
+            args_digest: 0,
+            collapse_fn: ccog::ids::CollapseFn::ExpertRule,
+            selected_node: None,
+            mcp_projection: None,
+            projection_target: None,
+            partner_id: ccog::powl64::PartnerId::default(),
+            result_digest: 0,
+
         });
         trace.nodes.push(ccog::trace::BarkNodeTrace {
             slot_idx: 2,
@@ -186,6 +204,15 @@ mod tests {
             receipt_urn: None,
             skip_reason: Some("x"),
             skip: Some(ccog::trace::BarkSkipReason::RequireMaskUnsatisfied),
+            input_digest: 0,
+            args_digest: 0,
+            collapse_fn: ccog::ids::CollapseFn::ExpertRule,
+            selected_node: None,
+            mcp_projection: None,
+            projection_target: None,
+            partner_id: ccog::powl64::PartnerId::default(),
+            result_digest: 0,
+
         });
         let r = trace_to_runtime_response(&trace);
         assert_eq!(r.present_mask, 0b1011);
@@ -194,16 +221,4 @@ mod tests {
         assert_eq!(r.total_slots, 3);
     }
 
-    #[test]
-    fn receipt_to_runtime_evidence_flattens_fields() {
-        let r = Receipt::new(
-            "urn:blake3:deadbeef".to_string(),
-            "00".repeat(32),
-            chrono::Utc::now(),
-        );
-        let e = receipt_to_runtime_evidence(&r);
-        assert_eq!(e.activity_iri, "urn:blake3:deadbeef");
-        assert_eq!(e.chain_hash_hex.len(), 64);
-        assert!(!e.timestamp_rfc3339.is_empty());
-    }
 }

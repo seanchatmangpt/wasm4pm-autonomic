@@ -1,0 +1,14 @@
+[book]
+title = "INSA: Instinctual Autonomics"
+authors = ["DTeam"]
+language = "en"
+multilingual = false
+src = "src"
+
+[output.html]
+git-repository-url = "https://github.com/seanchatmangpt/dteam"
+edit-url-template = "https://github.com/seanchatmangpt/dteam/edit/main/docs/book/src/{path}"
+site-url = "/insa/"
+
+[preprocessor.mathjax]
+include = true

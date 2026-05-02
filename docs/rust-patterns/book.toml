@@ -1,0 +1,7 @@
+[book]
+title = "DTEAM Rust Patterns"
+authors = ["DTEAM Team"]
+description = "A collection of Rust patterns, techniques, and philosophies utilized in the DTEAM and INSA systems."
+language = "en"
+multilingual = false
+src = "src"

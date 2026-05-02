@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use crate::utils::dense_kernel::StaticPackedKeyTable;
+    use crate::utils::static_pkt::StaticPackedKeyTable;
     use crate::{RlState, RlAction};
     use crate::reinforcement::QLearning;
     use proptest::prelude::*;
@@ -38,7 +38,7 @@ mod tests {
         fn test_q_learning_zero_allocation_logic(
             steps in 1usize..100,
         ) {
-            let agent: QLearning<RlState, RlAction> = QLearning::new();
+            let mut agent: QLearning<RlState<1>, RlAction> = QLearning::new();
             let mut state = RlState::default();
             
             for _ in 0..steps {
