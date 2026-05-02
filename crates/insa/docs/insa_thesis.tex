@@ -44,6 +44,11 @@
     tabsize=2
 }
 
+\newtheorem{theorem}{Theorem}[chapter]
+\newtheorem{definition}{Definition}[chapter]
+\newtheorem{axiom}{Axiom}[chapter]
+\newtheorem{lemma}{Lemma}[chapter]
+
 \title{\textbf{Hyperdimensional Semantic Multiplexing and Admitted Autonomic Closure}\\\vspace{0.5em}\Large A Formal Calculus of Executable Enterprise State and the Manufacturing of Production-Grade Instinctual Autonomics (INSA)}
 \author{Sean Chatman}
 \date{\today}
@@ -69,14 +74,18 @@ A_{\text{LLM}} = \text{Validate}\Big(\text{Parse}\Big(\text{Tool}\Big(\text{Samp
 \end{equation}
 Where $C_t$ represents the serialized context window of tokens. We observe that as $t \to \infty$ and $W_{\text{model}} \to 0$, the industry falsely presumed that model "intelligence" would saturate enterprise requirements. 
 
-In hyperdimensional terms, the LLM operates in a latent space $\mathbb{R}^d$ where $d \approx 10^5$. The projection into action $A$ is inherently lossy and unadmitted. The mapping $\pi: \mathbb{R}^d \to \mathcal{A}$ suffers from semantic drift where small perturbations in $O$ yield catastrophic variances in $A$.
+In hyperdimensional terms, the LLM operates in a latent space $\mathbb{R}^d$ where $d \approx 10^5$. The projection into action $A$ is inherently lossy and unadmitted. The mapping $\pi: \mathbb{R}^d \to \mathcal{A}$ suffers from semantic drift where small perturbations in $O$ yield catastrophic variances in $A$. Formally, the sensitivity of the LLM projection is defined by the gradient of the latent potential:
+\begin{equation}
+\Delta A \propto \| \nabla_{\Omega} \pi(\omega) \| \cdot \delta \omega
+\end{equation}
+In an unadmitted system, this gradient is unbounded, leading to hallucinations and security escapes.
 
 \section{The Little's Law WIP Explosion}
 By applying Little's Law ($L = \lambda W$), where $L$ is work-in-process (WIP), $\lambda$ is the arrival rate, and $W$ is the time in system, we demonstrate that generative AI systems act as global congestion magnifiers. Because LLMs are optimized for fluency rather than closure, they increase the arrival rate of unverified, unadmitted artifacts ($\lambda_{\text{generated\_work}}$) through drafts, summaries, and agent-chatter. 
 
-The global WIP of an LLM-centered enterprise evolves according to:
+The global WIP of an LLM-centered enterprise evolves according to the differential equation:
 \begin{equation}
-\frac{dL}{dt} = \int_{0}^{T} [\lambda_{\text{gen}}(t) - \mu_{\text{closure}}(t)] dt
+\frac{dL}{dt} = \lambda_{\text{gen}}(t) - \mu_{\text{closure}}(t)
 \end{equation}
 As $\lambda_{\text{gen}}$ scales with infinitely fast model inference while $\mu_{\text{closure}}$ remains constrained by human-in-the-loop review and semantic ambiguity, $L$ expands asymptotically. This identifies the "LLM Bubble": the overpricing of $O \to \text{plausible output}$ while the actual enterprise value resides strictly in the transformation $O^* \to \text{admitted action}$.
 
@@ -98,7 +107,10 @@ We define the exploration field as $\mathcal{O}_{\text{explored}}$. The transiti
 \end{equation}
 
 \section{The Selection Ledger Rule}
-A decisive turning point occurred when the exploratory codebase was declared "finished" prematurely by generative models. We enforced the "Nothing survives because it exists" law, treating the old repository as raw ore. We applied a selection ledger with a discrete transition function:
+\begin{axiom}[Nothing survives because it exists]
+An artifact is carried forward from exploration to exploitation strictly upon the condition of its legal, semantic, and structural admission into the core kernel.
+\end{axiom}
+A decisive turning point occurred when the exploratory codebase was declared "finished" prematurely by generative models. We enforced the Selection Ledger with a discrete transition function:
 \begin{equation}
 \forall a \in \text{Artifacts}: a \to \{ \text{KEEP\_AS\_LAW, REWRITE, DELETE} \}
 \end{equation}
@@ -114,10 +126,13 @@ If the route cannot replay or the layout drifts by a single byte, the system und
 \chapter{The Calculus of Admitted Field Context ($O^*$)}
 
 \section{Closure Operators and Topological Sufficiency}
-We reject the premise that action $\mathcal{A}$ may be derived from raw observation $O$. Instead, we define a rigorous topological closure operator $\text{Cl}_{\Sigma, P, R}$, where $\Sigma$ denotes semantics, $P$ policy, and $R$ reachability. The admitted field context $O^*$ is defined as the fixed point of this operator:
+We reject the premise that action $\mathcal{A}$ may be derived from raw observation $O$. Instead, we define a rigorous topological closure operator $\text{Cl}_{\Sigma, P, R}$, where $\Sigma$ denotes semantics, $P$ policy, and $R$ reachability. 
+\begin{definition}[Admitted Field Context]
+The admitted field context $O^*$ is the fixed point of the closure operator:
 \begin{equation}
 O^* = \text{fix}(\text{Cl}_{\Sigma, P, R}(O)) \implies \text{Cl}_{\Sigma, P, R}(O^*) = O^*
 \end{equation}
+\end{definition}
 
 This operator ensures that all references are grounded, all policies are checked, and all evidence is fresh before the field enters the kernel.
 
@@ -133,10 +148,12 @@ The $COG8$ framework imposes a strict boundary on the cardinality of the support
 \begin{equation}
 | \text{support}(COG8) | \le 8
 \end{equation}
+\begin{theorem}[Andon Decomposition]
 When the requisite closure dimensionality reaches $9$, the calculus explicitly forbids scalar widening ($u8 \to u16$). Instead, it triggers an architectural Andon event:
 \begin{equation}
 \text{Need9} \implies \nabla \cdot \text{Decompose}(O^*) \quad (\text{Composition, Sequencing, Hierarchy})
 \end{equation}
+\end{theorem}
 This ensures the ontology remains factored into byte-aligned atoms, maintaining cache density and preventing semantic sprawl.
 
 \chapter{Byte-Width Semantic Multiplexing}
@@ -218,6 +235,40 @@ Truthforge is the admission machinery that ensures:
 \end{equation}
 If a SIMD or intrinsic-based fast path deviates by even a single bit from the scalar reference law, it is de-admitted.
 
+\chapter{The Information Calculus of POWL64}
+
+\section{Cryptographic Route Proofs}
+The $POWL64$ segment represents the physical proof of autonomic motion. Each route cell $C_i$ is bound to its predecessor via a recursive hash chain:
+\begin{equation}
+H_{i} = \text{blake3}(H_{i-1} || \text{Payload}(C_i) || \text{BlockedAlternatives}_i)
+\end{equation}
+This ensures that the route is not merely a record of what happened, but a cryptographically irrefutable witness of why alternatives were inhibited.
+
+\section{Deterministic Replayability}
+\begin{definition}[Replay Equivalence]
+A route $\vec{R}$ is replayable if and only if the reconstruction function $\mathcal{R}$ over the admitted field $O^*$ yields an identical hash chain:
+\begin{equation}
+\mathcal{R}(O^*, \vec{R}) \equiv \vec{H}_{\text{chain}}
+\end{equation}
+\end{definition}
+This property transforms the "done" state into evidentiary done. A decision that cannot be replayed is architecturally non-existent.
+
+\chapter{The Discrete Algebra of CONSTRUCT8}
+
+\section{Bounded Mutation Deltas}
+External results do not become authority; they re-enter as observations. The $CONSTRUCT8$ delta $\Delta O$ is the only mechanism for state mutation. We enforce the bound:
+\begin{equation}
+\| \Delta O \|_0 \le 8
+\end{equation}
+This L0-norm constraint ensures that state mutation remains atomic, typed, and auditable. 
+
+\section{Reentry Validation}
+The reentry function $\mathcal{M}$ satisfies:
+\begin{equation}
+O^*_{t+1} = \mathcal{M}(O^*_t, \text{Validate}(\text{ProjectionResult}))
+\end{equation}
+By forcing all external intelligence (LLMs, tools, humans) through the CONSTRUCT8 bottle-neck, we prevent state contamination and maintain the integrity of the Blue River Dam.
+
 \chapter{Manufacturing and Assurance Stations}
 
 \section{unrdf: Ontology Projection}
@@ -235,8 +286,8 @@ Never allow in-band payload to become out-of-band control. This ensures that an 
 
 \section{The doctor and wizard Lifecycle}
 \begin{itemize}
-    \item \textbf{doctor}: Diagnostic admission control (Is the field healthy?).
-    \item \textbf{wizard}: Guided admissible construction (How do we close the gap?).
+    \item \textbf{doctor}: Diagnostic admission control. It continuously evaluates the health of the closure field $O^*$.
+    \item \textbf{wizard}: Guided admissible construction. It maps the shortest path from an incomplete field to a valid admitted artifact.
 \end{itemize}
 
 \chapter{Strategic Monetization: The Blue River Dam}
