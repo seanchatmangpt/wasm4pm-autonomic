@@ -5,3 +5,7 @@ edition = "2021"
 publish = false
 
 [dependencies]
+
+insa-instinct = { path = "../insa-instinct" }
+insa-types = { path = "../insa-types" }
+insa-kappa8 = { path = "../insa-kappa8" }

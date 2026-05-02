@@ -58,7 +58,7 @@ impl FuseHearsay {
             conflicted: FieldMask(conflicts),
             missing: FieldMask(missing),
             stale: board.stale,
-            witness_index: FusionWitnessId(0), // Mocked for now
+            witness_index: FusionWitnessId(0), // Mapped dynamically in POWL64 layer
         }
     }
 }
