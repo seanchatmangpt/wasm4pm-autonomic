@@ -1,0 +1,23 @@
+\contentsline {chapter}{\numberline {1}The Great Divergence: Generative Noise vs. Admitted Truth}{4}{chapter.1}%
+\contentsline {section}{\numberline {1.1}The Semantic Liquidity Trap: Queuing Theory in the AI Age}{4}{section.1.1}%
+\contentsline {section}{\numberline {1.2}The Latent Space Fallacy: The Epistemological Failure of reasoning Agents}{5}{section.1.2}%
+\contentsline {section}{\numberline {1.3}Conway's Law and the Risk of Systemic Fragmentation}{6}{section.1.3}%
+\contentsline {chapter}{\numberline {2}The Blue River Dam: The Strategy of Upstream Control}{7}{chapter.2}%
+\contentsline {section}{\numberline {2.1}Headwaters Control: The Geopolitics of Enterprise Truth}{7}{section.2.1}%
+\contentsline {section}{\numberline {2.2}The Three Planes of Assurance: A Bell Labs Inheritance}{8}{section.2.2}%
+\contentsline {section}{\numberline {2.3}Telco Discipline: A URL is Not a Service}{8}{section.2.3}%
+\contentsline {chapter}{\numberline {3}The Economics of the No: Monetizing Work Avoidance}{10}{chapter.3}%
+\contentsline {section}{\numberline {3.1}The Denominator Problem in Management: The End of WIP}{10}{section.3.1}%
+\contentsline {section}{\numberline {3.2}The Competitive Moat of No-at-Scale}{11}{section.3.2}%
+\contentsline {section}{\numberline {3.3}The Evidence Pack economy: From Seats to Receipts}{11}{section.3.3}%
+\contentsline {chapter}{\numberline {4}The Operational Lifecycle: From Doctor to Wizard}{12}{chapter.4}%
+\contentsline {section}{\numberline {4.1}The Role of the Doctor: Diagnostic Admission Control}{12}{section.4.1}%
+\contentsline {section}{\numberline {4.2}The Role of the Wizard: Admissible Construction without Drift}{13}{section.4.2}%
+\contentsline {section}{\numberline {4.3}The Working Dog/Handler Co-evolutionary Model}{13}{section.4.3}%
+\contentsline {chapter}{\numberline {5}Managing the Projections: SaaS Manufacturing}{14}{chapter.5}%
+\contentsline {section}{\numberline {5.1}The Paradigm Shift from Building to Projecting}{14}{section.5.1}%
+\contentsline {section}{\numberline {5.2}The Moat of Restraint and the Eradication of State}{14}{section.5.2}%
+\contentsline {chapter}{\numberline {6}The 29-Phase Genesis: An Industrial Retrospective}{16}{chapter.6}%
+\contentsline {section}{\numberline {6.1}Purification: The Extraction of Law}{16}{section.6.1}%
+\contentsline {section}{\numberline {6.2}The Selection Ledger and the Rise of Vibe Done}{16}{section.6.2}%
+\contentsline {chapter}{\numberline {7}Conclusion: The Inevitability of Admitted Autonomics}{18}{chapter.7}%
